@@ -48,7 +48,7 @@ GENERATED_FILES += $(BIN_DIR)/lua55ce-runtime.zip
 #RESOURCE_OBJECT = resources.o
 
 MAIN_OBJECTS += $(BIN_DIR)/main-dbg.o
-MAIN_OBJECTS += $(BIN_DIR)/main-rel.o
+MAIN_OBJECTS += $(BIN_DIR)/main-con.o
 
 SOURCES += $(SRC_DIR)/platform.c
 SOURCES += $(SRC_DIR)/bump-allocator.c
@@ -197,8 +197,8 @@ clean:
 $(BIN_DIR)/main-dbg.o: $(SRC_DIR)/main-linux.c $(SINGLE_HEADER) $(SRC_DIR)/version.h
 	$(CC) -DCOMEXE_DBG $(CC_FLAGS) $(CC_FLAGS_X) $(INCLUDE_DIRS) -c $< -o $@
 
-$(BIN_DIR)/main-rel.o: $(SRC_DIR)/main-linux.c $(SINGLE_HEADER) $(SRC_DIR)/version.h
-	$(CC) -DCOMEXE_REL $(CC_FLAGS) $(CC_FLAGS_X) $(INCLUDE_DIRS) -c $< -o $@
+$(BIN_DIR)/main-con.o: $(SRC_DIR)/main-linux.c $(SINGLE_HEADER) $(SRC_DIR)/version.h
+	$(CC) -DCOMEXE_CON $(CC_FLAGS) $(CC_FLAGS_X) $(INCLUDE_DIRS) -c $< -o $@
 
 #
 # Executables
@@ -208,8 +208,8 @@ $(BIN_DIR)/main-rel.o: $(SRC_DIR)/main-linux.c $(SINGLE_HEADER) $(SRC_DIR)/versi
 $(BIN_DIR)/comexe-dbg: $(SRC_DIR)/comexe.h $(OBJECTS) $(BIN_DIR)/main-dbg.o
 	$(CC) -static $(OBJECTS) $(BIN_DIR)/main-dbg.o -o $@ $(STATIC_LIB_DIRS) $(STATIC_LIBS) -ltcc
 
-$(BIN_DIR)/comexe: $(SRC_DIR)/comexe.h $(OBJECTS) $(BIN_DIR)/main-rel.o
-	$(CC) -s -static $(OBJECTS) $(BIN_DIR)/main-rel.o -o $@ $(STATIC_LIB_DIRS) $(STATIC_LIBS) -ltcc
+$(BIN_DIR)/comexe: $(SRC_DIR)/comexe.h $(OBJECTS) $(BIN_DIR)/main-con.o
+	$(CC) -s -static $(OBJECTS) $(BIN_DIR)/main-con.o -o $@ $(STATIC_LIB_DIRS) $(STATIC_LIBS) -ltcc
 
 #
 # Boostrap dependencies

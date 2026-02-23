@@ -50,7 +50,7 @@
 #elif defined(COMEXE_GUI)
 #define COMEXE_BUILD_TYPE "cmd-gui"
 #else
-#define COMEXE_BUILD_TYPE "???"
+#error "Unknown build type"
 #endif
 
 /*============================================================================*/

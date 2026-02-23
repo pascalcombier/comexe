@@ -29,7 +29,7 @@
 #elif defined(COMEXE_CON)
 #define COMEXE_BUILD_TYPE "cmd-con"
 #else
-#define COMEXE_BUILD_TYPE "???"
+#error "Unknown build type"
 #endif
 
 /*============================================================================*/
