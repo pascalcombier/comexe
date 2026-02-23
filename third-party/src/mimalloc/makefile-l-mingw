@@ -1,0 +1,63 @@
+.PHONY: all clean
+
+all: bin/libmimalloc.a
+
+bin/alloc-aligned.o: src/alloc-aligned.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/alloc-aligned.c -o bin/alloc-aligned.o
+
+bin/alloc.o: src/alloc.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/alloc.c -o bin/alloc.o
+
+bin/alloc-posix.o: src/alloc-posix.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/alloc-posix.c -o bin/alloc-posix.o
+
+bin/arena.o: src/arena.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/arena.c -o bin/arena.o
+
+bin/arena-meta.o: src/arena-meta.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/arena-meta.c -o bin/arena-meta.o
+
+bin/bitmap.o: src/bitmap.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/bitmap.c -o bin/bitmap.o
+
+bin/heap.o: src/heap.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/heap.c -o bin/heap.o
+
+bin/init.o: src/init.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/init.c -o bin/init.o
+
+bin/libc.o: src/libc.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/libc.c -o bin/libc.o
+
+bin/options.o: src/options.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/options.c -o bin/options.o
+
+bin/os.o: src/os.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/os.c -o bin/os.o
+
+bin/theap.o: src/theap.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/theap.c -o bin/theap.o
+
+bin/threadlocal.o: src/threadlocal.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/threadlocal.c -o bin/threadlocal.o
+
+bin/page.o: src/page.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/page.c -o bin/page.o
+
+bin/page-map.o: src/page-map.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/page-map.c -o bin/page-map.o
+
+bin/random.o: src/random.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/random.c -o bin/random.o
+
+bin/stats.o: src/stats.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/stats.c -o bin/stats.o
+
+bin/prim.o: src/prim/prim.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Wno-unknown-pragmas -Wno-attributes -Wno-array-bounds -Wno-incompatible-pointer-types -c src/prim/prim.c -o bin/prim.o
+
+bin/libmimalloc.a: bin/alloc-aligned.o bin/alloc.o bin/alloc-posix.o bin/arena.o bin/arena-meta.o bin/bitmap.o bin/heap.o bin/init.o bin/libc.o bin/options.o bin/os.o bin/theap.o bin/threadlocal.o bin/page.o bin/page-map.o bin/random.o bin/stats.o bin/prim.o
+	ar rcs $@ $^
+
+clean:
+	rm -f bin/alloc-aligned.o bin/alloc.o bin/alloc-posix.o bin/arena.o bin/arena-meta.o bin/bitmap.o bin/heap.o bin/init.o bin/libc.o bin/options.o bin/os.o bin/theap.o bin/threadlocal.o bin/page.o bin/page-map.o bin/random.o bin/stats.o bin/prim.o bin/libmimalloc.a

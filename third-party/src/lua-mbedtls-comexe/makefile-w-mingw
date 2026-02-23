@@ -1,0 +1,21 @@
+.PHONY: all clean
+
+all: bin\libluambedtls.a
+
+bin\base64.o: src\base64.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -DMBEDTLS_DECLARE_PRIVATE_IDENTIFIERS -I..\lua\src -I..\mbedtls\include -I..\mbedtls\src\tf-psa-crypto\include -I..\mbedtls\src\tf-psa-crypto\drivers\builtin\include -fdiagnostics-color=never -c src\base64.c -o bin\base64.o
+
+bin\main.o: src\main.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -DMBEDTLS_DECLARE_PRIVATE_IDENTIFIERS -I..\lua\src -I..\mbedtls\include -I..\mbedtls\src\tf-psa-crypto\include -I..\mbedtls\src\tf-psa-crypto\drivers\builtin\include -fdiagnostics-color=never -c src\main.c -o bin\main.o
+
+bin\md.o: src\md.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -DMBEDTLS_DECLARE_PRIVATE_IDENTIFIERS -I..\lua\src -I..\mbedtls\include -I..\mbedtls\src\tf-psa-crypto\include -I..\mbedtls\src\tf-psa-crypto\drivers\builtin\include -fdiagnostics-color=never -c src\md.c -o bin\md.o
+
+bin\ssl.o: src\ssl.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -DMBEDTLS_DECLARE_PRIVATE_IDENTIFIERS -I..\lua\src -I..\mbedtls\include -I..\mbedtls\src\tf-psa-crypto\include -I..\mbedtls\src\tf-psa-crypto\drivers\builtin\include -fdiagnostics-color=never -c src\ssl.c -o bin\ssl.o
+
+bin\libluambedtls.a: bin\base64.o bin\main.o bin\md.o bin\ssl.o
+	ar rcs $@ $^
+
+clean:
+	del /F /Q 2>NUL bin\base64.o bin\main.o bin\md.o bin\ssl.o bin\libluambedtls.a

@@ -1,0 +1,78 @@
+.PHONY: all clean
+
+all: src/config.h bin/libtcc.a bin/libtccmain.a bin/tcc x86-64-linux-tcc-runtime/libtcc1.a x86-64-linux-tcc-runtime/runmain.o 
+
+src/config.h: libtcc-config.h
+	cp -f libtcc-config.h src/config.h
+
+bin/libtcc.o: src/libtcc.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -c src/libtcc.c -o bin/libtcc.o
+
+bin/tccpp.o: src/tccpp.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -c src/tccpp.c -o bin/tccpp.o
+
+bin/tccgen.o: src/tccgen.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -c src/tccgen.c -o bin/tccgen.o
+
+bin/tccdbg.o: src/tccdbg.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -c src/tccdbg.c -o bin/tccdbg.o
+
+bin/tccasm.o: src/tccasm.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -c src/tccasm.c -o bin/tccasm.o
+
+bin/tccrun.o: src/tccrun.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -c src/tccrun.c -o bin/tccrun.o
+
+bin/x86_64-gen.o: src/x86_64-gen.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -c src/x86_64-gen.c -o bin/x86_64-gen.o
+
+bin/x86_64-link.o: src/x86_64-link.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -c src/x86_64-link.c -o bin/x86_64-link.o
+
+bin/i386-asm.o: src/i386-asm.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -c src/i386-asm.c -o bin/i386-asm.o
+
+bin/tccelf.o: src/tccelf.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -c src/tccelf.c -o bin/tccelf.o
+
+bin/tcc.o: src/tcc.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" -DONE_SOURCE=0 -c src/tcc.c -o bin/tcc.o
+
+bin/tcc: src/tcc.c bin/libtcc.a
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_ELF -DCONFIG_TCC_SWITCHES=\"-static\" src/tcc.c bin/libtcc.a -o bin/tcc
+
+bin/libtcc1.o: src/lib/libtcc1.c bin/tcc src/config.h
+	bin/tcc -m64 -Bsrc -Isrc -Isrc -Isrc/include -c src/lib/libtcc1.c -o bin/libtcc1.o
+
+bin/alloca.o: src/lib/alloca.S bin/tcc src/config.h
+	bin/tcc -m64 -Bsrc -Isrc -Isrc -Isrc/include -c src/lib/alloca.S -o bin/alloca.o
+
+bin/alloca-bt.o: src/lib/alloca-bt.S bin/tcc src/config.h
+	bin/tcc -m64 -Bsrc -Isrc -Isrc -Isrc/include -c src/lib/alloca-bt.S -o bin/alloca-bt.o
+
+bin/stdatomic.o: src/lib/stdatomic.c bin/tcc src/config.h
+	bin/tcc -m64 -Bsrc -Isrc -Isrc -Isrc/include -c src/lib/stdatomic.c -o bin/stdatomic.o
+
+bin/builtin.o: src/lib/builtin.c bin/tcc src/config.h
+	bin/tcc -m64 -Bsrc -Isrc -Isrc -Isrc/include -c src/lib/builtin.c -o bin/builtin.o
+
+bin/atomic.o: src/lib/atomic.S bin/tcc src/config.h
+	bin/tcc -m64 -Bsrc -Isrc -Isrc -Isrc/include -c src/lib/atomic.S -o bin/atomic.o
+
+bin/dsohandle.o: src/lib/dsohandle.c bin/tcc src/config.h
+	bin/tcc -m64 -Bsrc -Isrc -Isrc -Isrc/include -c src/lib/dsohandle.c -o bin/dsohandle.o
+
+x86-64-linux-tcc-runtime/runmain.o: src/lib/runmain.c bin/tcc src/config.h
+	bin/tcc -m64 -Bsrc -Isrc -Isrc -Isrc/include -c src/lib/runmain.c -o x86-64-linux-tcc-runtime/runmain.o
+
+bin/libtcc.a: bin/libtcc.o bin/tccpp.o bin/tccgen.o bin/tccdbg.o bin/tccasm.o bin/tccrun.o bin/x86_64-gen.o bin/x86_64-link.o bin/i386-asm.o bin/tccelf.o
+	ar rcs $@ $^
+
+bin/libtccmain.a: bin/tcc.o
+	ar rcs $@ $^
+
+x86-64-linux-tcc-runtime/libtcc1.a: bin/libtcc1.o bin/alloca.o bin/alloca-bt.o bin/stdatomic.o bin/builtin.o bin/atomic.o bin/dsohandle.o
+	bin/tcc -m64 -ar $@ $^
+
+clean:
+	rm -f src/config.h bin/libtcc.o bin/tccpp.o bin/tccgen.o bin/tccdbg.o bin/tccasm.o bin/tccrun.o bin/x86_64-gen.o bin/x86_64-link.o bin/i386-asm.o bin/tccelf.o bin/libtcc.a bin/libtccmain.a bin/tcc bin/libtcc1.o bin/alloca.o bin/alloca-bt.o bin/stdatomic.o bin/builtin.o bin/atomic.o bin/dsohandle.o x86-64-linux-tcc-runtime/libtcc1.a bin/tcc.o x86-64-linux-tcc-runtime/runmain.o 

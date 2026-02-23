@@ -1,0 +1,63 @@
+.PHONY: all clean
+
+all: bin/libluasocket.a
+
+bin/auxiliar.o: src/auxiliar.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/auxiliar.c -o bin/auxiliar.o
+
+bin/buffer.o: src/buffer.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/buffer.c -o bin/buffer.o
+
+bin/compat.o: src/compat.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/compat.c -o bin/compat.o
+
+bin/except.o: src/except.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/except.c -o bin/except.o
+
+bin/inet.o: src/inet.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/inet.c -o bin/inet.o
+
+bin/io.o: src/io.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/io.c -o bin/io.o
+
+bin/luasocket.o: src/luasocket.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/luasocket.c -o bin/luasocket.o
+
+bin/mime.o: src/mime.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/mime.c -o bin/mime.o
+
+bin/options.o: src/options.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/options.c -o bin/options.o
+
+bin/select.o: src/select.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/select.c -o bin/select.o
+
+bin/tcp.o: src/tcp.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/tcp.c -o bin/tcp.o
+
+bin/timeout.o: src/timeout.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/timeout.c -o bin/timeout.o
+
+bin/udp.o: src/udp.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/udp.c -o bin/udp.o
+
+bin/usocket.o: src/usocket.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/usocket.c -o bin/usocket.o
+
+bin/unix.o: src/unix.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/unix.c -o bin/unix.o
+
+bin/serial.o: src/serial.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/serial.c -o bin/serial.o
+
+bin/unixdgram.o: src/unixdgram.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/unixdgram.c -o bin/unixdgram.o
+
+bin/unixstream.o: src/unixstream.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-unused-parameter -I../lua/src -D_GNU_SOURCE -c src/unixstream.c -o bin/unixstream.o
+
+bin/libluasocket.a: bin/auxiliar.o bin/buffer.o bin/compat.o bin/except.o bin/inet.o bin/io.o bin/luasocket.o bin/mime.o bin/options.o bin/select.o bin/tcp.o bin/timeout.o bin/udp.o bin/usocket.o bin/unix.o bin/serial.o bin/unixdgram.o bin/unixstream.o
+	ar rcs $@ $^
+
+clean:
+	rm -f bin/auxiliar.o bin/buffer.o bin/compat.o bin/except.o bin/inet.o bin/io.o bin/luasocket.o bin/mime.o bin/options.o bin/select.o bin/tcp.o bin/timeout.o bin/udp.o bin/usocket.o bin/unix.o bin/serial.o bin/unixdgram.o bin/unixstream.o bin/libluasocket.a

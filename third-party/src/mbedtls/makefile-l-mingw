@@ -1,0 +1,349 @@
+.PHONY: all clean
+
+all: bin/libtfpsacrypto.a bin/libmbedtls.a
+
+bin/aes.o: src/tf-psa-crypto/drivers/builtin/src/aes.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/aes.c -o bin/aes.o
+
+bin/aesce.o: src/tf-psa-crypto/drivers/builtin/src/aesce.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/aesce.c -o bin/aesce.o
+
+bin/aesni.o: src/tf-psa-crypto/drivers/builtin/src/aesni.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/aesni.c -o bin/aesni.o
+
+bin/aria.o: src/tf-psa-crypto/drivers/builtin/src/aria.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/aria.c -o bin/aria.o
+
+bin/asn1parse.o: src/tf-psa-crypto/drivers/builtin/src/asn1parse.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/asn1parse.c -o bin/asn1parse.o
+
+bin/asn1write.o: src/tf-psa-crypto/drivers/builtin/src/asn1write.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/asn1write.c -o bin/asn1write.o
+
+bin/base64.o: src/tf-psa-crypto/drivers/builtin/src/base64.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/base64.c -o bin/base64.o
+
+bin/bignum.o: src/tf-psa-crypto/drivers/builtin/src/bignum.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/bignum.c -o bin/bignum.o
+
+bin/bignum_core.o: src/tf-psa-crypto/drivers/builtin/src/bignum_core.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/bignum_core.c -o bin/bignum_core.o
+
+bin/bignum_mod.o: src/tf-psa-crypto/drivers/builtin/src/bignum_mod.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/bignum_mod.c -o bin/bignum_mod.o
+
+bin/bignum_mod_raw.o: src/tf-psa-crypto/drivers/builtin/src/bignum_mod_raw.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/bignum_mod_raw.c -o bin/bignum_mod_raw.o
+
+bin/block_cipher.o: src/tf-psa-crypto/drivers/builtin/src/block_cipher.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/block_cipher.c -o bin/block_cipher.o
+
+bin/camellia.o: src/tf-psa-crypto/drivers/builtin/src/camellia.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/camellia.c -o bin/camellia.o
+
+bin/ccm.o: src/tf-psa-crypto/drivers/builtin/src/ccm.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/ccm.c -o bin/ccm.o
+
+bin/chacha20.o: src/tf-psa-crypto/drivers/builtin/src/chacha20.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/chacha20.c -o bin/chacha20.o
+
+bin/chachapoly.o: src/tf-psa-crypto/drivers/builtin/src/chachapoly.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/chachapoly.c -o bin/chachapoly.o
+
+bin/cipher.o: src/tf-psa-crypto/drivers/builtin/src/cipher.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/cipher.c -o bin/cipher.o
+
+bin/cipher_wrap.o: src/tf-psa-crypto/drivers/builtin/src/cipher_wrap.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/cipher_wrap.c -o bin/cipher_wrap.o
+
+bin/cmac.o: src/tf-psa-crypto/drivers/builtin/src/cmac.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/cmac.c -o bin/cmac.o
+
+bin/constant_time.o: src/tf-psa-crypto/drivers/builtin/src/constant_time.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/constant_time.c -o bin/constant_time.o
+
+bin/ctr_drbg.o: src/tf-psa-crypto/drivers/builtin/src/ctr_drbg.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/ctr_drbg.c -o bin/ctr_drbg.o
+
+bin/ecdh.o: src/tf-psa-crypto/drivers/builtin/src/ecdh.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/ecdh.c -o bin/ecdh.o
+
+bin/ecdsa.o: src/tf-psa-crypto/drivers/builtin/src/ecdsa.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/ecdsa.c -o bin/ecdsa.o
+
+bin/ecjpake.o: src/tf-psa-crypto/drivers/builtin/src/ecjpake.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/ecjpake.c -o bin/ecjpake.o
+
+bin/ecp.o: src/tf-psa-crypto/drivers/builtin/src/ecp.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/ecp.c -o bin/ecp.o
+
+bin/ecp_curves.o: src/tf-psa-crypto/drivers/builtin/src/ecp_curves.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/ecp_curves.c -o bin/ecp_curves.o
+
+bin/ecp_curves_new.o: src/tf-psa-crypto/drivers/builtin/src/ecp_curves_new.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/ecp_curves_new.c -o bin/ecp_curves_new.o
+
+bin/entropy.o: src/tf-psa-crypto/drivers/builtin/src/entropy.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/entropy.c -o bin/entropy.o
+
+bin/entropy_poll.o: src/tf-psa-crypto/drivers/builtin/src/entropy_poll.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/entropy_poll.c -o bin/entropy_poll.o
+
+bin/gcm.o: src/tf-psa-crypto/drivers/builtin/src/gcm.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/gcm.c -o bin/gcm.o
+
+bin/hmac_drbg.o: src/tf-psa-crypto/drivers/builtin/src/hmac_drbg.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/hmac_drbg.c -o bin/hmac_drbg.o
+
+bin/lmots.o: src/tf-psa-crypto/drivers/builtin/src/lmots.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/lmots.c -o bin/lmots.o
+
+bin/lms.o: src/tf-psa-crypto/drivers/builtin/src/lms.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/lms.c -o bin/lms.o
+
+bin/md.o: src/tf-psa-crypto/drivers/builtin/src/md.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/md.c -o bin/md.o
+
+bin/md5.o: src/tf-psa-crypto/drivers/builtin/src/md5.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/md5.c -o bin/md5.o
+
+bin/memory_buffer_alloc.o: src/tf-psa-crypto/drivers/builtin/src/memory_buffer_alloc.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/memory_buffer_alloc.c -o bin/memory_buffer_alloc.o
+
+bin/nist_kw.o: src/tf-psa-crypto/drivers/builtin/src/nist_kw.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/nist_kw.c -o bin/nist_kw.o
+
+bin/oid.o: src/tf-psa-crypto/drivers/builtin/src/oid.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/oid.c -o bin/oid.o
+
+bin/pem.o: src/tf-psa-crypto/drivers/builtin/src/pem.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/pem.c -o bin/pem.o
+
+bin/pk.o: src/tf-psa-crypto/drivers/builtin/src/pk.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/pk.c -o bin/pk.o
+
+bin/pk_ecc.o: src/tf-psa-crypto/drivers/builtin/src/pk_ecc.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/pk_ecc.c -o bin/pk_ecc.o
+
+bin/pk_rsa.o: src/tf-psa-crypto/drivers/builtin/src/pk_rsa.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/pk_rsa.c -o bin/pk_rsa.o
+
+bin/pk_wrap.o: src/tf-psa-crypto/drivers/builtin/src/pk_wrap.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/pk_wrap.c -o bin/pk_wrap.o
+
+bin/pkcs5.o: src/tf-psa-crypto/drivers/builtin/src/pkcs5.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/pkcs5.c -o bin/pkcs5.o
+
+bin/pkparse.o: src/tf-psa-crypto/drivers/builtin/src/pkparse.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/pkparse.c -o bin/pkparse.o
+
+bin/pkwrite.o: src/tf-psa-crypto/drivers/builtin/src/pkwrite.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/pkwrite.c -o bin/pkwrite.o
+
+bin/platform.o: src/tf-psa-crypto/drivers/builtin/src/platform.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/platform.c -o bin/platform.o
+
+bin/platform_util.o: src/tf-psa-crypto/drivers/builtin/src/platform_util.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/platform_util.c -o bin/platform_util.o
+
+bin/poly1305.o: src/tf-psa-crypto/drivers/builtin/src/poly1305.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/poly1305.c -o bin/poly1305.o
+
+bin/psa_crypto_aead.o: src/tf-psa-crypto/drivers/builtin/src/psa_crypto_aead.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/psa_crypto_aead.c -o bin/psa_crypto_aead.o
+
+bin/psa_crypto_cipher.o: src/tf-psa-crypto/drivers/builtin/src/psa_crypto_cipher.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/psa_crypto_cipher.c -o bin/psa_crypto_cipher.o
+
+bin/psa_crypto_ecp.o: src/tf-psa-crypto/drivers/builtin/src/psa_crypto_ecp.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/psa_crypto_ecp.c -o bin/psa_crypto_ecp.o
+
+bin/psa_crypto_ffdh.o: src/tf-psa-crypto/drivers/builtin/src/psa_crypto_ffdh.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/psa_crypto_ffdh.c -o bin/psa_crypto_ffdh.o
+
+bin/psa_crypto_hash.o: src/tf-psa-crypto/drivers/builtin/src/psa_crypto_hash.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/psa_crypto_hash.c -o bin/psa_crypto_hash.o
+
+bin/psa_crypto_mac.o: src/tf-psa-crypto/drivers/builtin/src/psa_crypto_mac.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/psa_crypto_mac.c -o bin/psa_crypto_mac.o
+
+bin/psa_crypto_pake.o: src/tf-psa-crypto/drivers/builtin/src/psa_crypto_pake.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/psa_crypto_pake.c -o bin/psa_crypto_pake.o
+
+bin/psa_crypto_rsa.o: src/tf-psa-crypto/drivers/builtin/src/psa_crypto_rsa.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/psa_crypto_rsa.c -o bin/psa_crypto_rsa.o
+
+bin/psa_util.o: src/tf-psa-crypto/drivers/builtin/src/psa_util.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/psa_util.c -o bin/psa_util.o
+
+bin/ripemd160.o: src/tf-psa-crypto/drivers/builtin/src/ripemd160.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/ripemd160.c -o bin/ripemd160.o
+
+bin/rsa.o: src/tf-psa-crypto/drivers/builtin/src/rsa.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/rsa.c -o bin/rsa.o
+
+bin/rsa_alt_helpers.o: src/tf-psa-crypto/drivers/builtin/src/rsa_alt_helpers.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/rsa_alt_helpers.c -o bin/rsa_alt_helpers.o
+
+bin/sha1.o: src/tf-psa-crypto/drivers/builtin/src/sha1.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/sha1.c -o bin/sha1.o
+
+bin/sha256.o: src/tf-psa-crypto/drivers/builtin/src/sha256.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/sha256.c -o bin/sha256.o
+
+bin/sha3.o: src/tf-psa-crypto/drivers/builtin/src/sha3.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/sha3.c -o bin/sha3.o
+
+bin/sha512.o: src/tf-psa-crypto/drivers/builtin/src/sha512.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/sha512.c -o bin/sha512.o
+
+bin/threading.o: src/tf-psa-crypto/drivers/builtin/src/threading.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/builtin/src/threading.c -o bin/threading.o
+
+bin/everest.o: src/tf-psa-crypto/drivers/everest/library/everest.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/everest/library/everest.c -o bin/everest.o
+
+bin/x25519.o: src/tf-psa-crypto/drivers/everest/library/x25519.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/everest/library/x25519.c -o bin/x25519.o
+
+bin/Hacl_Curve25519_joined.o: src/tf-psa-crypto/drivers/everest/library/Hacl_Curve25519_joined.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/everest/library/Hacl_Curve25519_joined.c -o bin/Hacl_Curve25519_joined.o
+
+bin/p256-m_driver_entrypoints.o: src/tf-psa-crypto/drivers/p256-m/p256-m_driver_entrypoints.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/p256-m/p256-m_driver_entrypoints.c -o bin/p256-m_driver_entrypoints.o
+
+bin/p256-m.o: src/tf-psa-crypto/drivers/p256-m/p256-m/p256-m.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/drivers/p256-m/p256-m/p256-m.c -o bin/p256-m.o
+
+bin/psa_crypto.o: src/tf-psa-crypto/core/psa_crypto.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/core/psa_crypto.c -o bin/psa_crypto.o
+
+bin/psa_crypto_client.o: src/tf-psa-crypto/core/psa_crypto_client.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/core/psa_crypto_client.c -o bin/psa_crypto_client.o
+
+bin/psa_crypto_driver_wrappers_no_static.o: src/tf-psa-crypto/core/psa_crypto_driver_wrappers_no_static.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/core/psa_crypto_driver_wrappers_no_static.c -o bin/psa_crypto_driver_wrappers_no_static.o
+
+bin/psa_crypto_slot_management.o: src/tf-psa-crypto/core/psa_crypto_slot_management.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/core/psa_crypto_slot_management.c -o bin/psa_crypto_slot_management.o
+
+bin/psa_crypto_storage.o: src/tf-psa-crypto/core/psa_crypto_storage.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/core/psa_crypto_storage.c -o bin/psa_crypto_storage.o
+
+bin/psa_its_file.o: src/tf-psa-crypto/core/psa_its_file.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/core/psa_its_file.c -o bin/psa_its_file.o
+
+bin/tf_psa_crypto_config.o: src/tf-psa-crypto/core/tf_psa_crypto_config.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/core/tf_psa_crypto_config.c -o bin/tf_psa_crypto_config.o
+
+bin/tf_psa_crypto_version.o: src/tf-psa-crypto/core/tf_psa_crypto_version.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/everest/include/tf-psa-crypto/private/everest -Isrc/tf-psa-crypto/drivers/builtin/src -c src/tf-psa-crypto/core/tf_psa_crypto_version.c -o bin/tf_psa_crypto_version.o
+
+bin/debug.o: src/library/debug.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/debug.c -o bin/debug.o
+
+bin/error.o: src/library/error.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/error.c -o bin/error.o
+
+bin/mbedtls_config.o: src/library/mbedtls_config.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/mbedtls_config.c -o bin/mbedtls_config.o
+
+bin/mps_reader.o: src/library/mps_reader.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/mps_reader.c -o bin/mps_reader.o
+
+bin/mps_trace.o: src/library/mps_trace.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/mps_trace.c -o bin/mps_trace.o
+
+bin/net_sockets.o: src/library/net_sockets.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/net_sockets.c -o bin/net_sockets.o
+
+bin/pkcs7.o: src/library/pkcs7.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/pkcs7.c -o bin/pkcs7.o
+
+bin/ssl_cache.o: src/library/ssl_cache.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_cache.c -o bin/ssl_cache.o
+
+bin/ssl_ciphersuites.o: src/library/ssl_ciphersuites.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_ciphersuites.c -o bin/ssl_ciphersuites.o
+
+bin/ssl_client.o: src/library/ssl_client.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_client.c -o bin/ssl_client.o
+
+bin/ssl_cookie.o: src/library/ssl_cookie.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_cookie.c -o bin/ssl_cookie.o
+
+bin/ssl_debug_helpers_generated.o: src/library/ssl_debug_helpers_generated.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_debug_helpers_generated.c -o bin/ssl_debug_helpers_generated.o
+
+bin/ssl_msg.o: src/library/ssl_msg.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_msg.c -o bin/ssl_msg.o
+
+bin/ssl_ticket.o: src/library/ssl_ticket.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_ticket.c -o bin/ssl_ticket.o
+
+bin/ssl_tls12_client.o: src/library/ssl_tls12_client.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_tls12_client.c -o bin/ssl_tls12_client.o
+
+bin/ssl_tls12_server.o: src/library/ssl_tls12_server.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_tls12_server.c -o bin/ssl_tls12_server.o
+
+bin/ssl_tls13_client.o: src/library/ssl_tls13_client.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_tls13_client.c -o bin/ssl_tls13_client.o
+
+bin/ssl_tls13_generic.o: src/library/ssl_tls13_generic.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_tls13_generic.c -o bin/ssl_tls13_generic.o
+
+bin/ssl_tls13_keys.o: src/library/ssl_tls13_keys.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_tls13_keys.c -o bin/ssl_tls13_keys.o
+
+bin/ssl_tls13_server.o: src/library/ssl_tls13_server.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_tls13_server.c -o bin/ssl_tls13_server.o
+
+bin/ssl_tls.o: src/library/ssl_tls.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/ssl_tls.c -o bin/ssl_tls.o
+
+bin/timing.o: src/library/timing.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/timing.c -o bin/timing.o
+
+bin/version.o: src/library/version.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/version.c -o bin/version.o
+
+bin/version_features.o: src/library/version_features.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/version_features.c -o bin/version_features.o
+
+bin/x509.o: src/library/x509.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/x509.c -o bin/x509.o
+
+bin/x509_create.o: src/library/x509_create.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/x509_create.c -o bin/x509_create.o
+
+bin/x509_crl.o: src/library/x509_crl.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/x509_crl.c -o bin/x509_crl.o
+
+bin/x509_crt.o: src/library/x509_crt.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/x509_crt.c -o bin/x509_crt.o
+
+bin/x509_csr.o: src/library/x509_csr.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/x509_csr.c -o bin/x509_csr.o
+
+bin/x509_oid.o: src/library/x509_oid.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/x509_oid.c -o bin/x509_oid.o
+
+bin/x509write.o: src/library/x509write.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/x509write.c -o bin/x509write.o
+
+bin/x509write_crt.o: src/library/x509write_crt.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/x509write_crt.c -o bin/x509write_crt.o
+
+bin/x509write_csr.o: src/library/x509write_csr.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I../libuv/include -Iinclude -Isrc/tf-psa-crypto/core -Isrc/tf-psa-crypto/include -Isrc/tf-psa-crypto/drivers/builtin/include -Isrc/tf-psa-crypto/drivers/builtin/src -Isrc/library -Wno-format -c src/library/x509write_csr.c -o bin/x509write_csr.o
+
+bin/libtfpsacrypto.a: bin/aes.o bin/aesce.o bin/aesni.o bin/aria.o bin/asn1parse.o bin/asn1write.o bin/base64.o bin/bignum.o bin/bignum_core.o bin/bignum_mod.o bin/bignum_mod_raw.o bin/block_cipher.o bin/camellia.o bin/ccm.o bin/chacha20.o bin/chachapoly.o bin/cipher.o bin/cipher_wrap.o bin/cmac.o bin/constant_time.o bin/ctr_drbg.o bin/ecdh.o bin/ecdsa.o bin/ecjpake.o bin/ecp.o bin/ecp_curves.o bin/ecp_curves_new.o bin/entropy.o bin/entropy_poll.o bin/gcm.o bin/hmac_drbg.o bin/lmots.o bin/lms.o bin/md.o bin/md5.o bin/memory_buffer_alloc.o bin/nist_kw.o bin/oid.o bin/pem.o bin/pk.o bin/pk_ecc.o bin/pk_rsa.o bin/pk_wrap.o bin/pkcs5.o bin/pkparse.o bin/pkwrite.o bin/platform.o bin/platform_util.o bin/poly1305.o bin/psa_crypto_aead.o bin/psa_crypto_cipher.o bin/psa_crypto_ecp.o bin/psa_crypto_ffdh.o bin/psa_crypto_hash.o bin/psa_crypto_mac.o bin/psa_crypto_pake.o bin/psa_crypto_rsa.o bin/psa_util.o bin/ripemd160.o bin/rsa.o bin/rsa_alt_helpers.o bin/sha1.o bin/sha256.o bin/sha3.o bin/sha512.o bin/threading.o bin/everest.o bin/x25519.o bin/Hacl_Curve25519_joined.o bin/p256-m_driver_entrypoints.o bin/p256-m.o bin/psa_crypto.o bin/psa_crypto_client.o bin/psa_crypto_driver_wrappers_no_static.o bin/psa_crypto_slot_management.o bin/psa_crypto_storage.o bin/psa_its_file.o bin/tf_psa_crypto_config.o bin/tf_psa_crypto_version.o
+	ar rcs $@ $^
+
+bin/libmbedtls.a: bin/debug.o bin/error.o bin/mbedtls_config.o bin/mps_reader.o bin/mps_trace.o bin/net_sockets.o bin/pkcs7.o bin/ssl_cache.o bin/ssl_ciphersuites.o bin/ssl_client.o bin/ssl_cookie.o bin/ssl_debug_helpers_generated.o bin/ssl_msg.o bin/ssl_ticket.o bin/ssl_tls12_client.o bin/ssl_tls12_server.o bin/ssl_tls13_client.o bin/ssl_tls13_generic.o bin/ssl_tls13_keys.o bin/ssl_tls13_server.o bin/ssl_tls.o bin/timing.o bin/version.o bin/version_features.o bin/x509.o bin/x509_create.o bin/x509_crl.o bin/x509_crt.o bin/x509_csr.o bin/x509_oid.o bin/x509write.o bin/x509write_crt.o bin/x509write_csr.o
+	ar rcs $@ $^
+
+clean:
+	rm -f bin/aes.o bin/aesce.o bin/aesni.o bin/aria.o bin/asn1parse.o bin/asn1write.o bin/base64.o bin/bignum.o bin/bignum_core.o bin/bignum_mod.o bin/bignum_mod_raw.o bin/block_cipher.o bin/camellia.o bin/ccm.o bin/chacha20.o bin/chachapoly.o bin/cipher.o bin/cipher_wrap.o bin/cmac.o bin/constant_time.o bin/ctr_drbg.o bin/ecdh.o bin/ecdsa.o bin/ecjpake.o bin/ecp.o bin/ecp_curves.o bin/ecp_curves_new.o bin/entropy.o bin/entropy_poll.o bin/gcm.o bin/hmac_drbg.o bin/lmots.o bin/lms.o bin/md.o bin/md5.o bin/memory_buffer_alloc.o bin/nist_kw.o bin/oid.o bin/pem.o bin/pk.o bin/pk_ecc.o bin/pk_rsa.o bin/pk_wrap.o bin/pkcs5.o bin/pkparse.o bin/pkwrite.o bin/platform.o bin/platform_util.o bin/poly1305.o bin/psa_crypto_aead.o bin/psa_crypto_cipher.o bin/psa_crypto_ecp.o bin/psa_crypto_ffdh.o bin/psa_crypto_hash.o bin/psa_crypto_mac.o bin/psa_crypto_pake.o bin/psa_crypto_rsa.o bin/psa_util.o bin/ripemd160.o bin/rsa.o bin/rsa_alt_helpers.o bin/sha1.o bin/sha256.o bin/sha3.o bin/sha512.o bin/threading.o bin/everest.o bin/x25519.o bin/Hacl_Curve25519_joined.o bin/p256-m_driver_entrypoints.o bin/p256-m.o bin/psa_crypto.o bin/psa_crypto_client.o bin/psa_crypto_driver_wrappers_no_static.o bin/psa_crypto_slot_management.o bin/psa_crypto_storage.o bin/psa_its_file.o bin/tf_psa_crypto_config.o bin/tf_psa_crypto_version.o bin/debug.o bin/error.o bin/mbedtls_config.o bin/mps_reader.o bin/mps_trace.o bin/net_sockets.o bin/pkcs7.o bin/ssl_cache.o bin/ssl_ciphersuites.o bin/ssl_client.o bin/ssl_cookie.o bin/ssl_debug_helpers_generated.o bin/ssl_msg.o bin/ssl_ticket.o bin/ssl_tls12_client.o bin/ssl_tls12_server.o bin/ssl_tls13_client.o bin/ssl_tls13_generic.o bin/ssl_tls13_keys.o bin/ssl_tls13_server.o bin/ssl_tls.o bin/timing.o bin/version.o bin/version_features.o bin/x509.o bin/x509_create.o bin/x509_crl.o bin/x509_crt.o bin/x509_csr.o bin/x509_oid.o bin/x509write.o bin/x509write_crt.o bin/x509write_csr.o bin/libtfpsacrypto.a bin/libmbedtls.a
+  

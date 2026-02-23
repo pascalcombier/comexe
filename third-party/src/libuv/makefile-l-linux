@@ -1,0 +1,111 @@
+.PHONY: all clean
+
+all: bin/libuv.a
+
+bin/fs-poll.o: src/fs-poll.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/fs-poll.c -o bin/fs-poll.o
+
+bin/idna.o: src/idna.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/idna.c -o bin/idna.o
+
+bin/inet.o: src/inet.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/inet.c -o bin/inet.o
+
+bin/random.o: src/random.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/random.c -o bin/random.o
+
+bin/strscpy.o: src/strscpy.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/strscpy.c -o bin/strscpy.o
+
+bin/strtok.o: src/strtok.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/strtok.c -o bin/strtok.o
+
+bin/thread-common.o: src/thread-common.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/thread-common.c -o bin/thread-common.o
+
+bin/threadpool.o: src/threadpool.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/threadpool.c -o bin/threadpool.o
+
+bin/timer.o: src/timer.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/timer.c -o bin/timer.o
+
+bin/uv-common.o: src/uv-common.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/uv-common.c -o bin/uv-common.o
+
+bin/uv-data-getter-setters.o: src/uv-data-getter-setters.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/uv-data-getter-setters.c -o bin/uv-data-getter-setters.o
+
+bin/version.o: src/version.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/version.c -o bin/version.o
+
+bin/async.o: src/unix/async.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/async.c -o bin/async.o
+
+bin/core.o: src/unix/core.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/core.c -o bin/core.o
+
+bin/dl.o: src/unix/dl.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/dl.c -o bin/dl.o
+
+bin/fs.o: src/unix/fs.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/fs.c -o bin/fs.o
+
+bin/getaddrinfo.o: src/unix/getaddrinfo.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/getaddrinfo.c -o bin/getaddrinfo.o
+
+bin/getnameinfo.o: src/unix/getnameinfo.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/getnameinfo.c -o bin/getnameinfo.o
+
+bin/loop.o: src/unix/loop.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/loop.c -o bin/loop.o
+
+bin/loop-watcher.o: src/unix/loop-watcher.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/loop-watcher.c -o bin/loop-watcher.o
+
+bin/pipe.o: src/unix/pipe.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/pipe.c -o bin/pipe.o
+
+bin/poll.o: src/unix/poll.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/poll.c -o bin/poll.o
+
+bin/process.o: src/unix/process.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/process.c -o bin/process.o
+
+bin/proctitle.o: src/unix/proctitle.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/proctitle.c -o bin/proctitle.o
+
+bin/signal.o: src/unix/signal.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/signal.c -o bin/signal.o
+
+bin/stream.o: src/unix/stream.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/stream.c -o bin/stream.o
+
+bin/tcp.o: src/unix/tcp.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/tcp.c -o bin/tcp.o
+
+bin/thread.o: src/unix/thread.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/thread.c -o bin/thread.o
+
+bin/tty.o: src/unix/tty.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/tty.c -o bin/tty.o
+
+bin/udp.o: src/unix/udp.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/udp.c -o bin/udp.o
+
+bin/linux.o: src/unix/linux.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/linux.c -o bin/linux.o
+
+bin/random-getrandom.o: src/unix/random-getrandom.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/random-getrandom.c -o bin/random-getrandom.o
+
+bin/random-devurandom.o: src/unix/random-devurandom.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/random-devurandom.c -o bin/random-devurandom.o
+
+bin/procfs-exepath.o: src/unix/procfs-exepath.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -D_GNU_SOURCE -D_FILE_OFFSET_BIT=64 -D_LARGEFILE_SOURCE -pthread -Wno-format-truncation -c src/unix/procfs-exepath.c -o bin/procfs-exepath.o
+
+bin/libuv.a: bin/fs-poll.o bin/idna.o bin/inet.o bin/random.o bin/strscpy.o bin/strtok.o bin/thread-common.o bin/threadpool.o bin/timer.o bin/uv-common.o bin/uv-data-getter-setters.o bin/version.o bin/async.o bin/core.o bin/dl.o bin/fs.o bin/getaddrinfo.o bin/getnameinfo.o bin/loop.o bin/loop-watcher.o bin/pipe.o bin/poll.o bin/process.o bin/proctitle.o bin/signal.o bin/stream.o bin/tcp.o bin/thread.o bin/tty.o bin/udp.o bin/linux.o bin/random-getrandom.o bin/random-devurandom.o bin/procfs-exepath.o
+	ar rcs $@ $^
+
+clean:
+	rm -f bin/fs-poll.o bin/idna.o bin/inet.o bin/random.o bin/strscpy.o bin/strtok.o bin/thread-common.o bin/threadpool.o bin/timer.o bin/uv-common.o bin/uv-data-getter-setters.o bin/version.o bin/async.o bin/core.o bin/dl.o bin/fs.o bin/getaddrinfo.o bin/getnameinfo.o bin/loop.o bin/loop-watcher.o bin/pipe.o bin/poll.o bin/process.o bin/proctitle.o bin/signal.o bin/stream.o bin/tcp.o bin/thread.o bin/tty.o bin/udp.o bin/linux.o bin/random-getrandom.o bin/random-devurandom.o bin/procfs-exepath.o bin/libuv.a

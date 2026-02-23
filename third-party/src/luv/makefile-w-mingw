@@ -1,0 +1,12 @@
+.PHONY: all clean
+
+all: bin\libluv.a
+
+bin\luv.o: src\luv.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -I..\lua\src -I..\libuv\include -Wno-missing-braces -Wno-sign-compare -Wno-unused-function -Wno-maybe-uninitialized -fdiagnostics-color=never -c src\luv.c -o bin\luv.o
+
+bin\libluv.a: bin\luv.o
+	ar rcs $@ $^
+
+clean:
+	del /F /Q 2>NUL bin\luv.o bin\libluv.a

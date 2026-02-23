@@ -1,0 +1,120 @@
+.PHONY: all clean
+
+all: src/config.h bin/libtcc.a bin/libtccmain.a bin/tcc.exe x86-64-windows-tcc-runtime/libtcc1.a x86-64-windows-tcc-runtime/runmain.o x86-64-windows-tcc-runtime/bt-exe.o x86-64-windows-tcc-runtime/bt-log.o x86-64-windows-tcc-runtime/bcheck.o x86-64-windows-tcc-runtime/gdi32.def x86-64-windows-tcc-runtime/kernel32.def x86-64-windows-tcc-runtime/msvcrt.def x86-64-windows-tcc-runtime/user32.def x86-64-windows-tcc-runtime/ws2_32.def
+
+src/config.h: libtcc-config.h
+	cp -f libtcc-config.h src/config.h
+
+bin/libtcc.o: src/libtcc.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -c src/libtcc.c -o bin/libtcc.o
+
+bin/tccpp.o: src/tccpp.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -c src/tccpp.c -o bin/tccpp.o
+
+bin/tccgen.o: src/tccgen.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -c src/tccgen.c -o bin/tccgen.o
+
+bin/tccdbg.o: src/tccdbg.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -c src/tccdbg.c -o bin/tccdbg.o
+
+bin/tccasm.o: src/tccasm.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -c src/tccasm.c -o bin/tccasm.o
+
+bin/tccrun.o: src/tccrun.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -c src/tccrun.c -o bin/tccrun.o
+
+bin/x86_64-gen.o: src/x86_64-gen.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -c src/x86_64-gen.c -o bin/x86_64-gen.o
+
+bin/x86_64-link.o: src/x86_64-link.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -c src/x86_64-link.c -o bin/x86_64-link.o
+
+bin/i386-asm.o: src/i386-asm.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -c src/i386-asm.c -o bin/i386-asm.o
+
+bin/tccpe.o: src/tccpe.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -c src/tccpe.c -o bin/tccpe.o
+
+bin/tcc.o: src/tcc.c src/config.h
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE -DONE_SOURCE=0 -c src/tcc.c -o bin/tcc.o
+
+bin/tcc.exe: src/tcc.c bin/libtcc.a
+	$(CC) -ggdb -fvisibility=hidden --std=gnu99 -Wall -Wextra -Os -DTCC_TARGET_X86_64 -Isrc -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-old-style-declaration -Wno-sign-compare -Wno-missing-field-initializers -Wno-shift-negative-value -Wno-type-limits -DTCC_TARGET_PE src/tcc.c bin/libtcc.a -o bin/tcc.exe
+
+bin/libtcc1.o: src/lib/libtcc1.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/lib/libtcc1.c -o bin/libtcc1.o
+
+bin/alloca.o: src/lib/alloca.S bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/lib/alloca.S -o bin/alloca.o
+
+bin/alloca-bt.o: src/lib/alloca-bt.S bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/lib/alloca-bt.S -o bin/alloca-bt.o
+
+bin/stdatomic.o: src/lib/stdatomic.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/lib/stdatomic.c -o bin/stdatomic.o
+
+bin/builtin.o: src/lib/builtin.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/lib/builtin.c -o bin/builtin.o
+
+bin/atomic.o: src/lib/atomic.S bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/lib/atomic.S -o bin/atomic.o
+
+bin/crt1.o: src/win32/lib/crt1.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/win32/lib/crt1.c -o bin/crt1.o
+
+bin/crt1w.o: src/win32/lib/crt1w.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/win32/lib/crt1w.c -o bin/crt1w.o
+
+bin/wincrt1.o: src/win32/lib/wincrt1.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/win32/lib/wincrt1.c -o bin/wincrt1.o
+
+bin/wincrt1w.o: src/win32/lib/wincrt1w.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/win32/lib/wincrt1w.c -o bin/wincrt1w.o
+
+bin/dllcrt1.o: src/win32/lib/dllcrt1.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/win32/lib/dllcrt1.c -o bin/dllcrt1.o
+
+bin/dllmain.o: src/win32/lib/dllmain.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/win32/lib/dllmain.c -o bin/dllmain.o
+
+bin/chkstk.o: src/win32/lib/chkstk.S bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/win32/lib/chkstk.S -o bin/chkstk.o
+
+x86-64-windows-tcc-runtime/runmain.o: src/lib/runmain.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/lib/runmain.c -o x86-64-windows-tcc-runtime/runmain.o
+
+x86-64-windows-tcc-runtime/bt-exe.o: src/lib/bt-exe.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/lib/bt-exe.c -o x86-64-windows-tcc-runtime/bt-exe.o
+
+x86-64-windows-tcc-runtime/bt-log.o: src/lib/bt-log.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -c src/lib/bt-log.c -o x86-64-windows-tcc-runtime/bt-log.o
+
+x86-64-windows-tcc-runtime/bcheck.o: src/lib/bcheck.c bin/tcc.exe src/config.h
+	bin/tcc.exe -m64 -Bsrc -Isrc -Isrc -Isrc/include -Bsrc/win32 -bt -c src/lib/bcheck.c -o x86-64-windows-tcc-runtime/bcheck.o
+
+x86-64-windows-tcc-runtime/gdi32.def: src/win32/lib/gdi32.def
+	cp -f src/win32/lib/gdi32.def x86-64-windows-tcc-runtime/gdi32.def
+
+x86-64-windows-tcc-runtime/kernel32.def: src/win32/lib/kernel32.def
+	cp -f src/win32/lib/kernel32.def x86-64-windows-tcc-runtime/kernel32.def
+
+x86-64-windows-tcc-runtime/msvcrt.def: src/win32/lib/msvcrt.def
+	cp -f src/win32/lib/msvcrt.def x86-64-windows-tcc-runtime/msvcrt.def
+
+x86-64-windows-tcc-runtime/user32.def: src/win32/lib/user32.def
+	cp -f src/win32/lib/user32.def x86-64-windows-tcc-runtime/user32.def
+
+x86-64-windows-tcc-runtime/ws2_32.def: src/win32/lib/ws2_32.def
+	cp -f src/win32/lib/ws2_32.def x86-64-windows-tcc-runtime/ws2_32.def
+
+bin/libtcc.a: bin/libtcc.o bin/tccpp.o bin/tccgen.o bin/tccdbg.o bin/tccasm.o bin/tccrun.o bin/x86_64-gen.o bin/x86_64-link.o bin/i386-asm.o bin/tccpe.o
+	ar rcs $@ $^
+
+bin/libtccmain.a: bin/tcc.o
+	ar rcs $@ $^
+
+x86-64-windows-tcc-runtime/libtcc1.a: bin/libtcc1.o bin/alloca.o bin/alloca-bt.o bin/stdatomic.o bin/builtin.o bin/atomic.o bin/crt1.o bin/crt1w.o bin/wincrt1.o bin/wincrt1w.o bin/dllcrt1.o bin/dllmain.o bin/chkstk.o
+	bin/tcc.exe -m64 -ar $@ $^
+
+clean:
+	rm -f src/config.h bin/libtcc.o bin/tccpp.o bin/tccgen.o bin/tccdbg.o bin/tccasm.o bin/tccrun.o bin/x86_64-gen.o bin/x86_64-link.o bin/i386-asm.o bin/tccpe.o bin/libtcc.a bin/libtccmain.a bin/tcc.exe bin/libtcc1.o bin/alloca.o bin/alloca-bt.o bin/stdatomic.o bin/builtin.o bin/atomic.o bin/crt1.o bin/crt1w.o bin/wincrt1.o bin/wincrt1w.o bin/dllcrt1.o bin/dllmain.o bin/chkstk.o x86-64-windows-tcc-runtime/libtcc1.a bin/tcc.o x86-64-windows-tcc-runtime/runmain.o x86-64-windows-tcc-runtime/bt-exe.o x86-64-windows-tcc-runtime/bt-log.o x86-64-windows-tcc-runtime/bcheck.o x86-64-windows-tcc-runtime/gdi32.def x86-64-windows-tcc-runtime/kernel32.def x86-64-windows-tcc-runtime/msvcrt.def x86-64-windows-tcc-runtime/user32.def x86-64-windows-tcc-runtime/ws2_32.def

@@ -1,0 +1,120 @@
+.PHONY: all clean
+
+all: bin\libuv.a
+
+bin\fs-poll.o: src\fs-poll.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\fs-poll.c -o bin\fs-poll.o
+
+bin\idna.o: src\idna.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\idna.c -o bin\idna.o
+
+bin\inet.o: src\inet.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\inet.c -o bin\inet.o
+
+bin\random.o: src\random.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\random.c -o bin\random.o
+
+bin\strscpy.o: src\strscpy.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\strscpy.c -o bin\strscpy.o
+
+bin\strtok.o: src\strtok.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\strtok.c -o bin\strtok.o
+
+bin\thread-common.o: src\thread-common.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\thread-common.c -o bin\thread-common.o
+
+bin\threadpool.o: src\threadpool.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\threadpool.c -o bin\threadpool.o
+
+bin\timer.o: src\timer.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\timer.c -o bin\timer.o
+
+bin\uv-common.o: src\uv-common.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\uv-common.c -o bin\uv-common.o
+
+bin\uv-data-getter-setters.o: src\uv-data-getter-setters.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\uv-data-getter-setters.c -o bin\uv-data-getter-setters.o
+
+bin\version.o: src\version.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\version.c -o bin\version.o
+
+bin\async.o: src\win\async.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\async.c -o bin\async.o
+
+bin\core.o: src\win\core.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\core.c -o bin\core.o
+
+bin\detect-wakeup.o: src\win\detect-wakeup.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\detect-wakeup.c -o bin\detect-wakeup.o
+
+bin\dl.o: src\win\dl.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\dl.c -o bin\dl.o
+
+bin\error.o: src\win\error.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\error.c -o bin\error.o
+
+bin\fs.o: src\win\fs.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\fs.c -o bin\fs.o
+
+bin\fs-event.o: src\win\fs-event.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\fs-event.c -o bin\fs-event.o
+
+bin\getaddrinfo.o: src\win\getaddrinfo.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\getaddrinfo.c -o bin\getaddrinfo.o
+
+bin\getnameinfo.o: src\win\getnameinfo.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\getnameinfo.c -o bin\getnameinfo.o
+
+bin\handle.o: src\win\handle.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\handle.c -o bin\handle.o
+
+bin\loop-watcher.o: src\win\loop-watcher.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\loop-watcher.c -o bin\loop-watcher.o
+
+bin\pipe.o: src\win\pipe.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\pipe.c -o bin\pipe.o
+
+bin\poll.o: src\win\poll.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\poll.c -o bin\poll.o
+
+bin\process.o: src\win\process.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\process.c -o bin\process.o
+
+bin\process-stdio.o: src\win\process-stdio.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\process-stdio.c -o bin\process-stdio.o
+
+bin\signal.o: src\win\signal.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\signal.c -o bin\signal.o
+
+bin\snprintf.o: src\win\snprintf.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\snprintf.c -o bin\snprintf.o
+
+bin\stream.o: src\win\stream.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\stream.c -o bin\stream.o
+
+bin\tcp.o: src\win\tcp.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\tcp.c -o bin\tcp.o
+
+bin\thread.o: src\win\thread.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\thread.c -o bin\thread.o
+
+bin\tty.o: src\win\tty.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\tty.c -o bin\tty.o
+
+bin\udp.o: src\win\udp.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\udp.c -o bin\udp.o
+
+bin\util.o: src\win\util.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\util.c -o bin\util.o
+
+bin\winapi.o: src\win\winapi.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\winapi.c -o bin\winapi.o
+
+bin\winsock.o: src\win\winsock.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Iinclude -Isrc -Wno-unused-parameter -Wno-missing-braces -Wno-maybe-uninitialized -Wno-sign-compare -Wno-cast-function-type -fdiagnostics-color=never -c src\win\winsock.c -o bin\winsock.o
+
+bin\libuv.a: bin\fs-poll.o bin\idna.o bin\inet.o bin\random.o bin\strscpy.o bin\strtok.o bin\thread-common.o bin\threadpool.o bin\timer.o bin\uv-common.o bin\uv-data-getter-setters.o bin\version.o bin\async.o bin\core.o bin\detect-wakeup.o bin\dl.o bin\error.o bin\fs.o bin\fs-event.o bin\getaddrinfo.o bin\getnameinfo.o bin\handle.o bin\loop-watcher.o bin\pipe.o bin\poll.o bin\process.o bin\process-stdio.o bin\signal.o bin\snprintf.o bin\stream.o bin\tcp.o bin\thread.o bin\tty.o bin\udp.o bin\util.o bin\winapi.o bin\winsock.o
+	ar rcs $@ $^
+
+clean:
+	del /F /Q 2>NUL bin\fs-poll.o bin\idna.o bin\inet.o bin\random.o bin\strscpy.o bin\strtok.o bin\thread-common.o bin\threadpool.o bin\timer.o bin\uv-common.o bin\uv-data-getter-setters.o bin\version.o bin\async.o bin\core.o bin\detect-wakeup.o bin\dl.o bin\error.o bin\fs.o bin\fs-event.o bin\getaddrinfo.o bin\getnameinfo.o bin\handle.o bin\loop-watcher.o bin\pipe.o bin\poll.o bin\process.o bin\process-stdio.o bin\signal.o bin\snprintf.o bin\stream.o bin\tcp.o bin\thread.o bin\tty.o bin\udp.o bin\util.o bin\winapi.o bin\winsock.o bin\libuv.a

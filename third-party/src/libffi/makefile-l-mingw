@@ -1,0 +1,33 @@
+.PHONY: all clean
+
+all: bin/libffi.a
+
+bin/prep_cif.o: src/prep_cif.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -O2 -fomit-frame-pointer -DHAVE_CONFIG_H -Iinclude -Wno-unused-parameter -Wno-deprecated-declarations -Wno-empty-body -Wno-implicit-fallthrough -Iconfig-windows -DX86_WIN64 -c src/prep_cif.c -o bin/prep_cif.o
+
+bin/types.o: src/types.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -O2 -fomit-frame-pointer -DHAVE_CONFIG_H -Iinclude -Wno-unused-parameter -Wno-deprecated-declarations -Wno-empty-body -Wno-implicit-fallthrough -Iconfig-windows -DX86_WIN64 -c src/types.c -o bin/types.o
+
+bin/raw_api.o: src/raw_api.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -O2 -fomit-frame-pointer -DHAVE_CONFIG_H -Iinclude -Wno-unused-parameter -Wno-deprecated-declarations -Wno-empty-body -Wno-implicit-fallthrough -Iconfig-windows -DX86_WIN64 -c src/raw_api.c -o bin/raw_api.o
+
+bin/java_raw_api.o: src/java_raw_api.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -O2 -fomit-frame-pointer -DHAVE_CONFIG_H -Iinclude -Wno-unused-parameter -Wno-deprecated-declarations -Wno-empty-body -Wno-implicit-fallthrough -Iconfig-windows -DX86_WIN64 -c src/java_raw_api.c -o bin/java_raw_api.o
+
+bin/closures.o: src/closures.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -O2 -fomit-frame-pointer -DHAVE_CONFIG_H -Iinclude -Wno-unused-parameter -Wno-deprecated-declarations -Wno-empty-body -Wno-implicit-fallthrough -Iconfig-windows -DX86_WIN64 -c src/closures.c -o bin/closures.o
+
+bin/tramp.o: src/tramp.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -O2 -fomit-frame-pointer -DHAVE_CONFIG_H -Iinclude -Wno-unused-parameter -Wno-deprecated-declarations -Wno-empty-body -Wno-implicit-fallthrough -Iconfig-windows -DX86_WIN64 -c src/tramp.c -o bin/tramp.o
+
+bin/ffiw64.o: src/x86/ffiw64.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -O2 -fomit-frame-pointer -DHAVE_CONFIG_H -Iinclude -Wno-unused-parameter -Wno-deprecated-declarations -Wno-empty-body -Wno-implicit-fallthrough -Iconfig-windows -DX86_WIN64 -c src/x86/ffiw64.c -o bin/ffiw64.o
+
+bin/win64.o: src/x86/win64.S
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -O2 -fomit-frame-pointer -DHAVE_CONFIG_H -Iinclude -Wno-unused-parameter -Wno-deprecated-declarations -Wno-empty-body -Wno-implicit-fallthrough -Iconfig-windows -DX86_WIN64 -c src/x86/win64.S -o bin/win64.o
+
+bin/libffi.a: bin/prep_cif.o bin/types.o bin/raw_api.o bin/java_raw_api.o bin/closures.o bin/tramp.o bin/ffiw64.o bin/win64.o
+	ar rcs $@ $^
+
+clean:
+	rm -f bin/prep_cif.o bin/types.o bin/raw_api.o bin/java_raw_api.o bin/closures.o bin/tramp.o bin/ffiw64.o bin/win64.o bin/libffi.a

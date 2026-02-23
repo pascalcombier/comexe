@@ -1,0 +1,225 @@
+#==============================================================================#
+# DOCUMENTATION                                                                #
+#==============================================================================#
+
+# Note: GNU Make automatic variables
+# $< first pre-requisite
+# $^ all pre-requisite
+
+# Note that to keep makefiles similar between win32 and Linux we implement a few
+# shell commands in Lua
+
+#==============================================================================#
+# COMPATIBILITY                                                                #
+#==============================================================================#
+
+# Dependancies
+MAKE_HEADER_BINARY = tools/bin/make-headers
+
+# Make Linux/Windows makefiles close
+CAT = cat
+RM  = rm -f
+CP  = cp
+
+# WARNING
+# On Linux:   cat INPUTS > OUTPUT
+# On Windows: lua55ce -x cat INPUTS OUTPUT (no redirection)
+
+# Tools
+CC      ?= x86_64-w64-mingw32-gcc
+WINDRES ?= x86_64-w64-mingw32-windres
+STRIP   ?= x86_64-w64-mingw32-strip
+
+#==============================================================================#
+# PROJECT CONFIGURATION                                                        #
+#==============================================================================#
+
+SRC_DIR = src
+BIN_DIR = bin
+
+# MAKEHEADERS header
+SINGLE_HEADER = $(SRC_DIR)/comexe.h
+
+# All
+RELEASE_BINARIES += $(BIN_DIR)/comexe-dbg.exe
+RELEASE_BINARIES += $(BIN_DIR)/comexe-con.exe
+RELEASE_BINARIES += $(BIN_DIR)/comexe-gui.exe
+
+RESOURCE_OBJECT = resources.o
+
+MAIN_OBJECTS += $(BIN_DIR)/main-dbg.o
+MAIN_OBJECTS += $(BIN_DIR)/main-con.o
+MAIN_OBJECTS += $(BIN_DIR)/main-gui.o
+
+SOURCES += $(SRC_DIR)/platform.c
+SOURCES += $(SRC_DIR)/bump-allocator.c
+SOURCES += $(SRC_DIR)/lua-application.c
+SOURCES += $(SRC_DIR)/page-buffer.c
+SOURCES += $(SRC_DIR)/trivial-queue-uint.c
+SOURCES += $(SRC_DIR)/trivial-array.c
+SOURCES += $(SRC_DIR)/lua-libbuffer.c
+SOURCES += $(SRC_DIR)/lua-libminizip.c
+SOURCES += $(SRC_DIR)/lua-libffi.c
+SOURCES += $(SRC_DIR)/lua-libtcc.c
+SOURCES += $(SRC_DIR)/lua-libwin32.c
+SOURCES += $(SRC_DIR)/lua-libwin32-service.c
+SOURCES += $(SRC_DIR)/lua-libwin32-com.c
+
+# Shared include directories
+INCLUDE_DIRS += -I$(SRC_DIR)
+INCLUDE_DIRS += -Ithird-party/src/mimalloc/include
+INCLUDE_DIRS += -Ithird-party/src/lua/src
+INCLUDE_DIRS += -Ithird-party/src/zlib/src
+INCLUDE_DIRS += -Ithird-party/src/zlib/src/contrib/minizip
+INCLUDE_DIRS += -Ithird-party/src/libffi/config-windows
+INCLUDE_DIRS += -Ithird-party/src/libffi/include
+INCLUDE_DIRS += -Ithird-party/src/libuv/include
+INCLUDE_DIRS += -Ithird-party/src/tcc-vio/src
+
+# Special: for thread_alt.h of mbedtls/tf-psa-crypto
+INCLUDE_DIRS += -Ithird-party/src/mbedtls/src/tf-psa-crypto/drivers/builtin/include
+INCLUDE_DIRS += -Ithird-party/src/mbedtls/src/tf-psa-crypto/include
+
+STATIC_LIB_DIRS += -Lthird-party/src/mimalloc/bin
+STATIC_LIB_DIRS += -Lthird-party/src/lua/bin
+STATIC_LIB_DIRS += -Lthird-party/src/zlib/bin
+STATIC_LIB_DIRS += -Lthird-party/src/libffi/bin
+STATIC_LIB_DIRS += -Lthird-party/src/libuv/bin
+STATIC_LIB_DIRS += -Lthird-party/src/luv/bin
+STATIC_LIB_DIRS += -Lthird-party/src/mbedtls/bin
+STATIC_LIB_DIRS += -Lthird-party/src/lua-mbedtls-comexe/bin
+STATIC_LIB_DIRS += -Lthird-party/src/luasocket/bin
+STATIC_LIB_DIRS += -Lthird-party/src/tcc-vio/bin/libtcc-x86_64-windows-static
+
+STATIC_LIBS  =
+STATIC_LIBS += -static-libgcc
+STATIC_LIBS += -lluv
+STATIC_LIBS += -luv
+STATIC_LIBS += -lluasocket
+
+# mbedtls
+STATIC_LIBS += -lluambedtls
+STATIC_LIBS += -lmbedtls
+STATIC_LIBS += -ltfpsacrypto
+
+# lua and ffi
+STATIC_LIBS += -llua
+STATIC_LIBS += -lffi
+
+# minizip
+STATIC_LIBS += -lminizip
+STATIC_LIBS += -lz
+
+# tcc
+STATIC_LIBS += -ltcc
+
+# For ComEXE
+STATIC_LIBS += -loleaut32 # VariantInit
+STATIC_LIBS += -lole32    # CoInitializeEx
+STATIC_LIBS += -lws2_32   # socket
+STATIC_LIBS += -lwinmm    # timeBeginPeriod
+
+# For libuv
+STATIC_LIBS += -lpsapi
+STATIC_LIBS += -liphlpapi
+STATIC_LIBS += -luserenv
+STATIC_LIBS += -ldbghelp # SymGetOptions
+
+# For libwin32-com
+STATIC_LIBS += -luuid
+
+# For mbed TLS
+STATIC_LIBS += -lbcrypt
+
+# Mimalloc
+STATIC_LIBS += -lmimalloc
+
+#==============================================================================#
+# GENERIC BUILD CONFIGURATION                                                  #
+#==============================================================================#
+
+# VPATH is the list of directories where to find the sources files
+VPATH += $(SRC_DIR)
+VPATH += $(BIN_DIR)
+
+# The program use stdbool.h from C99
+
+CC_FLAGS += -ggdb
+CC_FLAGS += -fdiagnostics-color=never
+CC_FLAGS += -std=c99
+CC_FLAGS += -Wall
+CC_FLAGS += -Wextra
+CC_FLAGS += -D_GNU_SOURCE
+
+# address and leak are adding stuff around malloc, the runtime is implemented in
+# asan library, so it needs to be linked with the flag -lasan.
+#
+# However, our project use mimalloc and not malloc, so it seems it make no sense
+# to use those 2 flags
+#
+# CC_FLAGS += -fsanitize=address
+# CC_FLAGS += -fsanitize=leak
+
+# For undefined, it requires the runtime -lubsan
+# CC_FLAGS += -fsanitize=undefined
+
+# Pedantic requires a change in Event struct
+# CC_FLAGS = -pedantic
+
+# libuv
+CC_FLAGS += -D_FILE_OFFSET_BIT=64
+CC_FLAGS += -D_LARGEFILE_SOURCE
+
+OBJECTS_0 = $(notdir $(SOURCES))
+OBJECTS_1 = $(OBJECTS_0:.c=.o)
+OBJECTS_2 = $(OBJECTS_1) $(RESOURCE_OBJECT)
+OBJECTS_3 = $(addprefix $(BIN_DIR)/,$(OBJECTS_2))
+OBJECTS   = $(OBJECTS_3)
+
+# Generic rule, build object files from VPATH directory list
+$(BIN_DIR)/%.o: %.c $(SINGLE_HEADER) $(SRC_DIR)/version.h
+	$(CC) $(CC_FLAGS) $(INCLUDE_DIRS) -c $< -o $@
+
+#==============================================================================#
+# GNU MAKE RULES                                                               #
+#==============================================================================#
+
+.PHONY: all clean
+
+all: $(RELEASE_BINARIES)
+
+
+clean:
+	$(RM) $(OBJECTS) $(MAIN_OBJECTS) $(RELEASE_BINARIES)
+
+$(BIN_DIR)/$(RESOURCE_OBJECT): src/resources.rc
+	$(WINDRES) $< -o $@
+
+$(BIN_DIR)/main-dbg.o: src/main-windows.c $(SINGLE_HEADER) src/version.h
+	$(CC) -DCOMEXE_DBG $(CC_FLAGS) $(INCLUDE_DIRS) -c $< -o $@
+
+$(BIN_DIR)/main-con.o: src/main-windows.c $(SINGLE_HEADER) src/version.h
+	$(CC) -DCOMEXE_CON $(CC_FLAGS) $(INCLUDE_DIRS) -c $< -o $@
+
+$(BIN_DIR)/main-gui.o: src/main-windows.c $(SINGLE_HEADER) src/version.h
+	$(CC) -DCOMEXE_GUI $(CC_FLAGS) $(INCLUDE_DIRS) -c $< -o $@
+
+#
+# Executables
+#
+
+$(BIN_DIR)/comexe-dbg.exe: $(OBJECTS) $(BIN_DIR)/main-dbg.o
+	$(CC) -municode -mconsole -static $(OBJECTS) $(BIN_DIR)/main-dbg.o -o $@ $(STATIC_LIB_DIRS) $(STATIC_LIBS)
+
+$(BIN_DIR)/comexe-con.exe: $(OBJECTS) $(BIN_DIR)/main-con.o
+	$(CC) -s -municode -mconsole -static $(OBJECTS) $(BIN_DIR)/main-con.o -o $@ $(STATIC_LIB_DIRS) $(STATIC_LIBS)
+
+$(BIN_DIR)/comexe-gui.exe: $(OBJECTS) $(BIN_DIR)/main-gui.o
+	$(CC) -s -municode -mwindows -static $(OBJECTS) $(BIN_DIR)/main-gui.o -o $@ $(STATIC_LIB_DIRS) $(STATIC_LIBS)
+
+#
+# Boostrap dependencies
+#
+
+$(SINGLE_HEADER): $(MAKE_HEADER_BINARY) $(SRC_DIR)/makeheaders.conf
+	cd $(SRC_DIR) && ../$(MAKE_HEADER_BINARY) -h -f makeheaders.conf >comexe.h

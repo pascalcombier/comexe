@@ -1,0 +1,45 @@
+build-tcc.bat
+echo #define TCC_VERSION "0.9.28rc" 1>..\config.h
+if not () == () echo #define TCC_GITHASH "" 1>>..\config.h
+if 32 == 64 echo #ifdef TCC_TARGET_X86_64 1>>..\config.h
+if 32 == 32 echo #ifdef TCC_TARGET_I386 1>>..\config.h
+echo #define CONFIG_TCC_CROSSPREFIX "i386-win32-" 1>>..\config.h
+
+echo #endif 1>>..\config.h
+for %f in (*tcc.exe *tcc.dll) do @del %f
+gcc -O2 -s -static -o libtcc.dll -shared ..\libtcc.c -DTCC_TARGET_PE -DTCC_TARGET_X86_64 -DLIBTCC_AS_DLL
+gcc -O2 -s -static -o tcc.exe ..\tcc.c libtcc.dll -DTCC_TARGET_PE -DTCC_TARGET_X86_64 -DONE_SOURCE"=0"
+if not _no_ == _yes_ goto :compiler_done
+if not exist libtcc mkdir libtcc
+if not exist doc mkdir doc
+copy ..\include\*.h include 1>nul
+copy ..\tcclib.h include 1>nul
+copy ..\libtcc.h libtcc 1>nul
+copy ..\tests\libtcc_test.c examples 1>nul
+copy tcc-win32.txt doc 1>nul
+if exist libtcc.dll .\tcc -impdef libtcc.dll -o libtcc\libtcc.def
+call :make_lib 64   || goto :the_end
+.\tcc -B. -m64 -c ../lib/libtcc1.c
+.\tcc -B. -m64 -c lib/crt1.c
+.\tcc -B. -m64 -c lib/crt1w.c
+.\tcc -B. -m64 -c lib/wincrt1.c
+.\tcc -B. -m64 -c lib/wincrt1w.c
+.\tcc -B. -m64 -c lib/dllcrt1.c
+.\tcc -B. -m64 -c lib/dllmain.c
+.\tcc -B. -m64 -c lib/chkstk.S
+.\tcc -B. -m64 -c ../lib/alloca.S
+.\tcc -B. -m64 -c ../lib/alloca-bt.S
+.\tcc -B. -m64 -c ../lib/stdatomic.c
+.\tcc -B. -m64 -c ../lib/builtin.c
+.\tcc -B. -m64 -ar lib/libtcc1.a libtcc1.o crt1.o crt1w.o wincrt1.o wincrt1w.o dllcrt1.o dllmain.o chkstk.o alloca.o alloca-bt.o stdatomic.o builtin.o
+.\tcc -B. -m64 -c ../lib/bcheck.c -o lib/bcheck.o -bt -I..
+.\tcc -B. -m64 -c ../lib/bt-exe.c -o lib/bt-exe.o
+.\tcc -B. -m64 -c ../lib/bt-log.c -o lib/bt-log.o
+.\tcc -B. -m64 -c ../lib/bt-dll.c -o lib/bt-dll.o
+.\tcc -B. -m64 -c ../lib/runmain.c -o lib/runmain.o
+exit /B 0
+
+for %f in (*.o *.def) do @del %f
+exit /B 0
+
+

@@ -1,0 +1,72 @@
+.PHONY: all clean
+
+all: bin/libz.a bin/libminizip.a
+
+bin/adler32.o: src/adler32.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/adler32.c -o bin/adler32.o
+
+bin/crc32.o: src/crc32.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/crc32.c -o bin/crc32.o
+
+bin/deflate.o: src/deflate.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/deflate.c -o bin/deflate.o
+
+bin/infback.o: src/infback.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/infback.c -o bin/infback.o
+
+bin/inffast.o: src/inffast.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/inffast.c -o bin/inffast.o
+
+bin/inflate.o: src/inflate.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/inflate.c -o bin/inflate.o
+
+bin/inftrees.o: src/inftrees.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/inftrees.c -o bin/inftrees.o
+
+bin/trees.o: src/trees.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/trees.c -o bin/trees.o
+
+bin/zutil.o: src/zutil.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/zutil.c -o bin/zutil.o
+
+bin/compress.o: src/compress.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/compress.c -o bin/compress.o
+
+bin/uncompr.o: src/uncompr.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/uncompr.c -o bin/uncompr.o
+
+bin/gzclose.o: src/gzclose.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/gzclose.c -o bin/gzclose.o
+
+bin/gzlib.o: src/gzlib.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/gzlib.c -o bin/gzlib.o
+
+bin/gzread.o: src/gzread.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/gzread.c -o bin/gzread.o
+
+bin/gzwrite.o: src/gzwrite.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -D_LARGEFILE64_SOURCE=1 -c src/gzwrite.c -o bin/gzwrite.o
+
+bin/ioapi.o: src/contrib/minizip/ioapi.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -Isrc -D_GNU_SOURCE -D_LARGEFILE64_SOURCE=1 -DUSE_FILE32API -Wno-unused-variable -Wno-unused-parameter -c src/contrib/minizip/ioapi.c -o bin/ioapi.o
+
+bin/mztools.o: src/contrib/minizip/mztools.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -Isrc -D_GNU_SOURCE -D_LARGEFILE64_SOURCE=1 -DUSE_FILE32API -Wno-unused-variable -Wno-unused-parameter -c src/contrib/minizip/mztools.c -o bin/mztools.o
+
+bin/unzip.o: src/contrib/minizip/unzip.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -Isrc -D_GNU_SOURCE -D_LARGEFILE64_SOURCE=1 -DUSE_FILE32API -Wno-unused-variable -Wno-unused-parameter -c src/contrib/minizip/unzip.c -o bin/unzip.o
+
+bin/zip.o: src/contrib/minizip/zip.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -Isrc -D_GNU_SOURCE -D_LARGEFILE64_SOURCE=1 -DUSE_FILE32API -Wno-unused-variable -Wno-unused-parameter -c src/contrib/minizip/zip.c -o bin/zip.o
+
+bin/iowin32.o: src/contrib/minizip/iowin32.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Wno-attributes -Isrc -D_GNU_SOURCE -D_LARGEFILE64_SOURCE=1 -DUSE_FILE32API -Wno-unused-variable -Wno-unused-parameter -c src/contrib/minizip/iowin32.c -o bin/iowin32.o
+
+bin/libz.a: bin/adler32.o bin/crc32.o bin/deflate.o bin/infback.o bin/inffast.o bin/inflate.o bin/inftrees.o bin/trees.o bin/zutil.o bin/compress.o bin/uncompr.o bin/gzclose.o bin/gzlib.o bin/gzread.o bin/gzwrite.o
+	ar rcs $@ $^
+
+bin/libminizip.a: bin/ioapi.o bin/mztools.o bin/unzip.o bin/zip.o bin/iowin32.o
+	ar rcs $@ $^
+
+clean:
+	rm -f bin/adler32.o bin/crc32.o bin/deflate.o bin/infback.o bin/inffast.o bin/inflate.o bin/inftrees.o bin/trees.o bin/zutil.o bin/compress.o bin/uncompr.o bin/gzclose.o bin/gzlib.o bin/gzread.o bin/gzwrite.o bin/ioapi.o bin/mztools.o bin/unzip.o bin/zip.o bin/iowin32.o bin/libz.a bin/libminizip.a

@@ -1,0 +1,111 @@
+.PHONY: all clean
+
+all: bin\liblua.a bin\lua55.exe
+
+bin\lapi.o: src\lapi.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lapi.c -o bin\lapi.o
+
+bin\lauxlib.o: src\lauxlib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lauxlib.c -o bin\lauxlib.o
+
+bin\lbaselib.o: src\lbaselib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lbaselib.c -o bin\lbaselib.o
+
+bin\lcode.o: src\lcode.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lcode.c -o bin\lcode.o
+
+bin\lcorolib.o: src\lcorolib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lcorolib.c -o bin\lcorolib.o
+
+bin\lctype.o: src\lctype.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lctype.c -o bin\lctype.o
+
+bin\ldblib.o: src\ldblib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\ldblib.c -o bin\ldblib.o
+
+bin\ldebug.o: src\ldebug.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\ldebug.c -o bin\ldebug.o
+
+bin\ldo.o: src\ldo.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\ldo.c -o bin\ldo.o
+
+bin\ldump.o: src\ldump.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\ldump.c -o bin\ldump.o
+
+bin\lfunc.o: src\lfunc.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lfunc.c -o bin\lfunc.o
+
+bin\lgc.o: src\lgc.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lgc.c -o bin\lgc.o
+
+bin\linit.o: src\linit.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\linit.c -o bin\linit.o
+
+bin\liolib.o: src\liolib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\liolib.c -o bin\liolib.o
+
+bin\llex.o: src\llex.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\llex.c -o bin\llex.o
+
+bin\lmathlib.o: src\lmathlib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lmathlib.c -o bin\lmathlib.o
+
+bin\lmem.o: src\lmem.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lmem.c -o bin\lmem.o
+
+bin\loadlib.o: src\loadlib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\loadlib.c -o bin\loadlib.o
+
+bin\lobject.o: src\lobject.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lobject.c -o bin\lobject.o
+
+bin\lopcodes.o: src\lopcodes.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lopcodes.c -o bin\lopcodes.o
+
+bin\loslib.o: src\loslib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\loslib.c -o bin\loslib.o
+
+bin\lparser.o: src\lparser.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lparser.c -o bin\lparser.o
+
+bin\lstate.o: src\lstate.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lstate.c -o bin\lstate.o
+
+bin\lstring.o: src\lstring.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lstring.c -o bin\lstring.o
+
+bin\lstrlib.o: src\lstrlib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lstrlib.c -o bin\lstrlib.o
+
+bin\ltable.o: src\ltable.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\ltable.c -o bin\ltable.o
+
+bin\ltablib.o: src\ltablib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\ltablib.c -o bin\ltablib.o
+
+bin\ltm.o: src\ltm.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\ltm.c -o bin\ltm.o
+
+bin\lundump.o: src\lundump.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lundump.c -o bin\lundump.o
+
+bin\lutf8lib.o: src\lutf8lib.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lutf8lib.c -o bin\lutf8lib.o
+
+bin\lvm.o: src\lvm.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lvm.c -o bin\lvm.o
+
+bin\lzio.o: src\lzio.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lzio.c -o bin\lzio.o
+
+bin\lua.o: src\lua.c
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -c src\lua.c -o bin\lua.o
+
+bin\liblua.a: bin\lapi.o bin\lauxlib.o bin\lbaselib.o bin\lcode.o bin\lcorolib.o bin\lctype.o bin\ldblib.o bin\ldebug.o bin\ldo.o bin\ldump.o bin\lfunc.o bin\lgc.o bin\linit.o bin\liolib.o bin\llex.o bin\lmathlib.o bin\lmem.o bin\loadlib.o bin\lobject.o bin\lopcodes.o bin\loslib.o bin\lparser.o bin\lstate.o bin\lstring.o bin\lstrlib.o bin\ltable.o bin\ltablib.o bin\ltm.o bin\lundump.o bin\lutf8lib.o bin\lvm.o bin\lzio.o
+	ar rcs $@ $^
+
+bin\lua55.exe: bin\lapi.o bin\lauxlib.o bin\lbaselib.o bin\lcode.o bin\lcorolib.o bin\lctype.o bin\ldblib.o bin\ldebug.o bin\ldo.o bin\ldump.o bin\lfunc.o bin\lgc.o bin\linit.o bin\liolib.o bin\llex.o bin\lmathlib.o bin\lmem.o bin\loadlib.o bin\lobject.o bin\lopcodes.o bin\loslib.o bin\lparser.o bin\lstate.o bin\lstring.o bin\lstrlib.o bin\ltable.o bin\ltablib.o bin\ltm.o bin\lundump.o bin\lutf8lib.o bin\lvm.o bin\lzio.o bin\lua.o
+	$(CC) -fvisibility=hidden --std=c99 -Wall -Wextra -ggdb -Os -fdiagnostics-color=never -o $@ $^ -lm
+
+clean:
+	del /F /Q 2>NUL bin\lapi.o bin\lauxlib.o bin\lbaselib.o bin\lcode.o bin\lcorolib.o bin\lctype.o bin\ldblib.o bin\ldebug.o bin\ldo.o bin\ldump.o bin\lfunc.o bin\lgc.o bin\linit.o bin\liolib.o bin\llex.o bin\lmathlib.o bin\lmem.o bin\loadlib.o bin\lobject.o bin\lopcodes.o bin\loslib.o bin\lparser.o bin\lstate.o bin\lstring.o bin\lstrlib.o bin\ltable.o bin\ltablib.o bin\ltm.o bin\lundump.o bin\lutf8lib.o bin\lvm.o bin\lzio.o bin\liblua.a bin\lua55.exe bin\lua.o

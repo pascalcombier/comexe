@@ -1,0 +1,61 @@
+/* Minimal layout: centered title, a box, then a textarea that expands */
+
+html, body {
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 16px;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.title {
+  text-align: center;
+  font-weight: 600;
+  font-size: 22px;
+}
+
+.box {
+  border: 1px solid #ccc;
+  background: #fff;
+  padding: 10px;
+}
+
+.box-loading { background: #fff; }
+.box-info    { background: #f3faf5; border-color: #bcd8c7; }
+.box-error   { background: #fff3f2; border-color: #e0c2c0; }
+
+#log {
+  flex: 1 1 auto;
+  min-height: 0; /* allow flex child to shrink/grow properly */
+  width: 100%;
+  box-sizing: border-box;
+  font-family: monospace;
+  white-space: pre-wrap;
+  padding: 8px;
+  border: 1px solid #ccc;
+  background: #f8f9fa;
+  overflow: auto; /* scroll inside the textarea */
+  resize: none;
+}
+
+@keyframes throbber-spin {
+  to { transform: rotate(360deg); }
+}
+
+.has-throbber::after {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-left: 0.5em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: throbber-spin 0.8s linear infinite;
+  vertical-align: -0.1em;
+}

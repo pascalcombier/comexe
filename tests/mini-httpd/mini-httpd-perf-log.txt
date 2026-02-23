@@ -1,0 +1,782 @@
+============= PLAIN ========================
+============= SSL 1 CLOSE ========================
+simpleloop Thread=01 Concu=00 Resu= 1000/ 1000 Dur=33.46s Req/s=000029 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=02 Concu=00 Resu= 1000/ 1000 Dur=37.68s Req/s=000026 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=03 Concu=00 Resu= 1000/ 1000 Dur=37.48s Req/s=000026 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=04 Concu=00 Resu= 1000/ 1000 Dur=37.43s Req/s=000026 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=05 Concu=00 Resu= 1000/ 1000 Dur=37.43s Req/s=000026 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=06 Concu=00 Resu= 1000/ 1000 Dur=37.79s Req/s=000026 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=07 Concu=00 Resu= 1000/ 1000 Dur=37.31s Req/s=000026 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=08 Concu=00 Resu= 1000/ 1000 Dur=34.65s Req/s=000028 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=01 Resu= 1000/ 1000 Dur=23.68s Req/s=000042 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=02 Resu= 1000/ 1000 Dur=20.20s Req/s=000049 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=03 Resu= 1000/ 1000 Dur=20.30s Req/s=000049 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=04 Resu= 1000/ 1000 Dur=21.38s Req/s=000046 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=05 Resu= 1000/ 1000 Dur=18.86s Req/s=000053 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=06 Resu= 1000/ 1000 Dur=17.69s Req/s=000056 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=07 Resu= 1000/ 1000 Dur=19.69s Req/s=000050 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=08 Resu= 1000/ 1000 Dur=17.30s Req/s=000057 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=02 Concu=04 Resu= 1000/ 1000 Dur=17.35s Req/s=000057 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=03 Concu=04 Resu= 1000/ 1000 Dur=23.14s Req/s=000043 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=04 Concu=04 Resu= 1000/ 1000 Dur=20.63s Req/s=000048 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+============= SSL 2 CLOSE ========================
+simpleloop Thread=01 Concu=00 Resu= 1000/ 1000 Dur=17.49s Req/s=000057 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=02 Concu=00 Resu= 1000/ 1000 Dur=17.91s Req/s=000055 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=03 Concu=00 Resu= 1000/ 1000 Dur=16.81s Req/s=000059 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=04 Concu=00 Resu= 1000/ 1000 Dur=20.48s Req/s=000048 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=05 Concu=00 Resu= 1000/ 1000 Dur=24.04s Req/s=000041 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=06 Concu=00 Resu= 1000/ 1000 Dur=18.09s Req/s=000055 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=07 Concu=00 Resu= 1000/ 1000 Dur=17.85s Req/s=000056 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+simpleloop Thread=08 Concu=00 Resu= 1000/ 1000 Dur=22.47s Req/s=000044 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=01 Resu= 1000/ 1000 Dur=21.09s Req/s=000047 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=02 Resu= 1000/ 1000 Dur=16.26s Req/s=000061 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=03 Resu= 1000/ 1000 Dur=18.97s Req/s=000052 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=04 Resu= 1000/ 1000 Dur=16.91s Req/s=000059 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=05 Resu= 1000/ 1000 Dur=16.34s Req/s=000061 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=06 Resu= 1000/ 1000 Dur=15.75s Req/s=000063 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=07 Resu= 1000/ 1000 Dur=18.60s Req/s=000053 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=01 Concu=08 Resu= 1000/ 1000 Dur=24.00s Req/s=000041 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=02 Concu=04 Resu= 1000/ 1000 Dur=38.11s Req/s=000026 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=03 Concu=04 Resu= 1000/ 1000 Dur=35.70s Req/s=000028 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+copasloop  Thread=04 Concu=04 Resu= 1000/ 1000 Dur=36.31s Req/s=000027 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+============= SSL 1 KEEP ========================
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=close-notify
+  ERROR Worker=01: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=01 Concu=00 Resu= 9901/10000 Dur=11.16s Req/s=000895 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=02: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=close-notify
+  ERROR Worker=02: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[505] code=nil error=close-notify
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=02 Concu=00 Resu= 9902/10000 Dur=08.65s Req/s=001156 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=close-notify
+  ERROR Worker=03: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[404] code=nil error=close-notify
+  ERROR Worker=02: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[606] code=nil error=close-notify
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=01: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=03: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=03 Concu=00 Resu= 9901/10000 Dur=08.36s Req/s=001196 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=04: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[101] code=nil error=close-notify
+  ERROR Worker=03: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[101] code=nil error=close-notify
+  ERROR Worker=04: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[202] code=nil error=close-notify
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[404] code=nil error=close-notify
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[404] code=nil error=close-notify
+  ERROR Worker=04: keepalive[505] code=nil error=close-notify
+  ERROR Worker=02: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[606] code=nil error=close-notify
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[808] code=nil error=close-notify
+  ERROR Worker=03: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=04 Concu=00 Resu= 9904/10000 Dur=08.63s Req/s=001158 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=04: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[303] code=nil error=close-notify
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[303] code=nil error=close-notify
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[404] code=nil error=close-notify
+  ERROR Worker=04: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[505] code=nil error=close-notify
+  ERROR Worker=05: keepalive[505] code=nil error=close-notify
+  ERROR Worker=02: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[909] code=nil error=close-notify
+  ERROR Worker=05: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[909] code=nil error=close-notify
+  ERROR Worker=04: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=05: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=01: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=05 Concu=00 Resu= 9905/10000 Dur=08.44s Req/s=001184 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=06: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[101] code=nil error=close-notify
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[101] code=nil error=close-notify
+  ERROR Worker=06: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[202] code=nil error=close-notify
+  ERROR Worker=05: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[303] code=nil error=close-notify
+  ERROR Worker=02: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[404] code=nil error=close-notify
+  ERROR Worker=02: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[505] code=nil error=close-notify
+  ERROR Worker=01: keepalive[505] code=nil error=close-notify
+  ERROR Worker=02: keepalive[606] code=nil error=close-notify
+  ERROR Worker=05: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=close-notify
+  ERROR Worker=05: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[909] code=nil error=close-notify
+  ERROR Worker=03: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=05: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=03: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=06 Concu=00 Resu= 9904/10000 Dur=08.87s Req/s=001127 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=close-notify
+  ERROR Worker=03: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[303] code=nil error=close-notify
+  ERROR Worker=03: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[404] code=nil error=close-notify
+  ERROR Worker=06: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[505] code=nil error=close-notify
+  ERROR Worker=04: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[606] code=nil error=close-notify
+  ERROR Worker=03: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[707] code=nil error=close-notify
+  ERROR Worker=06: keepalive[707] code=nil error=close-notify
+  ERROR Worker=03: keepalive[707] code=nil error=close-notify
+  ERROR Worker=02: keepalive[707] code=nil error=close-notify
+  ERROR Worker=04: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[808] code=nil error=close-notify
+  ERROR Worker=05: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[909] code=nil error=close-notify
+  ERROR Worker=06: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=06: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=02: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=01: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=05: keepalive[1010] code=nil error=close-notify
+keepalive  Thread=07 Concu=00 Resu= 9902/10000 Dur=09.14s Req/s=001094 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=05: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[101] code=nil error=close-notify
+  ERROR Worker=03: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[101] code=nil error=close-notify
+  ERROR Worker=07: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[202] code=nil error=close-notify
+  ERROR Worker=05: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[202] code=nil error=close-notify
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[303] code=nil error=close-notify
+  ERROR Worker=02: keepalive[303] code=nil error=close-notify
+  ERROR Worker=05: keepalive[303] code=nil error=close-notify
+  ERROR Worker=08: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=close-notify
+  ERROR Worker=07: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[404] code=nil error=close-notify
+  ERROR Worker=05: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[404] code=nil error=close-notify
+  ERROR Worker=08: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[505] code=nil error=close-notify
+  ERROR Worker=04: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[505] code=nil error=close-notify
+  ERROR Worker=05: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[505] code=nil error=close-notify
+  ERROR Worker=01: keepalive[606] code=nil error=close-notify
+  ERROR Worker=03: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=close-notify
+  ERROR Worker=03: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[808] code=nil error=close-notify
+  ERROR Worker=06: keepalive[808] code=nil error=close-notify
+  ERROR Worker=01: keepalive[909] code=nil error=close-notify
+  ERROR Worker=07: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[909] code=nil error=close-notify
+  ERROR Worker=04: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=08 Concu=00 Resu= 9904/10000 Dur=08.62s Req/s=001159 https://127.0.0.1:8802/test-get-variables?var1=123&var2=hello&var3=world
+============= SSL 2 KEEP ========================
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=01 Concu=00 Resu= 9901/10000 Dur=07.89s Req/s=001266 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=01: keepalive[101] code=nil error=close-notify
+  ERROR Worker=02: keepalive[101] code=nil error=close-notify
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=close-notify
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=close-notify
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=02: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=02 Concu=00 Resu= 9902/10000 Dur=04.91s Req/s=002037 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=03: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[101] code=nil error=close-notify
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[202] code=nil error=close-notify
+  ERROR Worker=02: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[404] code=nil error=close-notify
+  ERROR Worker=03: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[505] code=nil error=close-notify
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=close-notify
+  ERROR Worker=03: keepalive[909] code=nil error=close-notify
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[909] code=nil error=close-notify
+  ERROR Worker=01: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=03: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[1010] code=nil error=close-notify
+keepalive  Thread=03 Concu=00 Resu= 9901/10000 Dur=04.55s Req/s=002197 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=02: keepalive[101] code=nil error=close-notify
+  ERROR Worker=04: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[101] code=nil error=close-notify
+  ERROR Worker=03: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[202] code=nil error=close-notify
+  ERROR Worker=03: keepalive[202] code=nil error=close-notify
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[303] code=nil error=close-notify
+  ERROR Worker=01: keepalive[404] code=nil error=close-notify
+  ERROR Worker=04: keepalive[404] code=nil error=close-notify
+  ERROR Worker=03: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[505] code=nil error=close-notify
+  ERROR Worker=04: keepalive[505] code=nil error=close-notify
+  ERROR Worker=03: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[606] code=nil error=close-notify
+  ERROR Worker=04: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=close-notify
+  ERROR Worker=03: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=close-notify
+  ERROR Worker=01: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[909] code=nil error=close-notify
+  ERROR Worker=03: keepalive[909] code=nil error=close-notify
+  ERROR Worker=02: keepalive[909] code=nil error=close-notify
+  ERROR Worker=01: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=03: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[1010] code=nil error=close-notify
+keepalive  Thread=04 Concu=00 Resu= 9904/10000 Dur=04.55s Req/s=002198 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=02: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[101] code=nil error=close-notify
+  ERROR Worker=04: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=close-notify
+  ERROR Worker=03: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[202] code=nil error=close-notify
+  ERROR Worker=05: keepalive[303] code=nil error=close-notify
+  ERROR Worker=03: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[404] code=nil error=close-notify
+  ERROR Worker=01: keepalive[404] code=nil error=close-notify
+  ERROR Worker=03: keepalive[404] code=nil error=close-notify
+  ERROR Worker=02: keepalive[404] code=nil error=close-notify
+  ERROR Worker=03: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=close-notify
+  ERROR Worker=02: keepalive[505] code=nil error=close-notify
+  ERROR Worker=04: keepalive[606] code=nil error=close-notify
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[808] code=nil error=close-notify
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[909] code=nil error=close-notify
+  ERROR Worker=01: keepalive[909] code=nil error=close-notify
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[909] code=nil error=close-notify
+  ERROR Worker=02: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=03: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=01: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[1010] code=nil error=close-notify
+keepalive  Thread=05 Concu=00 Resu= 9905/10000 Dur=04.57s Req/s=002186 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=05: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[101] code=nil error=close-notify
+  ERROR Worker=02: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[202] code=nil error=close-notify
+  ERROR Worker=05: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[202] code=nil error=close-notify
+  ERROR Worker=04: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[202] code=nil error=close-notify
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[404] code=nil error=close-notify
+  ERROR Worker=04: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[404] code=nil error=close-notify
+  ERROR Worker=03: keepalive[505] code=nil error=close-notify
+  ERROR Worker=06: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[606] code=nil error=close-notify
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[606] code=nil error=close-notify
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[707] code=nil error=close-notify
+  ERROR Worker=06: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[808] code=nil error=close-notify
+  ERROR Worker=01: keepalive[808] code=nil error=close-notify
+  ERROR Worker=03: keepalive[808] code=nil error=close-notify
+  ERROR Worker=02: keepalive[808] code=nil error=close-notify
+  ERROR Worker=04: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[909] code=nil error=close-notify
+  ERROR Worker=01: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=05: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=02: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=03: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=06 Concu=00 Resu= 9904/10000 Dur=05.06s Req/s=001976 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=01: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[101] code=nil error=close-notify
+  ERROR Worker=06: keepalive[101] code=nil error=close-notify
+  ERROR Worker=07: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=close-notify
+  ERROR Worker=02: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[202] code=nil error=close-notify
+  ERROR Worker=06: keepalive[202] code=nil error=close-notify
+  ERROR Worker=05: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[202] code=nil error=close-notify
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[303] code=nil error=close-notify
+  ERROR Worker=05: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=close-notify
+  ERROR Worker=02: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[404] code=nil error=close-notify
+  ERROR Worker=06: keepalive[404] code=nil error=close-notify
+  ERROR Worker=03: keepalive[404] code=nil error=close-notify
+  ERROR Worker=07: keepalive[404] code=nil error=close-notify
+  ERROR Worker=02: keepalive[505] code=nil error=close-notify
+  ERROR Worker=01: keepalive[505] code=nil error=close-notify
+  ERROR Worker=05: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[505] code=nil error=close-notify
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=close-notify
+  ERROR Worker=04: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[606] code=nil error=close-notify
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[707] code=nil error=close-notify
+  ERROR Worker=04: keepalive[707] code=nil error=close-notify
+  ERROR Worker=06: keepalive[707] code=nil error=close-notify
+  ERROR Worker=07: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[808] code=nil error=close-notify
+  ERROR Worker=06: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[808] code=nil error=close-notify
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[909] code=nil error=close-notify
+  ERROR Worker=01: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[909] code=nil error=close-notify
+  ERROR Worker=07: keepalive[909] code=nil error=close-notify
+  ERROR Worker=04: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=03: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=06: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=07 Concu=00 Resu= 9902/10000 Dur=05.18s Req/s=001931 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+  ERROR Worker=08: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[101] code=nil error=close-notify
+  ERROR Worker=05: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[101] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[202] code=nil error=close-notify
+  ERROR Worker=05: keepalive[202] code=nil error=close-notify
+  ERROR Worker=02: keepalive[202] code=nil error=close-notify
+  ERROR Worker=03: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[202] code=nil error=close-notify
+  ERROR Worker=04: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[202] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[303] code=nil error=close-notify
+  ERROR Worker=01: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[303] code=nil error=close-notify
+  ERROR Worker=02: keepalive[303] code=nil error=close-notify
+  ERROR Worker=03: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[303] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[303] code=nil error=close-notify
+  ERROR Worker=08: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[404] code=nil error=close-notify
+  ERROR Worker=05: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[404] code=nil error=close-notify
+  ERROR Worker=02: keepalive[404] code=nil error=close-notify
+  ERROR Worker=03: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[404] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[505] code=nil error=close-notify
+  ERROR Worker=05: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[505] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[505] code=nil error=close-notify
+  ERROR Worker=08: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[606] code=nil error=close-notify
+  ERROR Worker=07: keepalive[606] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[606] code=nil error=close-notify
+  ERROR Worker=03: keepalive[606] code=nil error=close-notify
+  ERROR Worker=08: keepalive[707] code=nil error=close-notify
+  ERROR Worker=01: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[707] code=nil error=close-notify
+  ERROR Worker=07: keepalive[707] code=nil error=close-notify
+  ERROR Worker=04: keepalive[707] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[808] code=nil error=close-notify
+  ERROR Worker=01: keepalive[808] code=nil error=close-notify
+  ERROR Worker=06: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=03: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[808] code=nil error=invalid read result
+  ERROR Worker=08: keepalive[909] code=nil error=close-notify
+  ERROR Worker=01: keepalive[909] code=nil error=close-notify
+  ERROR Worker=06: keepalive[909] code=nil error=close-notify
+  ERROR Worker=03: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=04: keepalive[909] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[909] code=nil error=close-notify
+  ERROR Worker=05: keepalive[909] code=nil error=close-notify
+  ERROR Worker=08: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=01: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=06: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=03: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=02: keepalive[1010] code=nil error=close-notify
+  ERROR Worker=04: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=07: keepalive[1010] code=nil error=invalid read result
+  ERROR Worker=05: keepalive[1010] code=nil error=invalid read result
+keepalive  Thread=08 Concu=00 Resu= 9904/10000 Dur=04.90s Req/s=002038 https://127.0.0.1:8803/test-get-variables?var1=123&var2=hello&var3=world
+Performance test finished; server closed properly
+[Inferior 1 (process 33820) exited normally]
+(gdb)

@@ -1,0 +1,47 @@
+#==============================================================================#
+# DOCUMENTATION                                                                #
+#==============================================================================#
+
+# COMEXE BUILD STEP 2/3
+# ASSUMPTION: make-deps already called and zlib/lua are available
+
+# Note: GNU Make automatic variables
+# $< first pre-requisite
+# $^ all pre-requisite
+
+#==============================================================================#
+# CONFIGURATION                                                                #
+#==============================================================================#
+
+RM = DEL /F /Q 2>NUL
+CP = COPY >NUL
+
+#==============================================================================#
+# BUILD TOOLS                                                                  #
+#==============================================================================#
+
+BIN_DIR = bin
+SRC_DIR = src
+
+ZLIB_DIR = ..\third-party\src\zlib
+LUA_DIR  = ..\third-party\src\lua
+
+MAKEHEADERS = $(BIN_DIR)\make-headers.exe
+MINIZIP     = $(BIN_DIR)\trivial-minizip.exe
+LUAEXE      = $(BIN_DIR)\lua55.exe
+
+.PHONY: all clean
+
+all: $(MAKEHEADERS) $(MINIZIP) $(LUAEXE)
+
+$(MAKEHEADERS): $(SRC_DIR)\makeheaders.c
+	$(CC) $< -o $@
+
+$(MINIZIP): $(SRC_DIR)\trivial-minizip.c
+	$(CC) -Os -Wno-unused-parameter -I$(ZLIB_DIR)\src -I$(ZLIB_DIR)\src\contrib\minizip $< -o $@ -L$(ZLIB_DIR)\bin -lminizip -lz -s
+
+$(LUAEXE): ..\third-party\src\lua\bin\lua55.exe
+	$(CP) $< $@
+
+clean:
+	$(RM) $(MAKEHEADERS) $(MINIZIP) $(LUAEXE)
