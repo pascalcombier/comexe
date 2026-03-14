@@ -243,7 +243,7 @@ local function INIT_ReadFile (Filename, OutputType)
   local Result
   if (OutputType == nil) or (OutputType == "string") then
     Result = FileContents
-  elseif (OutputType == "lines") then
+  elseif FileContents and (OutputType == "lines") then
     local Lines = {}
     for Line in FileContents:gmatch("([^\r\n]*)\r?\n?") do
       append(Lines, Line)
