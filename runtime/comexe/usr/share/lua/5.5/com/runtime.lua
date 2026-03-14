@@ -85,36 +85,14 @@ end
 -- group/others and is a good portable default
 local RUNTIME_DIR_DEFAULT_MODE = tonumber("755", 8)
 
--- Note that fs_mkdir is not recursive: not equivalent to mkdir -p
-local function RUNTIME_MakeDirectorySimple (Directory)
-  -- Call the API
-  local MkdirSuccess, MkdirErrorString = fs_mkdir(Directory, RUNTIME_DIR_DEFAULT_MODE)
-  local Success
-  local ErrorMessage
-  if MkdirSuccess then
-    Success = true
-  else
-    -- Avoid race condition: fs_mkdir failed because another program created
-    -- the same directory
-    local FsStatSuccess = fs_stat(Directory)
-    if (FsStatSuccess and (FsStatSuccess.type == "directory")) then
-      Success = true
-    else
-      Success      = false
-      ErrorMessage = MkdirErrorString
-    end
-  end
-  -- Return value
-  return Success, ErrorMessage
-end
-
--- mkdir -p
-local function RUNTIME_MakeDirectoryRec (Directory)
+-- behavior like mkdir -p
+local function RUNTIME_MakeDirectory (Directory)
   -- Use pathnames
   local Current    = newpathname(Directory)
   local PathStack  = {}
   local Success    = true
   local Collecting = true
+  local ErrorString
   -- Collect non-existing directories in a stack
   while Collecting do
     local NativePath = Current:convert("native")
@@ -138,21 +116,23 @@ local function RUNTIME_MakeDirectoryRec (Directory)
   while Success and (#PathStack > 0) do
     local PathToCreate = remove(PathStack)
     local NativePath   = PathToCreate:convert("native")
-    Success = RUNTIME_MakeDirectorySimple(NativePath)
+    -- Create directory
+    local MkdirSuccess, MkdirErrorString = fs_mkdir(NativePath, RUNTIME_DIR_DEFAULT_MODE)
+    if MkdirSuccess then
+      Success = true
+    else
+      local FsStatSuccess = fs_stat(NativePath)
+      -- Maybe the directory created in the meantime
+      if (FsStatSuccess and (FsStatSuccess.type == "directory")) then
+        Success = true
+      else
+        Success      = false
+        ErrorString = MkdirErrorString
+      end
+    end
   end
   -- Return value
-  return Success
-end
-
--- Note that fs_mkdir is not recursive: not equivalent to mkdir -p
-local function RUNTIME_MakeDirectory (Directory, Mode)
-  local Success
-  if (Mode == "recursive") then
-    Success = RUNTIME_MakeDirectoryRec(Directory)
-  else
-    Success = RUNTIME_MakeDirectorySimple(Directory)
-  end
-  return Success
+  return Success, ErrorString
 end
 
 local function RUNTIME_DirectoryExists (Directory)
