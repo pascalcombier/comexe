@@ -411,7 +411,7 @@ local function ZIPM_WriteEntry (Writer, EntryName, EntryContent, EntriesSet)
 end
 
 -- Tricky: importing a directory treats that directory as the ZIP root and so
--- remove the first path component from each entry.
+-- we need to remove the first path component from each entry.
 --
 -- Example: "DIR-1/DIR-2/file.txt" -> "DIR-2/file.txt"
 local function ZIPM_ImportDirectory (Merger, Writer, SourceId, SourcePath, EntriesSet)
