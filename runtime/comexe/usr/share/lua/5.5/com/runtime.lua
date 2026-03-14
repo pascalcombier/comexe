@@ -157,7 +157,8 @@ local function RUNTIME_DeleteDirectory (Directory)
   return Success, ErrorMessage
 end
 
--- Will call the Callback on all the found files
+-- List FILES (and maybe links) recursively
+-- Call the Callback on all the found files
 -- Callback(Path, FileType)
 -- The Path will be relative to the requested Directory
 local function RUNTIME_ListFiles (Directory, Callback)
@@ -183,6 +184,20 @@ local function RUNTIME_ListFiles (Directory, Callback)
   end
   -- Start the recursive search
   FindRecursive(Directory)
+end
+
+-- Non-recursive: list files inside a directory
+local function RUNTIME_ListDirectory (Directory, Callback)
+  -- Call file system
+  local ScanResult, ErrorString = fs_scandir(Directory)
+  -- Error handling
+  assert(ScanResult, format("ERROR: Cannot scan directory '%s': %s", Directory, ErrorString))
+  -- Iterate
+  local Filename, Filetype = fs_scandir_next(ScanResult)
+  while Filename do
+    Callback(Filename, Filetype)
+    Filename, Filetype = fs_scandir_next(ScanResult)
+  end
 end
 
 --------------------------------------------------------------------------------
@@ -399,6 +414,7 @@ local PUBLIC_API = {
   directoryexists = RUNTIME_DirectoryExists,
   fileexists      = RUNTIME_FileExists,
   listfiles       = RUNTIME_ListFiles,
+  listdir         = RUNTIME_ListDirectory,
   deletefile      = RUNTIME_DeleteFile,
   deletedirectory = RUNTIME_DeleteDirectory,
   -- Miscellaneous
