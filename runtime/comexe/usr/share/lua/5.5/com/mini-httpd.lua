@@ -514,7 +514,7 @@ local function HTTPD_MethodListen (Server, HttpHandler)
     ServerEntry.state = "RUNNING"
     HttpHandler:event("Started", Uri)
   end
-  local Success = (ServerSocket ~= nil)
+  local Success = (ServerSocket ~= false)
   return Success, ErrorString
 end
 
