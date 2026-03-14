@@ -6,8 +6,8 @@
 -- We want to extend the commands while keeping compatibility.
 -- The added commands are implemented in this file.
 
--- zip-l zip-c and find a probably not necessary
--- But could be useful to understand step by step if something goes wrong
+-- zip command is probably not necessary
+-- But is useful to understand step by step if something goes wrong
 --
 -- For example in the case one use a third-party ZIP program, but the resulting
 -- runtime ZIP file is not working well with minizip
@@ -22,6 +22,7 @@ local Http        = require("socket.http")
 local MiniHttpLib = require("com.mini-httpd-lib")
 local Url         = require("socket.url")
 local Fennel      = require("fennel")
+local ApmClient   = require("apm-client")
 
 local format           = string.format
 local open             = io.open
@@ -45,9 +46,9 @@ local request          = Http.request
 local parseheadervalue = MiniHttpLib.parseheadervalue
 local parseurl         = Url.parse
 
-local IterateRead            = Minizip.IterateRead
-local NewMerger              = Minizip.NewMerger
-local Z_BEST_COMPRESSION     = Minizip.Z_BEST_COMPRESSION
+local IterateRead        = Minizip.IterateRead
+local NewMerger          = Minizip.NewMerger
+local Z_BEST_COMPRESSION = Minizip.Z_BEST_COMPRESSION
 
 local COMEXE_EXE            = getparam("LUA-EXE")
 local COMEXE_ZIP_INIT_ENTRY = "comexe/init.lua"
@@ -222,6 +223,8 @@ local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationE
       Merger:AddRule(Source, ".*", "COPY")
     elseif directoryexists(Input) then
       local Source = Merger:AddSource(Input, "dir")
+      -- Prevent from copying .apm-cache
+      Merger:AddRule(Source, "^%.apm%-cache/.*", "SKIP")
       Merger:AddRule(Source, ".*", "COPY")
     else
       print(format("WARNING: Input not found or invalid: %s", Input))
@@ -249,11 +252,15 @@ local function HandleHelp ()
   print("  --help, -h                        Show this help message")
   print("  --list-targets                    List available targets for make command")
   print("  --make, -m DIR/OR/ZIP/my-prog.lua [-v] [--nostdlib] [-t target] [-o output]")
-  print("  --zip-l <file.zip>                List contents of a zip file")
-  print("  --zip-c <file.zip> <dir|zip> ...  Create/overwrite a zip file")
+  print("  --zip l or list <file.zip>        List contents of a zip file")
+  print("  --zip c or create <file.zip> ...  Create/overwrite a zip file")
   print("  --find <directory>                Find files in a directory")
   print("  --compile, -c <file.lua|file.fnl> Compile Lua or Fennel source")
   print("  --wget <url>                      Download file via HTTP")
+  print("  --apm update                      Update available packages index")
+  print("  --apm list                        List available packages")
+  print("  --apm search <string>             Search packages by filename")
+  print("  --apm install <package.zip>       Install a package")
 end
 
 local function HandleListTargets (Filename)
@@ -625,13 +632,19 @@ local function EXT_Command (RawArguments)
     HandleListTargets(COMEXE_EXE)
   elseif (Command == "make") then
     HandleMake(Arguments)
-  elseif (Command == "zip-l") then
-    local Filename = Arguments[1]
-    HandleZipList(Filename)
-  elseif (Command == "zip-c") then
-    local OutputZip = Arguments[1]
-    local Inputs    = slice(Arguments, 2, #Arguments)
-    HandleZipCreate(OutputZip, Inputs)
+  elseif (Command == "zip") then
+    local ZipSubCommand = Arguments[1]
+    local ZipArguments  = slice(Arguments, 2, #Arguments)
+    if (ZipSubCommand == "l") or (ZipSubCommand == "list") then
+      local Filename = ZipArguments[1]
+      HandleZipList(Filename)
+    elseif (ZipSubCommand == "c") or (ZipSubCommand == "create") then
+      local OutputZip = ZipArguments[1]
+      local Inputs    = slice(ZipArguments, 2, #ZipArguments)
+      HandleZipCreate(OutputZip, Inputs)
+    else
+      error(format("Unknown zip subcommand: '%s' (expected 'l', 'list', 'c' or 'create')", tostring(ZipSubCommand)))
+    end
   elseif (Command == "find") then
     local Directory = (Arguments[1] or ".")
     HandleFind(Directory)
@@ -641,6 +654,8 @@ local function EXT_Command (RawArguments)
   elseif (Command == "wget") then
     local Uri = Arguments[1]
     HandleWget(Uri)
+  elseif (Command == "apm") then
+    ApmClient.HandleApmCommand(Arguments)
   else
     error(format("Command could not be found: '%s'", Command))
   end

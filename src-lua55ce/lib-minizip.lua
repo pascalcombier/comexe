@@ -132,6 +132,96 @@ local function ZIP_IterateRead (ZipFilename, EntryFunc)
 end
 
 --------------------------------------------------------------------------------
+-- TYPE ARCHIVE READER                                                        --
+--------------------------------------------------------------------------------
+
+local function ZIPR_MethodClose (ReaderObject)
+  -- Retrieve handle
+  local ZipFile = ReaderObject.ZipFile
+  local Result
+  if ZipFile then
+    Result = unzip_close(ZipFile)
+    ReaderObject.ZipFile = nil
+  end
+  -- Return value
+  return Result
+end
+
+local function ZIPR_ReadCurrentEntry (ZipFile, FileInfo)
+  local FileContent
+  local Result = unzip_open_current_file(ZipFile)
+  if (Result == UNZ_OK) then
+    local SizeInBytes = FileInfo.uncompressed_size
+    if (SizeInBytes > 0) then
+      local Data, ErrorMessage = unzip_read_current_file(ZipFile, SizeInBytes)
+      if Data then
+        FileContent = Data
+      end
+    else
+      FileContent = ""
+    end
+    unzip_close_current_file(ZipFile)
+  end
+  return FileContent
+end
+
+local function ZIPR_MethodRead (ReaderObject, EntryName)
+  -- Local variables
+  local FileContent
+  local ZipFile = ReaderObject.ZipFile
+  assert(ZipFile, "API misuse: Read after close")
+  -- Reset to beginning
+  local Status   = unzip_goto_first_file(ZipFile)
+  local Continue = (Status == UNZ_OK)
+  -- Iterate through files
+  while Continue do
+    local FileInfo = unzip_get_current_file_info(ZipFile)
+    if FileInfo then
+      if (FileInfo.filename == EntryName) then
+        FileContent = ZIPR_ReadCurrentEntry(ZipFile, FileInfo)
+        Continue    = false
+      else
+        -- Go to next file
+        Status   = unzip_goto_next_file(ZipFile)
+        Continue = (Status == UNZ_OK)
+      end
+    else
+      Continue = false -- Error unzip_get_current_file_info
+    end
+  end
+  -- Return value
+  return FileContent
+end
+
+local ZIPR_Metatable = {
+  -- Generic methods
+  __gc = ZIPR_MethodClose,
+  -- Custom methods
+  __index = {
+    Read  = ZIPR_MethodRead,
+    Close = ZIPR_MethodClose,
+  }
+}
+
+local function ZIP_NewReader (ZipFilename)
+  -- Result variables
+  local NewReaderObject
+  -- Open the ZIP file for reading
+  local ZipFile, ErrorMessage = unzip_open(ZipFilename)
+  -- Only proceed if zip opening succeeded
+  if ZipFile then
+    -- Create a new reader object
+    NewReaderObject = {
+      ZipFile = ZipFile
+    }
+    -- Attach the metatable
+    setmetatable(NewReaderObject, ZIPR_Metatable)
+  end
+  -- Return the reader object and error message
+  return NewReaderObject, ErrorMessage
+end
+
+--------------------------------------------------------------------------------
 -- TYPE ARCHIVE WRITER                                                        --
 --------------------------------------------------------------------------------
 
@@ -474,6 +564,7 @@ end
 
 local PUBLIC_API = {
   -- Functions
+  NewReader   = ZIP_NewReader,
   IterateRead = ZIP_IterateRead,
   NewWriter   = ZIP_NewWriter, --  Low-level writer
   NewMerger   = ZIP_NewMerger, -- High-level writer
