@@ -652,6 +652,11 @@ local function PATH_MethodToString (Pathname)
   return Result
 end
 
+local function PATH_MethodToInternal (Pathname)
+  local Result = Pathname:convert("internal")
+  return Result
+end
+
 local function PATH_MethodConcat (LeftPath, RightPath)
   -- local data
   local LeftMetatable  = getmetatable(LeftPath)
@@ -692,11 +697,12 @@ local PATH_MetatableImpl = {
     isabsolute   = PATH_MethodIsAbsolute,
     isrelative   = PATH_MethodIsRelative,
     depth        = PATH_MethodDepth,
+    tointernal   = PATH_MethodToInternal
   }
 }
 PATH_Metatable = PATH_MetatableImpl
 
-local function PATH_NewPathname (Pathname)
+local function PATH_NewPathnameObject (Pathname)
   -- Normalize path: use Linux forward slashes not Windows backslashes
   local NormalizedPath = PATH_InternalPathname(Pathname)
   -- Parse pathname
@@ -706,6 +712,37 @@ local function PATH_NewPathname (Pathname)
   setmetatable(ResolvedElements, PATH_Metatable)
   -- Return value
   return ResolvedElements
+end
+
+-- Versatile constructor: can create pathname from string
+-- Or from list of strings/pathname that would be appened together
+-- Note that it does not care about multiple ROOT
+local function PATH_NewPathname (...)
+  -- local data
+  local Count = select("#", ...)
+  local Parts = {}
+  -- Iterate over arguments
+  for Index = 1, Count do
+    local Argument = select(Index, ...)
+    local Type     = type(Argument)
+    if (Type == "string") then
+      append(Parts, Argument)
+    elseif (Type == "table") then
+      local Metatable = getmetatable(Argument)
+      if (Metatable == PATH_Metatable) then
+        -- Append all elements from the existing pathname
+        for ElementIndex = 1, #Argument do
+          append(Parts, Argument[ElementIndex])
+        end
+      end
+    end
+  end
+  -- Join parts
+  local FullPath = concat(Parts, PATH_InternalSeparator)
+  -- Create pathname object
+  local Result = PATH_NewPathnameObject(FullPath)
+  -- Return value
+  return Result
 end
 
 --------------------------------------------------------------------------------
