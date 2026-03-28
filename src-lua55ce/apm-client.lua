@@ -386,7 +386,9 @@ local function FindStringInList (List, String)
 end
 
 local EMPTY_REPO_LIST = {
-  repositories = {}
+  repositories = {
+    "https://raw.githubusercontent.com/pascalcombier/comlib/refs/heads/main/packages/lua/5.5/index.zip"
+  }
 }
 
 local EMPTY_LOCAL_STATE = {
