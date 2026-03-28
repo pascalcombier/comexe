@@ -223,8 +223,8 @@ local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationE
       Merger:AddRule(Source, ".*", "COPY")
     elseif directoryexists(Input) then
       local Source = Merger:AddSource(Input, "dir")
-      -- Prevent from copying .apm-cache
-      Merger:AddRule(Source, "^%.apm%-cache/.*", "SKIP")
+      -- Prevent from copying .comexe/apm
+      Merger:AddRule(Source, "^%.comexe/apm/.*", "SKIP")
       Merger:AddRule(Source, ".*", "COPY")
     else
       print(format("WARNING: Input not found or invalid: %s", Input))
