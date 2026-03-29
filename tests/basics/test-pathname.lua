@@ -204,6 +204,11 @@ Pathname:remove(2)
 InternalPathname = Pathname:convert("internal")
 EXPECT("NOM-048-removeelement", InternalPathname, "a/c")
 
+Pathname = newpathname("a/b/c/d")
+Pathname:remove(2, 3)
+InternalPathname = Pathname:convert("internal")
+EXPECT("NOM-049-remove-range", InternalPathname, "a/d")
+
 --------------------------------------------------------------------------------
 -- RESOLUTION / EDGE CASES                                                    --
 --------------------------------------------------------------------------------
@@ -320,32 +325,32 @@ EXPECT("RSL-025-abs-a-up-up-root", InternalPathname, "/")
 
 Reporter:block("SETNAME")
 
-Pathname         = newpathname("dir/old.txt")
+Pathname = newpathname("dir/old.txt")
 Pathname:setname("new.log")
 InternalPathname = Pathname:convert("internal")
 EXPECT("SET-001-basic", InternalPathname, "dir/new.log")
 
-Pathname         = newpathname("base")
+Pathname = newpathname("base")
 Pathname:setname("other")
 InternalPathname = Pathname:convert("internal")
 EXPECT("SET-002-simple", InternalPathname, "other")
 
-Pathname         = newpathname("/")
+Pathname = newpathname("/")
 Pathname:setname("foo")
 InternalPathname = Pathname:convert("internal")
 EXPECT("SET-003-root", InternalPathname, "foo")
 
-Pathname         = newpathname("C:")
+Pathname = newpathname("C:")
 Pathname:setname("foo")
 InternalPathname = Pathname:convert("internal")
 EXPECT("SET-004-drive", InternalPathname, "foo")
 
-Pathname         = newpathname("")
+Pathname = newpathname("")
 Pathname:setname("foo")
 InternalPathname = Pathname:convert("internal")
 EXPECT("SET-005-empty", InternalPathname, "foo")
 
-Pathname         = newpathname("a/b/c"):setname("d"):setname("e")
+Pathname = newpathname("a/b/c"):setname("d"):setname("e")
 InternalPathname = Pathname:convert("internal")
 EXPECT("SET-006-chaining", InternalPathname, "a/b/e")
 
@@ -363,7 +368,7 @@ EXPECT("PAR-001-rel-simple", InternalPathname, "a")
 Pathname         = newpathname("a")
 Pathname:parent()
 InternalPathname = Pathname:convert("internal")
-EXPECT("PAR-002-rel-to-empty", InternalPathname, "")
+EXPECT("PAR-002-rel-to-empty", InternalPathname, ".")
 
 Pathname         = newpathname("")
 Pathname:parent()

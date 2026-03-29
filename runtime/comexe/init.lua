@@ -499,15 +499,19 @@ local function PATH_MethodConvert (Pathname, OptionalMode)
   local Elements   = Pathname
   local StartIndex = 1
   local EndIndex   = #Elements
-  -- Determine separator
-  local Separator
-  if (Mode == "native") then
-    Separator = PATH_NativeSeparator
-  else
-    Separator = PATH_InternalSeparator
-  end
   -- Build result
-  local Result = PATH_BuildStringFromElements(Elements, StartIndex, EndIndex, Separator)
+  local Result
+  if (EndIndex == 0) then
+    Result = "."
+  else
+    local Separator
+    if (Mode == "native") then
+      Separator = PATH_NativeSeparator
+    else
+      Separator = PATH_InternalSeparator
+    end
+    Result = PATH_BuildStringFromElements(Elements, StartIndex, EndIndex, Separator)
+  end
   return Result
 end
 
@@ -585,9 +589,14 @@ local function PATH_MethodSetName (Pathname, Name)
   return Pathname
 end
 
-local function PATH_MethodRemoveElement (Pathname, Index)
-  -- Remove element at the given index
-  remove(Pathname, Index)
+local function PATH_MethodRemoveElement (Pathname, StartIndex, EndIndex)
+  -- Remove one or multiple elements
+  local LastIndex = (EndIndex or StartIndex)
+  local Index     = StartIndex
+  while (Index <= LastIndex) do
+    remove(Pathname, StartIndex)
+    Index = (Index + 1)
+  end
   -- Return value and allow chaining
   return Pathname
 end
