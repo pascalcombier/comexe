@@ -37,6 +37,7 @@ local hasprefix        = Runtime.hasprefix
 local removeprefix     = Runtime.removeprefix
 local hassuffix        = Runtime.hassuffix
 local removesuffix     = Runtime.removesuffix
+local makedirectory    = Runtime.makedirectory
 local fileexists       = Runtime.fileexists
 local directoryexists  = Runtime.directoryexists
 local listfiles        = Runtime.listfiles
@@ -52,6 +53,7 @@ local Z_BEST_COMPRESSION = Minizip.Z_BEST_COMPRESSION
 
 local COMEXE_EXE            = getparam("LUA-EXE")
 local COMEXE_ZIP_INIT_ENTRY = "comexe/init.lua"
+local MAKE_CACHE_DIRECTORY  = ".comexe/cache"
 
 --------------------------------------------------------------------------------
 -- COMMAND LONG ALIASES                                                       --
@@ -80,6 +82,12 @@ local function CreateTempFilename (Prefix, Suffix)
   -- Full string
   local FullString = format("%s%s_%s-%s%s", Prefix, DateString, TimeString, DecimalString, Suffix)
   -- Return value
+  return FullString
+end
+
+local function MakeCacheFilename (Prefix, Suffix)
+  local Filename   = CreateTempFilename(Prefix, Suffix)
+  local FullString = format("%s/%s", MAKE_CACHE_DIRECTORY, Filename)
   return FullString
 end
 
@@ -197,9 +205,14 @@ local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationE
   -- Extract target EXECUTABLE to temporary file
   local TargetContent = LoadResource(TargetEntryName, "ZIP")
   assert(TargetContent, format("Target [%s] not found", TargetName))
-  -- Write the content to a temporary file using CreateTempFilename
-  local TempExeFilename = CreateTempFilename("make-exe-base-", ".exe")
-  local TempZipFilename = CreateTempFilename("make-exe-data-", ".zip")
+  -- Create directory if necessary
+  if (not directoryexists(MAKE_CACHE_DIRECTORY)) then
+    local MakeDirectorySuccess, ErrorString = makedirectory(MAKE_CACHE_DIRECTORY)
+    assert(MakeDirectorySuccess, format("Failed to create cache directory %s: %q", MAKE_CACHE_DIRECTORY, ErrorString))
+  end
+  -- Write the content to a temporary files
+  local TempExeFilename = MakeCacheFilename("make-exe-base-", ".exe")
+  local TempZipFilename = MakeCacheFilename("make-exe-data-", ".zip")
   MAKE_Log("OPENING [%s]", TempExeFilename)
   assert(writefile(TempExeFilename, TargetContent))
   MAKE_Log("OPENING [%s]", TempZipFilename)
