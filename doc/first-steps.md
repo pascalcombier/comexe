@@ -1,6 +1,6 @@
 # First steps with ComEXE
 
-ComEXE is distributed as a [binary program](https://github.com/pascalcombier/comexe/releases) called lua55ce.exe on Windows and lua55ce on Linux. The name is very close to the original Lua binaries lua55.exe and lua55 because it is intended as a drop‑in replacement: ComEXE embeds the unmodified source code of Lua 5.5.
+ComEXE is distributed as a [binary program](https://github.com/pascalcombier/comexe/releases) called lua55ce.exe on Windows and lua55ce on Linux. The name is very close to the original Lua binaries lua55.exe and lua55 because it is intended as a drop-in replacement: ComEXE embeds the unmodified source code of Lua 5.5.
 
 ```
 > lua55ce
@@ -10,7 +10,7 @@ Hello World!
 > 
 ```
 
-The [command‑line flags](https://www.lua.org/manual/5.5/manual.html#7) of the official Lua interpreter are compatible with ComEXE.
+The [command-line flags](https://www.lua.org/manual/5.5/manual.html#7) of the official Lua interpreter are compatible with ComEXE.
 
 ```
 > lua55ce -h
