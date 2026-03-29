@@ -44,6 +44,24 @@ mkdir -p bin
 TARGETS_DIR=runtime/comexe/usr/bin/comexe-targets
 rm -f "$TARGETS_DIR"/*
 
+# Remove .gitkeep files from runtime
+# [find runtime -name ".gitkeep" -delete] is too dangerous to use
+# So we manually delete the files
+rm -f ./tools/bin/.gitkeep
+rm -f ./bin/.gitkeep
+rm -f ./third-party/src/libuv/bin/.gitkeep
+rm -f ./third-party/src/luasocket/bin/.gitkeep
+rm -f ./third-party/src/lua-mbedtls-comexe/bin/.gitkeep
+rm -f ./third-party/src/lua/bin/.gitkeep
+rm -f ./third-party/src/mbedtls/bin/.gitkeep
+rm -f ./third-party/src/zlib/bin/.gitkeep
+rm -f ./third-party/src/luv/bin/.gitkeep
+rm -f ./third-party/src/mimalloc/bin/.gitkeep
+rm -f ./third-party/src/tcc-vio/bin/.gitkeep
+rm -f ./third-party/src/libffi/bin/.gitkeep
+rm -f ./runtime/comexe/usr/lib/.gitkeep
+rm -f ./runtime/comexe/usr/bin/comexe-targets/.gitkeep
+
 #==============================================================================#
 # TCC (SPECIAL DEPENDANCY)                                                     #
 #==============================================================================#
