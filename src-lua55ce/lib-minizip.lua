@@ -69,20 +69,20 @@ local function ZIP_HandleFile (UnzFile, FileInfo, EntryCallback)
   end
   -- Provide a function to read content if necessary
   local function ReadFunction ()
-    local FileContent = nil
-    local OpenResult  = unzip_open_current_file(UnzFile)
+    local OpenResult = unzip_open_current_file(UnzFile)
+    local FileContent
     if (OpenResult == UNZ_OK) then
       local SizeInBytes = FileInfo.uncompressed_size
       -- Read the entire file content
       if (SizeInBytes > 0) then
         -- Read the entire file in one operation
         local Data, ErrorMessage = unzip_read_current_file(UnzFile, SizeInBytes)
-        if Data and (#Data > 0) then
+        if Data then
           FileContent = Data
         end
       end
-     -- Ignore the return value of unzip_close_current_file
-       unzip_close_current_file(UnzFile)
+      -- Ignore the return value of unzip_close_current_file
+      unzip_close_current_file(UnzFile)
     end
     -- Return value
     return FileContent
@@ -411,16 +411,18 @@ local function ZIPM_WriteEntry (Writer, EntryName, EntryContent, EntriesSet)
 end
 
 -- Tricky: importing a directory treats that directory as the ZIP root and so
--- we need to remove the first path component from each entry.
+-- we need to remove the source-root path components from each entry.
 --
--- Example: "DIR-1/DIR-2/file.txt" -> "DIR-2/file.txt"
+-- Example: SourcePath "DIR-1" and file "DIR-1/DIR-2/file.txt" -> "DIR-2/file.txt"
 local function ZIPM_ImportDirectory (Merger, Writer, SourceId, SourcePath, EntriesSet)
+  local SourceRootPath  = newpathname(SourcePath)
+  local SourceRootDepth = SourceRootPath:depth()
   -- local callback
   local function ProcessFile (NativePathname, FileType)
     if (FileType == "file") then
       local FilePathname = newpathname(NativePathname)
-      -- Remove the directory element (i.e. "DIR-1")
-      FilePathname:remove(1)
+      -- Remove source root components to build the ZIP entry
+      FilePathname:remove(1, SourceRootDepth)
       -- Convert
       local ZipEntryName = FilePathname:convert("internal")
       -- Check the action for this entry
