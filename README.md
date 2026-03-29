@@ -7,6 +7,6 @@ It is aimed at developers who want to use Lua as a general-purpose programming l
 Learn more:
 - [Download binaries for Windows x86-64 and Linux x86-64](https://github.com/pascalcombier/comexe/releases)
 - [First steps with lua55ce](./doc/first-steps.md)
-- [Use third-party Lua packages](./doc/third-party-packages.md)
+- [Install third-party Lua packages](./doc/third-party-packages.md)
 - [Generate standalone executables](./doc/standalone-executables.md)
 - [Differences with Lua PUC](./doc/differences-lua-puc.md)

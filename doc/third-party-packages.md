@@ -62,7 +62,7 @@ E:\my-program\src>lua55ce main.lua
 ```
 ## Manually
 
-Just create a directory `share\lua\5.5\` in the source directory and copy the files there.
+Just create the directory `share\lua\5.5\` in the source directory and copy the files there.
 
 ```
 E:\my-program\src>REM check the files available in the share directory
