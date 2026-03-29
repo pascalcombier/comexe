@@ -80,6 +80,8 @@ local function ZIP_HandleFile (UnzFile, FileInfo, EntryCallback)
         if Data then
           FileContent = Data
         end
+      elseif (SizeInBytes == 0) then
+        FileContent = ""
       end
       -- Ignore the return value of unzip_close_current_file
       unzip_close_current_file(UnzFile)
