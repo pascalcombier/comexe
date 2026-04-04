@@ -65,6 +65,6 @@ main.lua
 main.exe
 ```
 
-The command will bundle both main.lua (good) and main.exe (bad) into the new main.exe.
+The command will bundle both main.lua (good) and main.exe (bad) into the new main.exe, which will make the executable file larger.
 
 Always put your source code in its own folder!
