@@ -2,16 +2,17 @@
 
 ## luv: Cross-platform asynchronous I/O
 
-ComEXE uses [libuv](https://libuv.org) for portability. [luv](https://github.com/luvit/luv) is also included because it seems [popular on LuaRocks](https://luarocks.org/search?q=libuv). This library has everything a man could wish for: timers, processes, sockets, pipes, ttys, file-systems, threads, and other utilities. You can read [documentation on GitHub](https://github.com/luvit/luv/blob/master/docs/docs.md).
+ComEXE uses [libuv](https://libuv.org) for portability. [luv](https://github.com/luvit/luv) is also included because it is [popular on LuaRocks](https://luarocks.org/search?q=libuv). This library has everything a man could wish for: timers, processes, sockets, pipes, ttys, file-systems, threads, and other utilities. You can read the [documentation on GitHub](https://github.com/luvit/luv/blob/master/docs/docs.md).
 
 ## luasocket
 
-This library is [very popular on LuaRocks](https://luarocks.org/search?q=luasocket), many packages depend on it. ComEXE's default setup lets you fetch resources from HTTP/HTTPS.
+This library is [very popular on LuaRocks](https://luarocks.org/search?q=luasocket), many packages depend on it. ComEXE's default setup lets you fetch resources from HTTP/HTTPS. LuaSocket also has a great [online documentation](https://lunarmodules.github.io/luasocket/index.html). Note that SSL support is now limited to HTTP, it may not work for FTP or SMTP.
 
 ```lua title="test-fetch-http.lua"
 local http = require("socket.http")
+local URI  = "https://github.com/pascalcombier/comexe/blob/main/README.md"
 
-local BodyString, StatusCode, ResponseHeaders, StatusLine = http.request("https://github.com/pascalcombier/comexe/blob/main/README.md")
+local BodyString, StatusCode, ResponseHeaders, StatusLine = http.request(URI)
 
 print("Body Length", #BodyString)
 print("HttpCode", StatusCode)
@@ -32,8 +33,6 @@ HttpCode         200
 Response Headers 0
 StatusLine       HTTP/1.1 200 OK
 ```
-
-LuaSocket also has [online documentation](https://lunarmodules.github.io/luasocket/index.html). Note that SSL support is now limited to HTTP. It may not work for FTP or SMTP.
 
 ## JSON
 
