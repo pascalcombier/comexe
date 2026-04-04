@@ -184,7 +184,7 @@ local GetModuleHandle = kernel32:GetFunction("pointer", "GetModuleHandleA", "str
 -- Get all required functions from gdi32
 local CreateFont = gdi32:GetFunction("pointer", "CreateFontA", 
   "sint32", "sint32", "sint32", "sint32", "sint32", "uint32", "uint32", "uint32", 
-  "uint32", "uint32", "uint32", "uint32", "string")
+  "uint32", "uint32", "uint32", "uint32", "uint32", "string")
 local SelectObject = gdi32:GetFunction("pointer", "SelectObject", "pointer", "pointer")
 local DeleteObject = gdi32:GetFunction("sint32", "DeleteObject", "pointer")
 local SetBkMode = gdi32:GetFunction("sint32", "SetBkMode", "pointer", "sint32")
