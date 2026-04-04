@@ -163,41 +163,60 @@ end
 -- The Path will be relative to the requested Directory
 local function RUNTIME_ListFiles (Directory, Callback)
   -- Call file system
-  local StatResult, ErrorMessage = fs_stat(Directory)
-  -- Error handling
-  assert(StatResult, format("ERROR: Cannot access directory '%s': %q", Directory, ErrorMessage))
-  assert(StatResult.type == "directory", format("ERROR: '%s' is not a directory", Directory))
+  local StatResult, StatErrorString = fs_stat(Directory)
+  local ErrorString
   -- Local recursive function
   local function FindRecursive (CurrentDir)
-    local Request, ErrorMessage2 = fs_scandir(CurrentDir)
-    assert(Request, format("ERROR: Cannot scan directory '%s': %s", CurrentDir, ErrorMessage2))
+    local ScanResult, ScanErrorString = fs_scandir(CurrentDir)
     -- Iterate
-    local Filename, Filetype = fs_scandir_next(Request)
-    while Filename do
-      local FullPath = format([[%s%s%s]], CurrentDir, NATIVE_DIR_SEP, Filename)
-      Callback(FullPath, Filetype)
-      if (Filetype == "directory") then
-        FindRecursive(FullPath)
+    if ScanResult then
+      local Filename, Filetype = fs_scandir_next(ScanResult)
+      while Filename do
+        local FullPath = format([[%s%s%s]], CurrentDir, NATIVE_DIR_SEP, Filename)
+        Callback(FullPath, Filetype)
+        if (Filetype == "directory") then
+          FindRecursive(FullPath)
+        end
+        Filename, Filetype = fs_scandir_next(ScanResult)
       end
-      Filename, Filetype = fs_scandir_next(Request)
+    else
+      print(format("WARNING: Cannot scan directory '%s': %s", CurrentDir, ScanErrorString))
     end
   end
   -- Start the recursive search
-  FindRecursive(Directory)
+  if StatResult then
+    if (StatResult.type == "directory") then
+      FindRecursive(Directory)
+    else
+      ErrorString = format("'%s' is not a directory", Directory)
+    end
+  else
+    ErrorString = format("Cannot access directory '%s': %q", Directory, StatErrorString)
+  end
+  -- Evaluate success and return value
+  local Success = (ErrorString == nil)
+  return Success, ErrorString
 end
 
 -- Non-recursive: list files inside a directory
 local function RUNTIME_ListDirectory (Directory, Callback)
   -- Call file system
-  local ScanResult, ErrorString = fs_scandir(Directory)
+  local ScanResult, ScanErrorString = fs_scandir(Directory)
+  local Success
   -- Error handling
-  assert(ScanResult, format("ERROR: Cannot scan directory '%s': %s", Directory, ErrorString))
-  -- Iterate
-  local Filename, Filetype = fs_scandir_next(ScanResult)
-  while Filename do
-    Callback(Filename, Filetype)
-    Filename, Filetype = fs_scandir_next(ScanResult)
+  if ScanResult then
+    -- Iterate
+    local Filename, Filetype = fs_scandir_next(ScanResult)
+    while Filename do
+      Callback(Filename, Filetype)
+      Filename, Filetype = fs_scandir_next(ScanResult)
+    end
+    Success = true
+  else
+    Success = false
   end
+  -- Return value
+  return Success, ScanErrorString
 end
 
 --------------------------------------------------------------------------------
