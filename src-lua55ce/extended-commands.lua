@@ -280,7 +280,7 @@ local function HandleListTargets (Filename)
   -- Local data
   local TargetPrefix = [[comexe/usr/bin/comexe-targets/]]
   -- Local callback
-  local function PrintEntryName(EntryName)
+  local function PrintEntryName (EntryName)
     if hasprefix(EntryName, TargetPrefix) then
       -- Create a temporary pathname object for convenience
       local Pathname = newpathname(EntryName)
@@ -421,7 +421,7 @@ local function MAKE_FilterSources (SourceList)
         FirstLuaModuleName = Basename
         -- Use Lua file parent directory as source
         Path:parent()
-        local ParentDirectory = Path:convert("native")
+        local ParentDirectory = tostring(Path)
         append(NewSourceList, ParentDirectory)
       elseif hassuffix(Source, ".zip") then
         append(NewSourceList, Source)

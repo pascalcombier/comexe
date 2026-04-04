@@ -656,13 +656,13 @@ local function PATH_MethodDepth (Pathname)
   return #Pathname
 end
 
-local function PATH_MethodToString (Pathname)
-  local Result = Pathname:convert("native")
+local function PATH_MethodToNative (Pathname)
+  local Result = PATH_MethodConvert(Pathname, "native")
   return Result
 end
 
 local function PATH_MethodToInternal (Pathname)
-  local Result = Pathname:convert("internal")
+  local Result = PATH_MethodConvert(Pathname, "internal")
   return Result
 end
 
@@ -691,11 +691,10 @@ end
 
 local PATH_MetatableImpl = {
   -- Generic methods
-  __tostring = PATH_MethodToString,
+  __tostring = PATH_MethodToNative,
   __concat   = PATH_MethodConcat,
   -- Specific methods
   __index = {
-    convert      = PATH_MethodConvert,
     parent       = PATH_MethodParent,
     child        = PATH_MethodChild,
     setname      = PATH_MethodSetName,
@@ -706,6 +705,7 @@ local PATH_MetatableImpl = {
     isabsolute   = PATH_MethodIsAbsolute,
     isrelative   = PATH_MethodIsRelative,
     depth        = PATH_MethodDepth,
+    tonative     = PATH_MethodToNative,
     tointernal   = PATH_MethodToInternal
   }
 }

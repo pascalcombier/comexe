@@ -95,7 +95,7 @@ local function RUNTIME_MakeDirectory (Directory)
   local ErrorString
   -- Collect non-existing directories in a stack
   while Collecting do
-    local NativePath = Current:convert("native")
+    local NativePath = tostring(Current)
     local StatResult = fs_stat(NativePath)
     if StatResult then
       -- Fails if by lack of luck we have a file with the same name
@@ -115,7 +115,7 @@ local function RUNTIME_MakeDirectory (Directory)
   -- Create missing directories step by step
   while Success and (#PathStack > 0) do
     local PathToCreate = remove(PathStack)
-    local NativePath   = PathToCreate:convert("native")
+    local NativePath   = tostring(PathToCreate)
     -- Create directory
     local MkdirSuccess, MkdirErrorString = fs_mkdir(NativePath, RUNTIME_DIR_DEFAULT_MODE)
     if MkdirSuccess then

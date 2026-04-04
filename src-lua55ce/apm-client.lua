@@ -333,8 +333,11 @@ end
 
 local function APM_VerboseWriteFile (Filename, EntryContent)
   -- Ensure directory exists
-  local Pathname        = newpathname(Filename)
-  local ParentDirectory = Pathname:parent():convert()
+  local Pathname = newpathname(Filename)
+  -- Move to parent (side-effect)
+  Pathname:parent()
+  -- Convert to native pathname string
+  local ParentDirectory = tostring(Pathname)
   APM_VerboseEnsureDirectory(ParentDirectory)
   -- Write the file
   io.write(format("WRITING %s...", Filename))
@@ -667,13 +670,11 @@ local function APM_ExtractPackageFiles (ZipFilename)
       local EntryPathname = newpathname(EntryName)
       EntryPathname:remove(1) -- Remove package-name
       EntryPathname:remove(1) -- Remove version
-      -- Merge the 2 pathnames
-      local TargetPathname = newpathname(APM_INSTALL_DIRECTORY)
-      local FilePathname   = (TargetPathname .. EntryPathname)
       -- Extract ZIP entry and write file
       local EntryContent = ReadFunction()
       if EntryContent then
-        local Filename = FilePathname:convert("native")
+        local FilePathname = newpathname(APM_INSTALL_DIRECTORY, EntryPathname)
+        local Filename     = tostring(FilePathname)
         APM_VerboseWriteFile(Filename, EntryContent)
         append(InstalledFiles, Filename)
       end

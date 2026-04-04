@@ -339,7 +339,7 @@ local function ZIPM_MergerAddSource (Merger, SourcePath, SourceType)
   assert((SourceType == "dir") or (SourceType == "zip"), "SourceType must be 'dir', 'zip'")
   -- Convert pathname to native
   local SourcePathname = newpathname(SourcePath)
-  local NativePathname = SourcePathname:convert("native")
+  local NativePathname = tostring(SourcePathname)
   -- Store the source
   local NewSource = {
     type = SourceType,
@@ -426,7 +426,7 @@ local function ZIPM_ImportDirectory (Merger, Writer, SourceId, SourcePath, Entri
       -- Remove source root components to build the ZIP entry
       FilePathname:remove(1, SourceRootDepth)
       -- Convert
-      local ZipEntryName = FilePathname:convert("internal")
+      local ZipEntryName = FilePathname:tointernal()
       -- Check the action for this entry
       local Action = ZIP_GetActionForEntry(Merger, SourceId, ZipEntryName)
       if (Action == "COPY") then

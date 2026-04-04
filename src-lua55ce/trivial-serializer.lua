@@ -139,8 +139,11 @@ local function TS_EnsureDirectoryExists (Filename)
   local Success
   local ErrorString
   -- Ensure directory exists
-  local Pathname        = newpathname(Filename)
-  local ParentDirectory = Pathname:parent():convert()
+  local Pathname = newpathname(Filename)
+  -- Move to parent (side-effect)
+  Pathname:parent()
+  -- Convert to native pathname string
+  local ParentDirectory = tostring(Pathname)
   -- Check the directory
   if directoryexists(ParentDirectory) then
     Success = true
