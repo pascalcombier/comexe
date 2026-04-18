@@ -20,6 +20,8 @@ local tcc_add_symbol      = LibTcc.tcc_add_symbol
 local tcc_compile_string  = LibTcc.tcc_compile_string
 local tcc_run             = LibTcc.tcc_run
 local tcc_delete          = LibTcc.tcc_delete
+local sint32              = LibFfi.sint32
+local NULL                = LibFfi.NULL
 
 --------------------------------------------------------------------------------
 -- MAIN TEST FUNCTION                                                         --
@@ -45,12 +47,12 @@ local function LuaAdd (a, b)
   return a + b
 end
 
-local LuaAddCif = LibFfi.newcif("sint32", "sint32", "sint32")
+local LuaAddCif = LibFfi.newcif({ sint32, sint32, sint32 })
 assert(LuaAddCif)
 
 local LuaClosure, LuaAddPointer = LibFfi.newclosure(LuaAddCif, LuaAdd)
-assert(LuaClosure    ~= LibFfi.NULL)
-assert(LuaAddPointer ~= LibFfi.NULL)
+assert(LuaClosure    ~= NULL)
+assert(LuaAddPointer ~= NULL)
 
 --------------------------------------------------------------------------------
 -- MAIN SCRIPT                                                                --

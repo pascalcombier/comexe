@@ -127,12 +127,19 @@ end
 -- Working Win32 window example in Lua using libffi                           --
 --------------------------------------------------------------------------------
 
-local LibFFI  = require("com/ffi")
+local LibFFI = require("com.ffi")
 
-local NULL   = LibFFI.NULL
 local format = string.format
-local pack   = string.pack
-local unpack = string.unpack
+
+local NULL    = LibFFI.NULL
+local void    = LibFFI.void
+local uint16  = LibFFI.uint16
+local uint32  = LibFFI.uint32
+local sint32  = LibFFI.sint32
+local uint64  = LibFFI.uint64
+local sint64  = LibFFI.sint64
+local pointer = LibFFI.pointer
+local cstring = LibFFI.pointer
 
 -- Retrieve DLLs
 local libc     = LibFFI.loadlib("msvcrt.dll")
@@ -148,49 +155,49 @@ assert(gdi32)
 assert(shlwapi)
 
 -- Get all required functions from libc
-local malloc = libc:GetFunction("pointer", "malloc", "uint64")
-local free   = libc:GetFunction("void", "free", "pointer")
-local memset = libc:GetFunction("pointer", "memset", "pointer", "sint32", "uint64")
+local malloc = libc:getfunction(pointer, "malloc", uint64)
+local free   = libc:getfunction(void, "free", pointer)
+local memset = libc:getfunction(pointer, "memset", pointer, sint32, uint64)
 
 -- Get all required functions from user32
-local RegisterClassEx = user32:GetFunction("uint16", "RegisterClassExA", "pointer")
-local PostQuitMessage = user32:GetFunction("void", "PostQuitMessage", "sint32")
-local BeginPaint      = user32:GetFunction("pointer", "BeginPaint", "pointer", "pointer")
-local GetClientRect   = user32:GetFunction("sint32", "GetClientRect", "pointer", "pointer")
-local DrawText        = user32:GetFunction("sint32", "DrawTextW", "pointer", "pointer", "sint32", "pointer", "uint32")
-local EndPaint        = user32:GetFunction("sint32", "EndPaint", "pointer", "pointer")
-local DefWindowProc   = user32:GetFunction("sint64", "DefWindowProcA", "pointer", "uint32", "uint64", "sint64")
-local CreateWindowEx  = user32:GetFunction("pointer", "CreateWindowExA", 
-  "uint32", "string", "string", "uint32",
-  "sint32", "sint32", "sint32", "sint32",
-  "pointer", "pointer", "pointer", "pointer")
-local GetMessage      = user32:GetFunction("sint32", "GetMessageA", "pointer", "pointer", "uint32", "uint32")
-local ShowWindow      = user32:GetFunction("sint32", "ShowWindow", "pointer", "sint32")
-local UpdateWindow    = user32:GetFunction("sint32", "UpdateWindow", "pointer")
-local PeekMessage     = user32:GetFunction("sint32", "PeekMessageA", "pointer", "pointer", "uint32", "uint32", "uint32")
-local TranslateMessage = user32:GetFunction("sint32", "TranslateMessage", "pointer")
-local DispatchMessage = user32:GetFunction("sint64", "DispatchMessageA", "pointer")
-local LoadIcon        = user32:GetFunction("pointer", "LoadIconA", "pointer", "pointer")
-local LoadCursor      = user32:GetFunction("pointer", "LoadCursorA", "pointer", "pointer")
-local InvalidateRect  = user32:GetFunction("sint32", "InvalidateRect", "pointer", "pointer", "sint32")
-local FillRect        = user32:GetFunction("sint32", "FillRect", "pointer", "pointer", "pointer")
-local GetStockObject  = gdi32:GetFunction("pointer", "GetStockObject", "sint32")
-local SetTimer        = user32:GetFunction("uint64", "SetTimer", "pointer", "uint64", "uint32", "pointer")
-local KillTimer       = user32:GetFunction("sint32", "KillTimer", "pointer", "uint64")
+local RegisterClassEx = user32:getfunction(uint16, "RegisterClassExA", pointer)
+local PostQuitMessage = user32:getfunction(void, "PostQuitMessage", sint32)
+local BeginPaint      = user32:getfunction(pointer, "BeginPaint", pointer, pointer)
+local GetClientRect   = user32:getfunction(sint32, "GetClientRect", pointer, pointer)
+local DrawText        = user32:getfunction(sint32, "DrawTextW", pointer, pointer, sint32, pointer, uint32)
+local EndPaint        = user32:getfunction(sint32, "EndPaint", pointer, pointer)
+local DefWindowProc   = user32:getfunction(sint64, "DefWindowProcA", pointer, uint32, uint64, sint64)
+local CreateWindowEx  = user32:getfunction(pointer, "CreateWindowExA", 
+  uint32, cstring, cstring, uint32,
+  sint32, sint32, sint32, sint32,
+  pointer, pointer, pointer, pointer)
+local GetMessage      = user32:getfunction(sint32, "GetMessageA", pointer, pointer, uint32, uint32)
+local ShowWindow      = user32:getfunction(sint32, "ShowWindow", pointer, sint32)
+local UpdateWindow    = user32:getfunction(sint32, "UpdateWindow", pointer)
+local PeekMessage     = user32:getfunction(sint32, "PeekMessageA", pointer, pointer, uint32, uint32, uint32)
+local TranslateMessage = user32:getfunction(sint32, "TranslateMessage", pointer)
+local DispatchMessage = user32:getfunction(sint64, "DispatchMessageA", pointer)
+local LoadIcon        = user32:getfunction(pointer, "LoadIconA", pointer, pointer)
+local LoadCursor      = user32:getfunction(pointer, "LoadCursorA", pointer, pointer)
+local InvalidateRect  = user32:getfunction(sint32, "InvalidateRect", pointer, pointer, sint32)
+local FillRect        = user32:getfunction(sint32, "FillRect", pointer, pointer, pointer)
+local GetStockObject  = gdi32:getfunction(pointer, "GetStockObject", sint32)
+local SetTimer        = user32:getfunction(uint64, "SetTimer", pointer, uint64, uint32, pointer)
+local KillTimer       = user32:getfunction(sint32, "KillTimer", pointer, uint64)
 
 -- Get all required functions from kernel32
-local GetModuleHandle = kernel32:GetFunction("pointer", "GetModuleHandleA", "string")
+local GetModuleHandle = kernel32:getfunction(pointer, "GetModuleHandleA", cstring)
 
 -- Get all required functions from gdi32
-local CreateFont = gdi32:GetFunction("pointer", "CreateFontA", 
-  "sint32", "sint32", "sint32", "sint32", "sint32", "uint32", "uint32", "uint32", 
-  "uint32", "uint32", "uint32", "uint32", "uint32", "string")
-local SelectObject = gdi32:GetFunction("pointer", "SelectObject", "pointer", "pointer")
-local DeleteObject = gdi32:GetFunction("sint32", "DeleteObject", "pointer")
-local SetBkMode = gdi32:GetFunction("sint32", "SetBkMode", "pointer", "sint32")
+local CreateFont = gdi32:getfunction(pointer, "CreateFontA", 
+  sint32, sint32, sint32, sint32, sint32, uint32, uint32, uint32, 
+  uint32, uint32, uint32, uint32, uint32, cstring)
+local SelectObject = gdi32:getfunction(pointer, "SelectObject", pointer, pointer)
+local DeleteObject = gdi32:getfunction(sint32, "DeleteObject", pointer)
+local SetBkMode = gdi32:getfunction(sint32, "SetBkMode", pointer, sint32)
 
 -- shlwapi
-local StrDupAFunction = shlwapi:GetFunction("pointer", "StrDupA", "string")
+local StrDupAFunction = shlwapi:getfunction(pointer, "StrDupA", cstring)
 
 -- Assert all functions are available
 assert(malloc)
@@ -568,42 +575,88 @@ local DEFAULT_PITCH = 0
 local FF_SWISS = 32
 local ANTIALIASED_QUALITY = 4
 
--- Structure sizes
-local PAINTSTRUCT_SIZE = 72 -- Size of PAINTSTRUCT on 64-bit Windows
-local RECT_SIZE        = 16 -- Size of RECT structure
-local WNDCLASS_SIZE    = 80 -- Size of WNDCLASSEX structure
-local MESSAGE_SIZE     = 48 -- Size of MSG structure on 64-bit systems
+-- Structure definitions
+local WndClassExType, WndClassExError = LibFFI.newstructtype(
+  "WndClassEx",
+  "cbSize", uint32,
+  "style", uint32,
+  "lpfnWndProc", pointer,
+  "cbClsExtra", sint32,
+  "cbWndExtra", sint32,
+  "hInstance", pointer,
+  "hIcon", pointer,
+  "hCursor", pointer,
+  "hbrBackground", pointer,
+  "lpszMenuName", pointer,
+  "lpszClassName", pointer,
+  "hIconSm", pointer
+)
+assert(WndClassExType, WndClassExError)
+
+local RectType, RectTypeError = LibFFI.newstructtype(
+  "Rect",
+  "Left", sint32,
+  "Top", sint32,
+  "Right", sint32,
+  "Bottom", sint32
+)
+assert(RectType, RectTypeError)
+
+local MessageType, MessageTypeError = LibFFI.newstructtype(
+  "Message",
+  "Hwnd", pointer,
+  "Message", uint32,
+  "WParam", uint64,
+  "LParam", sint64,
+  "Time", uint32,
+  "PtX", sint32,
+  "PtY", sint32,
+  "LPrivate", uint32
+)
+assert(MessageType, MessageTypeError)
+
+local PaintStructType, PaintStructTypeError = LibFFI.newstructtype(
+  "PaintStruct",
+  "DeviceContext", pointer,
+  "Erase", sint32,
+  "Pad0", uint32,
+  "RcLeft", sint32,
+  "RcTop", sint32,
+  "RcRight", sint32,
+  "RcBottom", sint32,
+  "Restore", sint32,
+  "IncUpdate", sint32,
+  "ReservedA", uint64,
+  "ReservedB", uint64,
+  "ReservedC", uint64,
+  "ReservedD", uint64
+)
+assert(PaintStructType, PaintStructTypeError)
+
+local WndClassInfoOk, WndClassSize = WndClassExType:getstructinfo()
+local RectInfoOk, RectSize = RectType:getstructinfo()
+local MessageInfoOk, MessageSize = MessageType:getstructinfo()
+local PaintInfoOk, PaintStructSize = PaintStructType:getstructinfo()
+assert(WndClassInfoOk)
+assert(RectInfoOk)
+assert(MessageInfoOk)
+assert(PaintInfoOk)
+assert((WndClassSize == 80))
+assert((RectSize == 16))
+assert((MessageSize == 48))
+assert((PaintStructSize == 72))
 
 -- Others
 local EXIT_SUCCESS = 0
 
 --------------------------------------------------------------------------------
--- PRIVATE FUNCTIONS                                                          --
---------------------------------------------------------------------------------
-
-local function SafeAlloc (Size, InitialData)
-  local Pointer = malloc(Size)
-  if (Pointer == NULL) then
-    print(debug.traceback())
-    error("malloc returned NULL")
-  else
-    memset(Pointer, 0, Size)
-    if (InitialData) then
-      LibFFI.writepointer(Pointer, 0, InitialData)
-    end
-  end
-  -- return value
-  return Pointer
-end
-
---------------------------------------------------------------------------------
 -- GLOBALS                                                                    --
 --------------------------------------------------------------------------------
 
-local GlobalPaintStruct = SafeAlloc(PAINTSTRUCT_SIZE)
-local GlobalRectangle   = SafeAlloc(RECT_SIZE)
-local WndClassPtr       = SafeAlloc(WNDCLASS_SIZE)
-local MessagePtr        = SafeAlloc(MESSAGE_SIZE)
+local GlobalPaintStruct = PaintStructType:newinstance()
+local GlobalRectangle   = RectType:newinstance()
+local WndClassElement   = WndClassExType:newinstance()
+local MessageElement    = MessageType:newinstance()
 
 -- Active Win32 timer id (created later with SetTimer)
 local GlobalTimerId = 0 -- 0 is invalid timer ID
@@ -614,7 +667,12 @@ local MAX_TIMER_COUNT = 6
 
 -- Class name allocation
 local ClassName    = "MAIN_WindowClass\0"
-local ClassNamePtr = SafeAlloc(#ClassName, ClassName)
+local ClassNamePtr = malloc(#ClassName)
+assert((ClassNamePtr ~= NULL), "malloc failed for class name")
+memset(ClassNamePtr, 0, #ClassName)
+
+-- TODO: find a better way to write the string
+LibFFI.writememory(ClassNamePtr, 0, ClassName)
 
 local IconResourceId   = LibFFI.newpointer(0, IDI_APPLICATION)
 local CursorResourceId = LibFFI.newpointer(0, IDC_ARROW)
@@ -661,7 +719,8 @@ local GlobalFont = CreateFont(
 -- This UTF-16 string include an ending 0 character
 local GLOBAL_Text        = Utf8ToUtf16("Hello, World! 你好世界！")
 local GLOBAL_TextPointer = malloc(#GLOBAL_Text)
-LibFFI.writepointer(GLOBAL_TextPointer, 0, GLOBAL_Text)
+LibFFI.writememory(GLOBAL_TextPointer, 0, GLOBAL_Text)
+
 -- Release initial Lua memory
 GLOBAL_Text = nil
 
@@ -749,9 +808,9 @@ local function WindowProcedure (Window, Message, WParam, LParam)
     local DeviceContext = WParam
     if BACKGROUND_BRUSH then
       -- Get client rectangle first
-      local GetClientRectResult = GetClientRect(Window, GlobalRectangle)
+      local GetClientRectResult = GetClientRect(Window, GlobalRectangle:pointer())
       if (GetClientRectResult ~= 0) then
-        FillRect(DeviceContext, GlobalRectangle, BACKGROUND_BRUSH)
+        FillRect(DeviceContext, GlobalRectangle:pointer(), BACKGROUND_BRUSH)
       end
     end
     return 1
@@ -774,19 +833,19 @@ local function WindowProcedure (Window, Message, WParam, LParam)
     InvalidateRect(Window, 0, 1)
     return 0
   elseif (Message == WM_PAINT) then
-    local DeviceContext = BeginPaint(Window, GlobalPaintStruct)
+    local DeviceContext = BeginPaint(Window, GlobalPaintStruct:pointer())
     if (DeviceContext == NULL) then
       print("ERROR: BeginPaint failed")
       return DefWindowProc(Window, Message, WParam, LParam)
     end
-    local GetClientRectResult = GetClientRect(Window, GlobalRectangle)
+    local GetClientRectResult = GetClientRect(Window, GlobalRectangle:pointer())
     if (GetClientRectResult == 0) then
       print("ERROR: GetClientRect failed")
-      EndPaint(Window, GlobalPaintStruct)
+      EndPaint(Window, GlobalPaintStruct:pointer())
       return DefWindowProc(Window, Message, WParam, LParam)
     end
     -- Fill background with white
-    FillRect(DeviceContext, GlobalRectangle, BACKGROUND_BRUSH)
+    FillRect(DeviceContext, GlobalRectangle:pointer(), BACKGROUND_BRUSH)
     -- Select the font into the device context
     local OldFont = SelectObject(DeviceContext, GlobalFont)
     -- Set transparent background mode
@@ -796,69 +855,38 @@ local function WindowProcedure (Window, Message, WParam, LParam)
       DeviceContext,
       GLOBAL_TextPointer,
       -1, -- -1 means null-terminated string
-      GlobalRectangle,
+      GlobalRectangle:pointer(),
       (DT_SINGLELINE | DT_CENTER | DT_VCENTER)
     )
     -- Restore the old font
     SelectObject(DeviceContext, OldFont)
-    EndPaint(Window, GlobalPaintStruct)
+    EndPaint(Window, GlobalPaintStruct:pointer())
     return 0
   end
   -- Default behaviour
   return DefWindowProc(Window, Message, WParam, LParam)
 end
 
-local function WriteStructField (Pointer, Offset, Value, Format)
-  if (Value == nil) then
-    print("ERROR: WriteStructField with nil value")
-    print(debug.traceback())
-    os.exit(1)
-  -- Handle pointer values
-  elseif (type(Value) == "userdata") then
-    -- For pointer values, we need to handle them differently now
-    -- We'll need to get the actual pointer value and write it directly
-    local PointerValue = LibFFI.convertpointer(Value, "string")
-    LibFFI.writepointer(Pointer, Offset, PointerValue)
-  else
-    assert(Format, "Format parameter required for non-pointer values")
-    local BinaryString = pack(Format, Value)
-    assert(BinaryString, format("Failed to pack Value at Offset %d", Offset))
-    LibFFI.writepointer(Pointer, Offset, BinaryString)
-  end
-end
-
 local function CreateWindow ()
   -- Create window procedure closure
-  local WindowProcClosure, WindowProcPtr = LibFFI.newcfunction(WindowProcedure, "sint64", "pointer", "uint32", "uint64", "sint64")
+  local WindowProcClosure, WindowProcPtr = LibFFI.newcfunction(WindowProcedure, sint64, pointer, uint32, uint64, sint64)
   assert(WindowProcPtr)  
-  -- Write WNDCLASSPTR structure
-  -- cbSize (4 bytes)
-  WriteStructField(WndClassPtr, 0, WNDCLASS_SIZE, "<I4")
-  -- style (4 bytes) - Add CS_HREDRAW and CS_VREDRAW
-  WriteStructField(WndClassPtr, 4, CS_HREDRAW | CS_VREDRAW | CS_OWNDC, "<I4")
-  -- lpfnWndProc (8 bytes pointer)
-  WriteStructField(WndClassPtr, 8, WindowProcPtr)
-  -- cbClsExtra (4 bytes)
-  WriteStructField(WndClassPtr, 16, 0, "<I4")
-  -- cbWndExtra (4 bytes)
-  WriteStructField(WndClassPtr, 20, 0, "<I4")
-  -- hInstance (8 bytes pointer)
-  WriteStructField(WndClassPtr, 24, HInstance)  
-  -- hIcon (8 bytes pointer)
-  WriteStructField(WndClassPtr, 32, HIcon)
-  -- hCursor (8 bytes pointer)
-  WriteStructField(WndClassPtr, 40, HCursor)
-  -- hbrBackground (8 bytes pointer)
-  WriteStructField(WndClassPtr, 48, COLOR_WINDOW + 1, "i8")
-  -- lpszMenuName (8 bytes pointer) - NULL pointer
-  WriteStructField(WndClassPtr, 56, NULL)
-  -- lpszClassName (8 bytes pointer)
-  WriteStructField(WndClassPtr, 64, ClassNamePtr)
-  -- hIconSm (8 bytes pointer)
-  WriteStructField(WndClassPtr, 72, HIcon)
+  -- Write WNDCLASSEX structure
+  WndClassElement:setfield("cbSize", WndClassSize)
+  WndClassElement:setfield("style", (CS_HREDRAW | CS_VREDRAW | CS_OWNDC))
+  WndClassElement:setfield("lpfnWndProc", WindowProcPtr)
+  WndClassElement:setfield("cbClsExtra", 0)
+  WndClassElement:setfield("cbWndExtra", 0)
+  WndClassElement:setfield("hInstance", HInstance)
+  WndClassElement:setfield("hIcon", HIcon)
+  WndClassElement:setfield("hCursor", HCursor)
+  WndClassElement:setfield("hbrBackground", (COLOR_WINDOW + 1))
+  WndClassElement:setfield("lpszMenuName", NULL)
+  WndClassElement:setfield("lpszClassName", ClassNamePtr)
+  WndClassElement:setfield("hIconSm", HIcon)
 
   -- Register the window class
-  local ClassAtom = RegisterClassEx(WndClassPtr)
+  local ClassAtom = RegisterClassEx(WndClassElement:pointer())
   assert((ClassAtom ~= 0), "RegisterClassEx failed")
   
   -- Create the window
@@ -879,11 +907,10 @@ local function CreateWindow ()
   GlobalTimerId = SetTimer(Window, TIMER_ID, 1000, nil)
   assert((GlobalTimerId ~= 0), "SetTimer failed")
 
-  local ReadToLua = LibFFI.readpointer
   -- Message loop
   local Continue = true
   while Continue do
-    local Result = GetMessage(MessagePtr, nil, 0, 0) -- GetMessage is blocking
+    local Result = GetMessage(MessageElement:pointer(), nil, 0, 0) -- GetMessage is blocking
     if (Result == 0) then -- WM_QUIT received
       print("WM_QUIT received, exiting message loop")
       Continue = false
@@ -892,32 +919,29 @@ local function CreateWindow ()
       Continue = false
     else
       -- Get message type
-      local MessageData = ReadToLua(MessagePtr, 0, MESSAGE_SIZE)
-      local MessageType = unpack("I4", MessageData, 9) -- Offset 8 + 1 for Lua indexing
-      print(format("LOOP received 0x%04X %s", MessageType, Win32Messages[MessageType] or "Unknown"))
-      TranslateMessage(MessagePtr)
-      DispatchMessage(MessagePtr)
+      local ReceivedMessageType = MessageElement:getfield("Message")
+      print(format("LOOP received 0x%04X %s", ReceivedMessageType, Win32Messages[ReceivedMessageType] or "Unknown"))
+      TranslateMessage(MessageElement:pointer())
+      DispatchMessage(MessageElement:pointer())
     end
   end
   
   -- Return the wParam from the WM_QUIT message
-  local MessageData = ReadToLua(MessagePtr, 0, MESSAGE_SIZE)
-  local WParam      = unpack("I8", MessageData, 17)  -- Offset 16 + 1 for Lua indexing
-  return WParam
+  return MessageElement:getfield("WParam")
 end
 
 -- Clean up global structures at the end of the program
 local function CleanupGlobalStructures ()
-  free(GlobalPaintStruct)
-  free(GlobalRectangle)
-  free(WndClassPtr)
+  GlobalPaintStruct:free()
+  GlobalRectangle:free()
+  WndClassElement:free()
+  MessageElement:free()
   DeleteObject(GlobalFont)
   -- Ensure timer is killed if still active
   if (GlobalTimerId and GlobalTimerId ~= 0) then
     KillTimer(nil, GlobalTimerId)
     GlobalTimerId = 0
   end
-  free(MessagePtr)
   free(ClassNamePtr)
 end
 

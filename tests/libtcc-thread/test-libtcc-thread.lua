@@ -28,6 +28,8 @@ local tcc_add_symbol      = LibTcc.tcc_add_symbol
 local tcc_compile_string  = LibTcc.tcc_compile_string
 local tcc_run             = LibTcc.tcc_run
 local tcc_delete          = LibTcc.tcc_delete
+local void                = LibFfi.void
+local sint32              = LibFfi.sint32
 
 --------------------------------------------------------------------------------
 -- LOCAL FUNCTIONS                                                            --
@@ -68,9 +70,9 @@ function StartProgram ()
   local TccState = tcc_new()
   tcc_set_output_type(TccState, "memory")
   -- Make Lua functions callable by libtcc using new API
-  local SleepMsCif       = LibFfi.newcif("void", "sint32")
-  local ProcessEventsCif = LibFfi.newcif("void")
-  local NeedExitCif      = LibFfi.newcif("sint32")
+  local SleepMsCif       = LibFfi.newcif({ void, sint32 })
+  local ProcessEventsCif = LibFfi.newcif({ void })
+  local NeedExitCif      = LibFfi.newcif({ sint32 })
   local SleepMsClosure,       SleepMsPointer       = LibFfi.newclosure(SleepMsCif, SleepMs)
   local ProcessEventsClosure, ProcessEventsPointer = LibFfi.newclosure(ProcessEventsCif, EventLoopRunOnce)
   local NeedExitClosure,      NeedExitPointer      = LibFfi.newclosure(NeedExitCif,      NeedExit)

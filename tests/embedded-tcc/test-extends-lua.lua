@@ -16,6 +16,7 @@ local tcc_run             = LibTcc.tcc_run
 local tcc_delete          = LibTcc.tcc_delete
 local tcc_get_luastate    = LibTcc.tcc_get_luastate
 local NULL                = LibFfi.NULL
+local pointer             = LibFfi.pointer
 
 --------------------------------------------------------------------------------
 -- PRIVATE FUNCTIONS                                                          --
@@ -40,7 +41,7 @@ local function GetLuaState ()
   return tcc_get_luastate()
 end
 
-local GetLuaStateCif = LibFfi.newcif("pointer")
+local GetLuaStateCif = LibFfi.newcif({ pointer })
 assert(GetLuaStateCif)
 
 local GetLuaStateClosure, GetLuaStatePointer = LibFfi.newclosure(GetLuaStateCif, GetLuaState)

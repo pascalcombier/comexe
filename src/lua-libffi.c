@@ -3,17 +3,15 @@
  * FILENAME lua-libffi.c                                                      *
  * CONTENT  Raw bindings to call functions with libffi and callbacks          *
  *----------------------------------------------------------------------------*
- * Copyright (c) 2020-2025 Pascal COMBIER                                     *
+ * Copyright (c) 2020-2026 Pascal COMBIER                                     *
  * This source code is licensed under the BSD 2-clause license found in the   *
  * LICENSE file in the root directory of this source tree.                    *
  *----------------------------------------------------------------------------*/
 
 /* This library implements libffi raw bindings: stick to the concepts exposed by
  * libffi and propose a light interface to them. With that, it's easier to
- * develop better ffi APIs on the Lua side.
- * 
- * Limitations: currently only default ABI is supported
- * Not supported: FFI_STDCALL / FFI_FASTCALL / FFI_MS_CDECL
+ * develop better ffi APIs on the Lua side. This C code don't check the validity
+ * of the inputs. This is responsability of the Lua side to do it (ffi.lua)
  *
  * LUA CALLING C FUNCTIONS
  * =======================
@@ -52,6 +50,16 @@
  *                         Closure->ReturnType,
  *                         Closure->ArgTypes);
  *
+ *
+ * LIMITATIONS
+ * ===========
+ *
+ * X86-64 Windows and Linux
+ * Not supported: 32-bits FFI_STDCALL / FFI_FASTCALL / FFI_MS_CDECL
+ * Not supported: ffi_type_longdouble
+ * Not supported: variadics calls not supported
+ * Not supported: closures with struct-by-value not supported
+ * Not supported: COMPLEX not supported?
  */
 
 /*============================================================================*/
@@ -121,6 +129,22 @@ struct FFI_Closure
   ffi_closure    *Closure;
 };
 
+struct FFI_StructType
+{
+  ffi_type Type; /* Contains Type->elements */
+  size_t   FieldCount;
+};
+
+static struct PB_Allocator FFI_BufferAllocator =
+{
+  PLAT_GetPageSizeInBytes,
+  PLAT_SafeAlloc0,
+  PLAT_Free,
+  PLAT_SafeRealloc
+};
+
+static const char FFI_BUFFER_KEY;
+
 /*============================================================================*/
 /* HELPER FUNCTIONS                                                           */
 /*============================================================================*/
@@ -130,79 +154,207 @@ static bool STRING_Equals (const char *StringLeft, const char *StringRight)
   return (strcmp(StringLeft, StringRight) == 0);
 }
 
-static ffi_type *FFI_GetType (const char *TypeString)
+/* Lazy: allocate the buffer when needed by FFI_GetStructOffsets */
+static struct PB_Buffer *FFI_GetOffsetsBuffer (lua_State *LuaState)
 {
-  ffi_type *FfiType;
+  size_t InitialSizeInBytes = (64 * sizeof(size_t)); /* 64 structure fields */
+  struct PB_Buffer *Buffer;
 
-  if      (STRING_Equals(TypeString, "void"))    FfiType = &ffi_type_void;
-  else if (STRING_Equals(TypeString, "uint8"))   FfiType = &ffi_type_uint8;
-  else if (STRING_Equals(TypeString, "sint8"))   FfiType = &ffi_type_sint8;
-  else if (STRING_Equals(TypeString, "uint16"))  FfiType = &ffi_type_uint16;
-  else if (STRING_Equals(TypeString, "sint16"))  FfiType = &ffi_type_sint16;
-  else if (STRING_Equals(TypeString, "uint32"))  FfiType = &ffi_type_uint32;
-  else if (STRING_Equals(TypeString, "sint32"))  FfiType = &ffi_type_sint32;
-  else if (STRING_Equals(TypeString, "uint64"))  FfiType = &ffi_type_uint64;
-  else if (STRING_Equals(TypeString, "sint64"))  FfiType = &ffi_type_sint64;
-  else if (STRING_Equals(TypeString, "float"))   FfiType = &ffi_type_float;
-  else if (STRING_Equals(TypeString, "double"))  FfiType = &ffi_type_double;
-  else if (STRING_Equals(TypeString, "pointer")) FfiType = &ffi_type_pointer;
-  else if (STRING_Equals(TypeString, "string"))  FfiType = &ffi_type_pointer;
-  else FfiType = NULL;
+  lua_rawgetp(LuaState, LUA_REGISTRYINDEX, &FFI_BUFFER_KEY);
+  Buffer = lua_touserdata(LuaState, -1);
+  lua_pop(LuaState, 1);
 
-  return FfiType;
+  if (Buffer == NULL)
+  {
+    Buffer = PB_NewBuffer(&FFI_BufferAllocator, InitialSizeInBytes);
+
+    lua_pushlightuserdata(LuaState, Buffer);
+    lua_rawsetp(LuaState, LUA_REGISTRYINDEX, &FFI_BUFFER_KEY);
+  }
+
+  return Buffer;
+}
+
+/* Return an array of offsets (type: size_t)*/
+static size_t *FFI_GetOffsetBufferData (lua_State *LuaState,
+                                        size_t     FieldCount)
+{
+  size_t  NeededSizeInBytes = (FieldCount * sizeof(size_t));
+  struct  PB_Buffer *Buffer;
+  size_t *OffsetArray;
+
+  /* Resize buffer if needed */
+  Buffer = FFI_GetOffsetsBuffer(LuaState);
+  Buffer = PB_EnsureCapacity(Buffer, NeededSizeInBytes);
+
+  /* Buffer address might changed, need to update Lua registry */
+  lua_pushlightuserdata(LuaState, Buffer);
+  lua_rawsetp(LuaState, LUA_REGISTRYINDEX, &FFI_BUFFER_KEY);
+
+  /* Return the data */
+  OffsetArray = PB_GetData(Buffer);
+
+  return OffsetArray;
+}
+
+static int FFI_FreeOffsetsBuffer (lua_State *LuaState)
+{
+  struct PB_Buffer *Buffer;
+
+  /* Check buffer */
+  lua_rawgetp(LuaState, LUA_REGISTRYINDEX, &FFI_BUFFER_KEY);
+  Buffer = lua_touserdata(LuaState, -1);
+  lua_pop(LuaState, 1);
+
+  /* Free memory if buffer exist */
+  if (Buffer)
+  {
+    lua_pushnil(LuaState);
+    lua_rawsetp(LuaState, LUA_REGISTRYINDEX, &FFI_BUFFER_KEY);
+    PB_FreeBuffer(Buffer);
+  }
+
+  return 0; /* Number of return values */
+}
+
+static bool FFI_CifContainsStructure (struct FFI_Cif *Cif)
+{
+  bool   Contains = (Cif->ReturnType && (Cif->ReturnType->type == FFI_TYPE_STRUCT));
+  size_t Offset   = 0;
+
+  while (!Contains && (Offset < Cif->ArgCount))
+  {
+    if (Cif->ArgTypes[Offset] && (Cif->ArgTypes[Offset]->type == FFI_TYPE_STRUCT))
+    {
+      Contains = true;
+    }
+    else
+    {
+      Offset++;
+    }
+  }
+
+  return Contains;
 }
 
 static void FFI_PushValue (lua_State *LuaState, ffi_type *Type, void *Value)
 {
-  if      (Type == &ffi_type_void)    lua_pushnil(LuaState);
-  else if (Type == &ffi_type_uint8)   lua_pushinteger(LuaState, *(uint8_t *)Value);
-  else if (Type == &ffi_type_sint8)   lua_pushinteger(LuaState, *(int8_t *)Value);
-  else if (Type == &ffi_type_uint16)  lua_pushinteger(LuaState, *(uint16_t *)Value);
-  else if (Type == &ffi_type_sint16)  lua_pushinteger(LuaState, *(int16_t *)Value);
-  else if (Type == &ffi_type_uint32)  lua_pushinteger(LuaState, *(uint32_t *)Value);
-  else if (Type == &ffi_type_sint32)  lua_pushinteger(LuaState, *(int32_t *)Value);
-  else if (Type == &ffi_type_uint64)  lua_pushinteger(LuaState, *(uint64_t *)Value);
-  else if (Type == &ffi_type_sint64)  lua_pushinteger(LuaState, *(int64_t *)Value);
-  else if (Type == &ffi_type_float)   lua_pushnumber(LuaState, *(float *)Value);
-  else if (Type == &ffi_type_double)  lua_pushnumber(LuaState, *(double *)Value);
-  else if (Type == &ffi_type_pointer) lua_pushlightuserdata(LuaState, *(void **)Value);
+  switch (Type->type)
+  {
+    case FFI_TYPE_VOID:
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_UINT8:
+      lua_pushinteger(LuaState, *(uint8_t *)Value);
+      break;
+    case FFI_TYPE_SINT8:
+      lua_pushinteger(LuaState, *(int8_t *)Value);
+      break;
+    case FFI_TYPE_UINT16:
+      lua_pushinteger(LuaState, *(uint16_t *)Value);
+      break;
+    case FFI_TYPE_SINT16:
+      lua_pushinteger(LuaState, *(int16_t *)Value);
+      break;
+    case FFI_TYPE_UINT32:
+      lua_pushinteger(LuaState, *(uint32_t *)Value);
+      break;
+    case FFI_TYPE_SINT32:
+      lua_pushinteger(LuaState, *(int32_t *)Value);
+      break;
+    case FFI_TYPE_UINT64:
+      lua_pushinteger(LuaState, *(uint64_t *)Value);
+      break;
+    case FFI_TYPE_SINT64:
+      lua_pushinteger(LuaState, *(int64_t *)Value);
+      break;
+    case FFI_TYPE_FLOAT:
+      lua_pushnumber(LuaState, *(float *)Value);
+      break;
+    case FFI_TYPE_DOUBLE:
+      lua_pushnumber(LuaState, *(double *)Value);
+      break;
+    case FFI_TYPE_POINTER:
+      lua_pushlightuserdata(LuaState, *(void **)Value);
+      break;
+    case FFI_TYPE_STRUCT:
+      lua_pushlightuserdata(LuaState, Value);
+      break;
+    default:
+      lua_pushnil(LuaState);
+      break;
+  }
 }
 
 static void FFI_CopyLuaValueToCif (lua_State *LuaState,
-                          int        Index,
-                          ffi_type  *Type,
-                          void      *Value)
+                                   int        Index,
+                                   ffi_type  *Type,
+                                   void      *Value)
 {
-  if (Type == &ffi_type_void) {
-    /* Do nothing */
-  } else if (Type == &ffi_type_uint8) {
-    *(uint8_t*)Value = (uint8_t)luaL_checkinteger(LuaState, Index);
-  } else if (Type == &ffi_type_sint8) {
-    *(int8_t*)Value = (int8_t)luaL_checkinteger(LuaState, Index);
-  } else if (Type == &ffi_type_uint16) {
-    *(uint16_t*)Value = (uint16_t)luaL_checkinteger(LuaState, Index);
-  } else if (Type == &ffi_type_sint16) {
-    *(int16_t*)Value = (int16_t)luaL_checkinteger(LuaState, Index);
-  } else if (Type == &ffi_type_uint32) {
-    *(uint32_t*)Value = (uint32_t)luaL_checkinteger(LuaState, Index);
-  } else if (Type == &ffi_type_sint32) {
-    *(int32_t*)Value = (int32_t)luaL_checkinteger(LuaState, Index);
-  } else if (Type == &ffi_type_uint64) {
-    *(uint64_t*)Value = (uint64_t)luaL_checkinteger(LuaState, Index);
-  } else if (Type == &ffi_type_sint64) {
-    *(int64_t*)Value = (int64_t)luaL_checkinteger(LuaState, Index);
-  } else if (Type == &ffi_type_float) {
-    *(float*)Value = (float)luaL_checknumber(LuaState, Index);
-  } else if (Type == &ffi_type_double) {
-    *(double*)Value = (double)luaL_checknumber(LuaState, Index);
-  } else if (Type == &ffi_type_pointer) {
-    if (lua_isstring(LuaState, Index)) {
-      *(const char**)Value = lua_tostring(LuaState, Index);
-    } else if (lua_isnil(LuaState, Index)) {
-      *(void**)Value = NULL;
-    } else {
-      *(void**)Value = lua_touserdata(LuaState, Index);
-    }
+  void *StructPointer;
+
+  switch (Type->type)
+  {
+    case FFI_TYPE_VOID:
+      break;
+    case FFI_TYPE_UINT8:
+      *(uint8_t *)Value = (uint8_t)luaL_checkinteger(LuaState, Index);
+      break;
+    case FFI_TYPE_SINT8:
+      *(int8_t *)Value = (int8_t)luaL_checkinteger(LuaState, Index);
+      break;
+    case FFI_TYPE_UINT16:
+      *(uint16_t *)Value = (uint16_t)luaL_checkinteger(LuaState, Index);
+      break;
+    case FFI_TYPE_SINT16:
+      *(int16_t *)Value = (int16_t)luaL_checkinteger(LuaState, Index);
+      break;
+    case FFI_TYPE_UINT32:
+      *(uint32_t *)Value = (uint32_t)luaL_checkinteger(LuaState, Index);
+      break;
+    case FFI_TYPE_SINT32:
+      *(int32_t *)Value = (int32_t)luaL_checkinteger(LuaState, Index);
+      break;
+    case FFI_TYPE_UINT64:
+      *(uint64_t *)Value = (uint64_t)luaL_checkinteger(LuaState, Index);
+      break;
+    case FFI_TYPE_SINT64:
+      *(int64_t *)Value = (int64_t)luaL_checkinteger(LuaState, Index);
+      break;
+    case FFI_TYPE_FLOAT:
+      *(float *)Value = (float)luaL_checknumber(LuaState, Index);
+      break;
+    case FFI_TYPE_DOUBLE:
+      *(double *)Value = (double)luaL_checknumber(LuaState, Index);
+      break;
+    case FFI_TYPE_POINTER:
+      if (lua_isnil(LuaState, Index))
+      {
+        *(void **)Value = NULL;
+      }
+      else if (lua_isstring(LuaState, Index))
+      {
+        *(const char **)Value = lua_tostring(LuaState, Index);
+      }
+      else
+      {
+        *(void **)Value = lua_touserdata(LuaState, Index);
+      }
+      break;
+    case FFI_TYPE_STRUCT:
+      StructPointer = lua_touserdata(LuaState, Index);
+      if (StructPointer == NULL)
+      {
+        memset(Value, 0, Type->size);
+      }
+      else
+      {
+        memcpy(Value, StructPointer, Type->size);
+      }
+      break;
+    default:
+      luaL_error(LuaState, "Unsupported ffi type: %zu", Type->type);
+      break;
   }
 }
 
@@ -259,110 +411,176 @@ static int FFI_FreeLibrary (lua_State *LuaState)
 }
 
 /*============================================================================*/
-/* LIBFFI RAW INTERFACE                                                       */
+/* STRUCT-BY-VALUE SUPPORT                                                    */
 /*============================================================================*/
 
-static int FFI_NewCif (lua_State *LuaState)
+/* Note: inputs must be validated by caller:
+*  At least 1 field
+*  All fields must be valid ffi_type pointers
+*
+* Create a new FFI Type for StructureByValue calls (NOT related to structure
+* packing, does not support custom padding/layout: just support standard calls
+* with structure in order to call functions with StructureByValue in parameter)
+*
+* This is not common. Usually code use StructureByReference (pointers) in most
+* APIs.
+*/
+static int FFI_NewStructureType (lua_State *LuaState)
 {
-  const char     *ReturnTypeString = luaL_checkstring(LuaState, 1);
-  size_t          ArgCount         = (lua_gettop(LuaState) - 1);
-  ffi_type       *ReturnType       = FFI_GetType(ReturnTypeString);
-  struct FFI_Cif *Cif              = NULL;
-  ffi_type       *ArgType;
-  size_t          Offset;
-  const char     *TypeString;
-  ffi_status      Status;
-  bool            Success;
-  char            ErrorMessage[64];
+  struct FFI_StructType *NewStructType;
+  ffi_type             **Elements;
+  ffi_type              *FieldType;
+  size_t                 FieldCount;
+  size_t                 Offset;
+  int                    LuaIndex;
 
-  /* Validate that all arguments are strings */
-  for (Offset = 0; (Offset < ArgCount); Offset++)
+  FieldCount = lua_gettop(LuaState);
+  Elements   = PLAT_SafeAlloc0((FieldCount + 1), sizeof(ffi_type *));
+
+  for (Offset = 0; (Offset < FieldCount); Offset++)
   {
-    luaL_checkstring(LuaState, (Offset + 2));
+    LuaIndex  = (Offset + 1);
+    FieldType = lua_touserdata(LuaState, LuaIndex);
+
+    /* Assume FieldType is valid */
+    Elements[Offset] = FieldType;
   }
 
-  if (ReturnType)
+  /* Sentinel, required by libffi at the end of the list */
+  Elements[FieldCount] = NULL;
+
+  NewStructType = PLAT_SafeAlloc0(1, sizeof(struct FFI_StructType));
+
+  NewStructType->Type.size      = 0; /* Calculated by ffi_get_struct_offsets */
+  NewStructType->Type.alignment = 0; /* Calculated by ffi_get_struct_offsets */
+  NewStructType->Type.type      = FFI_TYPE_STRUCT;
+  NewStructType->Type.elements  = Elements;
+  NewStructType->FieldCount     = FieldCount;
+
+  lua_pushlightuserdata(LuaState, NewStructType);
+
+  return 1; /* Number of values returned on the stack */
+}
+
+/* Note: inputs must be validated by caller */
+static int FFI_GetStructOffsets (lua_State *LuaState)
+{
+  struct FFI_StructType *StructType = lua_touserdata(LuaState, 1);
+  size_t                 FieldCount = StructType->FieldCount;
+  size_t                *Offsets    = FFI_GetOffsetBufferData(LuaState, FieldCount);
+  size_t                 Offset;
+  size_t                 LuaIndex;
+  ffi_status             Status;
+
+  Status = ffi_get_struct_offsets(FFI_DEFAULT_ABI, &StructType->Type, Offsets);
+
+  lua_pushinteger(LuaState, Status);
+
+  if (Status == FFI_OK)
   {
-    Cif = PLAT_SafeAlloc0(1, sizeof(struct FFI_Cif));
-    
-    Cif->ReturnType = ReturnType;
-    Cif->ArgCount   = ArgCount;
-
-    /* Format list of Cif->ArgTypes if needed */
-    if (ArgCount == 0)
+    lua_createtable(LuaState, FieldCount, 0);
+    for (Offset = 0; (Offset < FieldCount); Offset++)
     {
-      Cif->ArgTypes = NULL;
-      Success       = true;
-    }
-    else
-    {
-      Cif->ArgTypes = PLAT_SafeAlloc0(ArgCount, sizeof(ffi_type *));
-      Offset        = 0;
-      Success       = true;
-
-      while (Success && (Offset < ArgCount))
-      {
-        TypeString = lua_tostring(LuaState, (Offset + 2));
-        ArgType    = FFI_GetType(TypeString);
-
-        if (ArgType)
-        {
-          Cif->ArgTypes[Offset] = ArgType;
-          Offset++;
-        }
-        else
-        {
-          Success = false;
-          snprintf(ErrorMessage,
-                   sizeof(ErrorMessage),
-                   "Unsupported FFI type: [%s] (parameter %zu)",
-                   TypeString,
-                   Offset);
-        }
-      }
+      LuaIndex = (Offset + 1);
+      lua_pushinteger(LuaState, Offsets[Offset]);
+      lua_rawseti(LuaState, -2, LuaIndex);
     }
   }
   else
   {
-    Success = false;
-    snprintf(ErrorMessage,
-             sizeof(ErrorMessage),
-             "Unsupported FFI type: [%s] (return value)",
-             ReturnTypeString);
+    lua_pushnil(LuaState);
   }
 
-  if (Success)
+  return 2; /* Number of values returned on the stack */
+}
+
+/* Note: inputs must be validated by caller */
+static int FFI_GetStructInfo (lua_State *LuaState)
+{
+  ffi_type *StructType = lua_touserdata(LuaState, 1);
+
+  lua_pushinteger(LuaState, StructType->size);
+  lua_pushinteger(LuaState, StructType->alignment);
+
+  return 2; /* Number of values returned on the stack */
+}
+
+/*============================================================================*/
+/* LIBFFI RAW INTERFACE                                                       */
+/*============================================================================*/
+
+/* Note: inputs must be validated by caller */
+/* Usage: FFI_NewCif(SignatureTable) */
+static int FFI_NewCif (lua_State *LuaState)
+{
+  struct FFI_Cif *Cif      = PLAT_SafeAlloc0(1, sizeof(struct FFI_Cif));
+  size_t          Count    = lua_rawlen(LuaState, 1);
+  size_t          ArgCount = (Count - 1);
+  ffi_type       *ReturnType;
+  ffi_type       *ArgType;
+  size_t          Offset;
+  ffi_status      Status;
+  size_t          LuaIndex;
+
+  /* Return type */
+  lua_rawgeti(LuaState, 1, 1);
+  ReturnType = lua_touserdata(LuaState, -1);
+  lua_pop(LuaState, 1);
+
+  /* Assume ReturnType is correct: ReturnType not NULL */
+  Cif->ReturnType = ReturnType;
+  Cif->ArgCount   = ArgCount;
+
+  /* Format list of Cif->ArgTypes if needed */
+  if (ArgCount == 0)
   {
-    Status = ffi_prep_cif(&Cif->cif,
-                          FFI_DEFAULT_ABI,
-                          ArgCount,
-                          Cif->ReturnType,
-                          Cif->ArgTypes);
-
-    Success = (Status == FFI_OK);
+    Cif->ArgTypes = NULL;
   }
+  else
+  {
+    Cif->ArgTypes = PLAT_SafeAlloc0(ArgCount, sizeof(ffi_type *));
+    Offset        = 0;
+
+    while (Offset < ArgCount)
+    {
+      LuaIndex = (Offset + 2);
+      
+      /* Extract argument type from table */
+      lua_rawgeti(LuaState, 1, LuaIndex);
+      ArgType = lua_touserdata(LuaState, -1);
+      lua_pop(LuaState, 1);
+
+      /* Assume ArgType is correct */
+      Cif->ArgTypes[Offset] = ArgType;
+      Offset++;
+    }
+  }
+
+  Status = ffi_prep_cif(&Cif->cif,
+                        FFI_DEFAULT_ABI,
+                        ArgCount,
+                        Cif->ReturnType,
+                        Cif->ArgTypes);
   
   /* Return value */
-  if (Success)
+  if (Status == FFI_OK)
   {
     lua_pushlightuserdata(LuaState, Cif);
-    lua_pushnil(LuaState);
   }
   else
   {
     /* Cleanup resources */
-    if (Cif)
+    if (Cif->ArgTypes)
     {
-      if (Cif->ArgTypes)
-      {
-        PLAT_Free(Cif->ArgTypes);
-      }
-      PLAT_Free(Cif);
+      PLAT_Free(Cif->ArgTypes);
     }
+    PLAT_Free(Cif);
+
     lua_pushnil(LuaState);
-    lua_pushstring(LuaState, ErrorMessage);
   }
-  
+
+  lua_pushinteger(LuaState, Status);
+
   return 2; /* Number of values returned on the stack */
 }
 
@@ -399,9 +617,21 @@ static int FFI_NewCallContext (lua_State *LuaState)
   }
 
   lua_pushlightuserdata(LuaState, NewContext);
-  lua_pushnil(LuaState);
   
-  return 2; /* Number of values returned on the stack */
+  return 1; /* Number of values returned on the stack */
+}
+
+/* This function is for CallStructByValue. It simply returns a pointer to the
+ * return value of the CIF (created with FFI_NewCallContext). It allows the Lua
+ * side to avoid the need for copying the value back and forth between C and
+ * Lua. */
+static int FFI_GetCifReturnPointer (lua_State *LuaState)
+{
+  struct FFI_CallContext *Context = lua_touserdata(LuaState, 1);
+
+  lua_pushlightuserdata(LuaState, Context->ReturnValue);
+
+  return 1; /* Number of values returned on the stack */
 }
 
 static int FFI_CallFunction (lua_State *LuaState)
@@ -411,29 +641,28 @@ static int FFI_CallFunction (lua_State *LuaState)
   struct FFI_Cif          *Cif             = CallContext->Cif;
   ffi_type                *ReturnType      = Cif->ReturnType;
   ffi_type               **ArgTypes        = Cif->ArgTypes;
-  size_t                   ArgCount        = (lua_gettop(LuaState) - 2);
   size_t                   Offset;
+  size_t                   LuaIndex;
   size_t                   ArgSize;
   size_t                   ReturnValueSize;
 
-  if (ArgCount < Cif->ArgCount)
-  {
-    return luaL_error(LuaState,
-                      "FFI_CallFunction: expected %d arguments, got %d",
-                      Cif->ArgCount,
-                      ArgCount);
-  }
+  /* Retrieve table size */
+  luaL_checktype(LuaState, 3, LUA_TTABLE);
 
   /* Clear return value */
   ReturnValueSize = FFI_AT_LEAST(ReturnType->size, 8);
   memset(CallContext->ReturnValue, 0, ReturnValueSize);
 
+  /* Note that we use Cif->ArgCount and not table size */
   /* Copy arguments from Lua stack */
   for (Offset = 0; (Offset < Cif->ArgCount); Offset++)
   {
     ArgSize = FFI_AT_LEAST(ArgTypes[Offset]->size, 8);
     memset(CallContext->ArgValues[Offset], 0, ArgSize);
-    FFI_CopyLuaValueToCif(LuaState, (Offset + 3), ArgTypes[Offset], CallContext->ArgValues[Offset]);
+    LuaIndex = (Offset + 1);
+    lua_rawgeti(LuaState, 3, LuaIndex);
+    FFI_CopyLuaValueToCif(LuaState, -1, ArgTypes[Offset], CallContext->ArgValues[Offset]);
+    lua_pop(LuaState, 1);
   }
 
   /* Call */
@@ -548,6 +777,12 @@ static int FFI_NewClosure (lua_State *LuaState)
 
   /* Check parameters */
   luaL_checktype(LuaState, 2, LUA_TFUNCTION);
+
+  if (FFI_CifContainsStructure(Cif))
+  {
+    return luaL_error(LuaState,
+                      "Struct-by-value is not supported for closures yet");
+  }
   
   /* Allocate ffi closure */
   ExecutableAddress = NULL;
@@ -608,7 +843,8 @@ static int FFI_FreeClosure (lua_State *LuaState)
 /* MEMORY AND POINTERS                                                        */
 /*============================================================================*/
 
-static int FFI_ReadPointer (lua_State *LuaState)
+/* read memory blob into Lua binary string */
+static int FFI_ReadMemory (lua_State *LuaState)
 {
   char   *Address = lua_touserdata(LuaState, 1);
   size_t  Offset  = luaL_checkinteger(LuaState, 2);
@@ -619,7 +855,8 @@ static int FFI_ReadPointer (lua_State *LuaState)
   return 1; /* Number of values returned on the stack */
 }
 
-static int FFI_WritePointer (lua_State *LuaState)
+/* write memory blob from Lua binary string */
+static int FFI_WriteMemory (lua_State *LuaState)
 {
   char       *Address = lua_touserdata(LuaState, 1);
   size_t      Offset = luaL_checkinteger(LuaState, 2);
@@ -644,6 +881,32 @@ static int FFI_NewPointerFromLuaInts (lua_State *LuaState)
   lua_pushlightuserdata(LuaState, Pointer);
 
   return 1; /* Number of values returned on the stack */
+}
+
+/* read pointer value from memory and return it as lightuserdata */
+static int FFI_ReadPointer (lua_State *LuaState)
+{
+  char   *Address = lua_touserdata(LuaState, 1);
+  size_t  Offset  = luaL_checkinteger(LuaState, 2);
+  void   *Value   = NULL;
+
+  memcpy(&Value, &Address[Offset], sizeof(void *));
+  
+  lua_pushlightuserdata(LuaState, Value);
+
+  return 1; /* Number of values returned on the stack */
+}
+
+/* write pointer from lightuserdata */
+static int FFI_WritePointer (lua_State *LuaState)
+{
+  char   *Address = lua_touserdata(LuaState, 1);
+  size_t  Offset  = luaL_checkinteger(LuaState, 2);
+  void   *Value   = lua_touserdata(LuaState, 3);
+
+  memcpy(&Address[Offset], &Value, sizeof(void *));
+  
+  return 0; /* Number of values returned on the stack */
 }
 
 static int FFI_ConvertPointer (lua_State *LuaState)
@@ -783,8 +1046,13 @@ static const struct luaL_Reg FFI_FUNCTIONS[] =
   { "loadlib",              FFI_LoadLibrary           },
   { "getproc",              FFI_GetProcAddress        },
   { "freelib",              FFI_FreeLibrary           },
-  /* low-lever interface to libffi */
+  /* Struct-by-value support */
+  { "newstructtype",        FFI_NewStructureType      },
+  { "getstructinfo",        FFI_GetStructInfo         },
+  { "getstructoffsets",     FFI_GetStructOffsets      },
+  /* low-level interface to libffi */
   { "newcif",               FFI_NewCif                },
+  { "getcifreturnpointer",  FFI_GetCifReturnPointer   },
   { "newcallcontext",       FFI_NewCallContext        },
   { "call",                 FFI_CallFunction          },
   { "freecallcontext",      FFI_FreeCallContext       },
@@ -792,6 +1060,8 @@ static const struct luaL_Reg FFI_FUNCTIONS[] =
   { "newclosure",           FFI_NewClosure            },
   { "freeclosure",          FFI_FreeClosure           },
   /* Memory and pointers */
+  { "readmemory",           FFI_ReadMemory            },
+  { "writememory",          FFI_WriteMemory           },
   { "readpointer",          FFI_ReadPointer           },
   { "writepointer",         FFI_WritePointer          },
   { "newpointer",           FFI_NewPointerFromLuaInts },
@@ -805,6 +1075,8 @@ static const struct luaL_Reg FFI_FUNCTIONS[] =
   { "realloc",              FFI_Realloc               },
   { "free",                 FFI_Free                  },
   { "memset",               FFI_Memset                },
+  /* over-engineered shit */
+  { "freeresources",        FFI_FreeOffsetsBuffer     },
   /* End of list */
   { NULL, NULL }
 };
@@ -814,6 +1086,36 @@ LUALIB_API int luaopen_libffiraw (lua_State *LuaState)
   /* Register functions */
   luaL_newlib(LuaState, FFI_FUNCTIONS);
 
+  /* Expose type constants as lightuserdata */
+  lua_pushlightuserdata(LuaState, &ffi_type_void);
+  lua_setfield(LuaState, -2, "void");
+  lua_pushlightuserdata(LuaState, &ffi_type_uint8);
+  lua_setfield(LuaState, -2, "uint8");
+  lua_pushlightuserdata(LuaState, &ffi_type_sint8);
+  lua_setfield(LuaState, -2, "sint8");
+  lua_pushlightuserdata(LuaState, &ffi_type_uint16);
+  lua_setfield(LuaState, -2, "uint16");
+  lua_pushlightuserdata(LuaState, &ffi_type_sint16);
+  lua_setfield(LuaState, -2, "sint16");
+  lua_pushlightuserdata(LuaState, &ffi_type_uint32);
+  lua_setfield(LuaState, -2, "uint32");
+  lua_pushlightuserdata(LuaState, &ffi_type_sint32);
+  lua_setfield(LuaState, -2, "sint32");
+  lua_pushlightuserdata(LuaState, &ffi_type_uint64);
+  lua_setfield(LuaState, -2, "uint64");
+  lua_pushlightuserdata(LuaState, &ffi_type_sint64);
+  lua_setfield(LuaState, -2, "sint64");
+  lua_pushlightuserdata(LuaState, &ffi_type_float);
+  lua_setfield(LuaState, -2, "float");
+  lua_pushlightuserdata(LuaState, &ffi_type_double);
+  lua_setfield(LuaState, -2, "double");
+  lua_pushlightuserdata(LuaState, &ffi_type_pointer);
+  lua_setfield(LuaState, -2, "pointer");
+  lua_pushinteger(LuaState, FFI_TYPE_STRUCT);
+  lua_setfield(LuaState, -2, "struct");
+  lua_pushinteger(LuaState, FFI_OK);
+  lua_setfield(LuaState, -2, "FFI_OK");
+  
   /* Add NULL constant as lightuserdata */
   lua_pushlightuserdata(LuaState, NULL);
   lua_setfield(LuaState, -2, "NULL");

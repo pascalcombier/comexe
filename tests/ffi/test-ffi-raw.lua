@@ -4,6 +4,19 @@
 
 local libffi = require("com.raw.libffi")
 assert(libffi)
+assert(libffi.sint32)
+assert(libffi.pointer)
+assert(libffi.uint8)
+
+local void    = libffi.void
+local sint32  = libffi.sint32
+local double  = libffi.double
+local pointer = libffi.pointer
+local cstring = libffi.pointer
+
+local PutsCifConstant = libffi.newcif({ sint32, cstring })
+assert(PutsCifConstant)
+libffi.freecif(PutsCifConstant)
 
 local Libc = libffi.loadlib("msvcrt.dll")
 assert(Libc)
@@ -17,11 +30,11 @@ local NULL = libffi.NULL
 local PutsAddress = libffi.getproc(Libc, "puts")
 assert(PutsAddress)
 
-local PutsCif = libffi.newcif("sint32", "string")
+local PutsCif = libffi.newcif({ sint32, cstring })
 assert(PutsCif)
 local PutsCallContext = libffi.newcallcontext(PutsCif)
 assert(PutsCallContext)
-local PutsReturnValue = libffi.call(PutsCallContext, PutsAddress, "CALL-LIBC-PUTS")
+local PutsReturnValue = libffi.call(PutsCallContext, PutsAddress, { "CALL-LIBC-PUTS" })
 assert(not(PutsReturnValue < 0))
 libffi.freecallcontext(PutsCallContext)
 libffi.freecif(PutsCif)
@@ -33,7 +46,7 @@ libffi.freecif(PutsCif)
 local SprintfAddress = libffi.getproc(Libc, "sprintf")
 assert(SprintfAddress ~= NULL)
 
-local SprintfCif = libffi.newcif("sint32", "pointer", "string", "string", "sint32", "double")
+local SprintfCif = libffi.newcif({ sint32, cstring, cstring, cstring, sint32, double })
 assert(SprintfCif)
 local SprintfCallContext = libffi.newcallcontext(SprintfCif)
 assert(SprintfCallContext)
@@ -44,9 +57,9 @@ local FormatString = "%s %d %f"
 local StringArg    = "Hello"
 local IntArg       = 42
 local FloatArg     = 3.14
-local SprintfReturnValue = libffi.call(SprintfCallContext, SprintfAddress, Buffer, FormatString, StringArg, IntArg, FloatArg)
+local SprintfReturnValue = libffi.call(SprintfCallContext, SprintfAddress, { Buffer, FormatString, StringArg, IntArg, FloatArg })
 assert(SprintfReturnValue > 0)
-local ResultString = libffi.readpointer(Buffer, 0, SprintfReturnValue)
+local ResultString = libffi.readmemory(Buffer, 0, SprintfReturnValue)
 local ExpectedString = string.format(FormatString, StringArg, IntArg, FloatArg)
 assert(ResultString == ExpectedString)
 libffi.free(Buffer)
@@ -60,7 +73,7 @@ libffi.freecif(SprintfCif)
 local MemcpyAddress = libffi.getproc(Libc, "memcpy")
 assert(MemcpyAddress ~= NULL)
 
-local MemcpyCif = libffi.newcif("pointer", "pointer", "pointer", "sint32")
+local MemcpyCif = libffi.newcif({ pointer, pointer, pointer, sint32 })
 assert(MemcpyCif)
 
 local function LuaArrayToC(Array, UserIntegerSizeInBytes)
@@ -75,7 +88,7 @@ local function LuaArrayToC(Array, UserIntegerSizeInBytes)
     local Pointer = libffi.pointeroffset(ArrayPointer, Offset)
     local MemcpyCallContext = libffi.newcallcontext(MemcpyCif)
     assert(MemcpyCallContext)
-    libffi.call(MemcpyCallContext, MemcpyAddress, Pointer, String, IntegerSizeInBytes)
+    libffi.call(MemcpyCallContext, MemcpyAddress, { Pointer, String, IntegerSizeInBytes })
     libffi.freecallcontext(MemcpyCallContext)
   end
   return ArrayPointer, ArrayLength
@@ -88,7 +101,7 @@ local function CArrayToLua(Array, Length, UserIntegerSizeInBytes)
   local Result = {}
   for Index = 1, Length do
     local Offset = ((Index - 1) * IntegerSizeInBytes)
-    local Bytes = libffi.readpointer(Array, Offset, IntegerSizeInBytes)
+    local Bytes = libffi.readmemory(Array, Offset, IntegerSizeInBytes)
     local Value = string.unpack("i", Bytes)
     Result[Index] = Value
   end
@@ -102,12 +115,12 @@ end
 local QsortAddress = libffi.getproc(Libc, "qsort")
 assert(QsortAddress ~= NULL)
 
-local QsortCif = libffi.newcif("void", "pointer", "sint32", "sint32", "pointer")
+local QsortCif = libffi.newcif({ void, pointer, sint32, sint32, pointer })
 assert(QsortCif)
 
 local function LuaCompareFunction(PointerA, PointerB)
-  local PointerStringA = libffi.readpointer(PointerA, 0, 4)
-  local PointerStringB = libffi.readpointer(PointerB, 0, 4)
+  local PointerStringA = libffi.readmemory(PointerA, 0, 4)
+  local PointerStringB = libffi.readmemory(PointerB, 0, 4)
   local IntegerA = string.unpack("i", PointerStringA)
   local IntegerB = string.unpack("i", PointerStringB)
   return (IntegerA - IntegerB)
@@ -116,7 +129,7 @@ end
 local QsortCallContext = libffi.newcallcontext(QsortCif)
 assert(QsortCallContext)
 
-local CompareCif = libffi.newcif("sint32", "pointer", "pointer")
+local CompareCif = libffi.newcif({ sint32, pointer, pointer })
 assert(CompareCif)
 
 local CompareClosure, CompareAddress = libffi.newclosure(CompareCif, LuaCompareFunction)
@@ -126,7 +139,7 @@ assert(CompareAddress ~= NULL)
 local ArrayInput = { 5, 2, 9, 1, 7 }
 
 local ArrayC, ArrayLen = LuaArrayToC(ArrayInput)
-libffi.call(QsortCallContext, QsortAddress, ArrayC, ArrayLen, 4, CompareAddress)
+libffi.call(QsortCallContext, QsortAddress, { ArrayC, ArrayLen, 4, CompareAddress })
 libffi.freecallcontext(QsortCallContext)
 
 local ArrayOutput = CArrayToLua(ArrayC, ArrayLen)
@@ -167,7 +180,7 @@ assert(Kernel32)
 local GetModuleHandleAddress = libffi.getproc(Kernel32, "GetModuleHandleA")
 assert(GetModuleHandleAddress ~= NULL)
 
-local GetModuleHandleACif, ErrorMessage = libffi.newcif("pointer", "pointer")
+local GetModuleHandleACif, ErrorMessage = libffi.newcif({ pointer, pointer })
 assert(GetModuleHandleACif, ErrorMessage)
 local GetModuleHandleCallContext = libffi.newcallcontext(GetModuleHandleACif)
 assert(GetModuleHandleCallContext)
@@ -175,7 +188,7 @@ assert(GetModuleHandleCallContext)
 local SprintfAddress = libffi.getproc(Libc, "sprintf")
 assert(SprintfAddress ~= NULL)
 
-local SprintfCif = libffi.newcif("sint32", "pointer", "string", "pointer", "sint32")
+local SprintfCif = libffi.newcif({ sint32, pointer, cstring, pointer, sint32 })
 assert(SprintfCif)
 local SprintfCallContext = libffi.newcallcontext(SprintfCif)
 assert(SprintfCallContext)
@@ -184,10 +197,10 @@ local Buffer = libffi.malloc(1024)
 assert(Buffer ~= NULL)
 
 for Index = 1, 10000 do
-  local Handle = libffi.call(GetModuleHandleCallContext, GetModuleHandleAddress, NULL)
+  local Handle = libffi.call(GetModuleHandleCallContext, GetModuleHandleAddress, { NULL })
   assert(Handle ~= NULL)
   local SprintfFormat = "Module Handle: %p %d\n"
-  local SprintfReturn = libffi.call(SprintfCallContext, SprintfAddress, Buffer, SprintfFormat, Handle, Index)
+  local SprintfReturn = libffi.call(SprintfCallContext, SprintfAddress, { Buffer, SprintfFormat, Handle, Index })
   assert(SprintfReturn > 0)
 end
 
