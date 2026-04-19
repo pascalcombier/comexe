@@ -1047,7 +1047,7 @@ static const struct luaL_Reg FFI_FUNCTIONS[] =
   { "getproc",              FFI_GetProcAddress        },
   { "freelib",              FFI_FreeLibrary           },
   /* Struct-by-value support */
-  { "newstructtype",        FFI_NewStructureType      },
+  { "newstruct",            FFI_NewStructureType      },
   { "getstructinfo",        FFI_GetStructInfo         },
   { "getstructoffsets",     FFI_GetStructOffsets      },
   /* low-level interface to libffi */

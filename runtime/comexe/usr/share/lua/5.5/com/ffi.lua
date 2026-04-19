@@ -400,8 +400,8 @@ local PUBLIC_API = {
   pointeroffset  = LibFFI.pointeroffset,
   pointerdiff    = LibFFI.pointerdiff,
   -- structure by value
-  newstructtype    = NewNamedStructure,
-  newstructtype2   = NewAnonymousStructure,
+  newstruct      = NewNamedStructure,
+  newstruct2     = NewAnonymousStructure,
   -- mimalloc
   getpagesize = LibFFI.getpagesize,
   malloc      = LibFFI.malloc,

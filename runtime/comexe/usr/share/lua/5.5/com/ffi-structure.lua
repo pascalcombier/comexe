@@ -44,7 +44,7 @@ local pointeroffset    = RawFfi.pointeroffset
 local safemalloc       = RawFfi.malloc
 local free             = RawFfi.free
 local memset           = RawFfi.memset
-local newstructtype    = RawFfi.newstructtype
+local newstruct        = RawFfi.newstruct
 local getstructinfo    = RawFfi.getstructinfo
 local getstructoffsets = RawFfi.getstructoffsets
 local FFI_OK           = RawFfi.FFI_OK
@@ -265,7 +265,7 @@ local function NewStructure (StructureName, FieldNames, FieldTypes)
   local NewStructureType
   local ErrorString
   -- Validate inputs
-  assert((FieldCount > 0), "newstructtype requires at least one field")
+  assert((FieldCount > 0), "newstruct requires at least one field")
   -- Resolve types into FfiType
   for FieldIndex = 1, FieldCount do
     local FieldType    = FieldTypes[FieldIndex]
@@ -275,7 +275,7 @@ local function NewStructure (StructureName, FieldNames, FieldTypes)
     FieldFfiTypes[FieldIndex] = FfiFieldType
   end
   -- C API is taking elements on the Lua stack
-  local StructureFfiType = newstructtype(table.unpack(FieldFfiTypes))
+  local StructureFfiType = newstruct(table.unpack(FieldFfiTypes))
   -- Calculate offsets
   local ReturnCode, Offsets = getstructoffsets(StructureFfiType)
   if (ReturnCode == FFI_OK) then

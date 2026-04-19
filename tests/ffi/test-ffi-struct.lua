@@ -10,7 +10,7 @@ assert(libffi)
 assert(libtcc)
 assert(ffi)
 assert(libffi.sint32)
-assert(libffi.newstructtype)
+assert(libffi.newstruct)
 
 local sint32 = libffi.sint32
 local NULL   = libffi.NULL
@@ -19,8 +19,8 @@ local NULL   = libffi.NULL
 -- STRUCT BY VALUE [ARGUMENTS + RETURNS]                                      --
 --------------------------------------------------------------------------------
 
-local PairStruct, PairTypeError = ffi.newstructtype("Pair", "First",  sint32,
-                                                    "Second", sint32)
+local PairStruct, PairTypeError = ffi.newstruct("Pair", "First",  sint32,
+                                                "Second", sint32)
 assert(PairStruct, PairTypeError)
 assert(PairStruct.getsizeinbytes)
 assert(PairStruct.getalignment)
