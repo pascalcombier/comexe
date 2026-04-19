@@ -633,14 +633,14 @@ local PaintStructType, PaintStructTypeError = LibFFI.newstruct(
 )
 assert(PaintStructType, PaintStructTypeError)
 
-local WndClassInfoOk, WndClassSize = WndClassExType:getstructinfo()
-local RectInfoOk, RectSize = RectType:getstructinfo()
-local MessageInfoOk, MessageSize = MessageType:getstructinfo()
-local PaintInfoOk, PaintStructSize = PaintStructType:getstructinfo()
-assert(WndClassInfoOk)
-assert(RectInfoOk)
-assert(MessageInfoOk)
-assert(PaintInfoOk)
+local WndClassSize = WndClassExType:getsizeinbytes()
+local RectSize = RectType:getsizeinbytes()
+local MessageSize = MessageType:getsizeinbytes()
+local PaintStructSize = PaintStructType:getsizeinbytes()
+assert(WndClassSize)
+assert(RectSize)
+assert(MessageSize)
+assert(PaintStructSize)
 assert((WndClassSize == 80))
 assert((RectSize == 16))
 assert((MessageSize == 48))
@@ -674,11 +674,12 @@ memset(ClassNamePtr, 0, #ClassName)
 -- TODO: find a better way to write the string
 LibFFI.writememory(ClassNamePtr, 0, ClassName)
 
-local IconResourceId   = LibFFI.newpointer(0, IDI_APPLICATION)
-local CursorResourceId = LibFFI.newpointer(0, IDC_ARROW)
-local HIcon            = LoadIcon(NULL,   IconResourceId)
-local HCursor          = LoadCursor(NULL, CursorResourceId)
-local HInstance        = GetModuleHandle(nil)
+local IconResourceId     = LibFFI.newpointer(0, IDI_APPLICATION)
+local CursorResourceId   = LibFFI.newpointer(0, IDC_ARROW)
+local WindowColorBrushId = LibFFI.newpointer(0, (COLOR_WINDOW + 1))
+local HIcon              = LoadIcon(NULL,   IconResourceId)
+local HCursor            = LoadCursor(NULL, CursorResourceId)
+local HInstance          = GetModuleHandle(nil)
 
 assert(HIcon     ~= NULL)
 assert(HCursor   ~= NULL)
@@ -808,9 +809,9 @@ local function WindowProcedure (Window, Message, WParam, LParam)
     local DeviceContext = WParam
     if BACKGROUND_BRUSH then
       -- Get client rectangle first
-      local GetClientRectResult = GetClientRect(Window, GlobalRectangle:pointer())
+      local GetClientRectResult = GetClientRect(Window, GlobalRectangle:getpointer())
       if (GetClientRectResult ~= 0) then
-        FillRect(DeviceContext, GlobalRectangle:pointer(), BACKGROUND_BRUSH)
+        FillRect(DeviceContext, GlobalRectangle:getpointer(), BACKGROUND_BRUSH)
       end
     end
     return 1
@@ -829,23 +830,23 @@ local function WindowProcedure (Window, Message, WParam, LParam)
     return 0
   elseif (Message == WM_SIZE) then
     -- Invalidate the window to force a redraw when resized
-    -- Pass 0 as the rectangle pointer (NULL) and 1 as erase parameter
-    InvalidateRect(Window, 0, 1)
+    -- Pass NULL as rectangle pointer and 1 as erase parameter
+    InvalidateRect(Window, NULL, 1)
     return 0
   elseif (Message == WM_PAINT) then
-    local DeviceContext = BeginPaint(Window, GlobalPaintStruct:pointer())
+    local DeviceContext = BeginPaint(Window, GlobalPaintStruct:getpointer())
     if (DeviceContext == NULL) then
       print("ERROR: BeginPaint failed")
       return DefWindowProc(Window, Message, WParam, LParam)
     end
-    local GetClientRectResult = GetClientRect(Window, GlobalRectangle:pointer())
+    local GetClientRectResult = GetClientRect(Window, GlobalRectangle:getpointer())
     if (GetClientRectResult == 0) then
       print("ERROR: GetClientRect failed")
-      EndPaint(Window, GlobalPaintStruct:pointer())
+      EndPaint(Window, GlobalPaintStruct:getpointer())
       return DefWindowProc(Window, Message, WParam, LParam)
     end
     -- Fill background with white
-    FillRect(DeviceContext, GlobalRectangle:pointer(), BACKGROUND_BRUSH)
+    FillRect(DeviceContext, GlobalRectangle:getpointer(), BACKGROUND_BRUSH)
     -- Select the font into the device context
     local OldFont = SelectObject(DeviceContext, GlobalFont)
     -- Set transparent background mode
@@ -855,12 +856,12 @@ local function WindowProcedure (Window, Message, WParam, LParam)
       DeviceContext,
       GLOBAL_TextPointer,
       -1, -- -1 means null-terminated string
-      GlobalRectangle:pointer(),
+      GlobalRectangle:getpointer(),
       (DT_SINGLELINE | DT_CENTER | DT_VCENTER)
     )
     -- Restore the old font
     SelectObject(DeviceContext, OldFont)
-    EndPaint(Window, GlobalPaintStruct:pointer())
+    EndPaint(Window, GlobalPaintStruct:getpointer())
     return 0
   end
   -- Default behaviour
@@ -880,13 +881,13 @@ local function CreateWindow ()
   WndClassElement:setfield("hInstance", HInstance)
   WndClassElement:setfield("hIcon", HIcon)
   WndClassElement:setfield("hCursor", HCursor)
-  WndClassElement:setfield("hbrBackground", (COLOR_WINDOW + 1))
+  WndClassElement:setfield("hbrBackground", WindowColorBrushId)
   WndClassElement:setfield("lpszMenuName", NULL)
   WndClassElement:setfield("lpszClassName", ClassNamePtr)
   WndClassElement:setfield("hIconSm", HIcon)
 
   -- Register the window class
-  local ClassAtom = RegisterClassEx(WndClassElement:pointer())
+  local ClassAtom = RegisterClassEx(WndClassElement:getpointer())
   assert((ClassAtom ~= 0), "RegisterClassEx failed")
   
   -- Create the window
@@ -910,7 +911,7 @@ local function CreateWindow ()
   -- Message loop
   local Continue = true
   while Continue do
-    local Result = GetMessage(MessageElement:pointer(), nil, 0, 0) -- GetMessage is blocking
+    local Result = GetMessage(MessageElement:getpointer(), nil, 0, 0) -- GetMessage is blocking
     if (Result == 0) then -- WM_QUIT received
       print("WM_QUIT received, exiting message loop")
       Continue = false
@@ -921,8 +922,8 @@ local function CreateWindow ()
       -- Get message type
       local ReceivedMessageType = MessageElement:getfield("Message")
       print(format("LOOP received 0x%04X %s", ReceivedMessageType, Win32Messages[ReceivedMessageType] or "Unknown"))
-      TranslateMessage(MessageElement:pointer())
-      DispatchMessage(MessageElement:pointer())
+      TranslateMessage(MessageElement:getpointer())
+      DispatchMessage(MessageElement:getpointer())
     end
   end
   
@@ -932,10 +933,6 @@ end
 
 -- Clean up global structures at the end of the program
 local function CleanupGlobalStructures ()
-  GlobalPaintStruct:free()
-  GlobalRectangle:free()
-  WndClassElement:free()
-  MessageElement:free()
   DeleteObject(GlobalFont)
   -- Ensure timer is killed if still active
   if (GlobalTimerId and GlobalTimerId ~= 0) then
