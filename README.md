@@ -1,6 +1,6 @@
 # ComEXE
 
-ComEXE is a statically-linked, drop-in replacement for the [Lua standalone program](https://www.lua.org/manual/5.5/manual.html#7). It provides additional command flags to improve Lua tooling and is released under [a permissive license](./LICENSE).
+ComEXE is a statically-linked, drop-in replacement for the [Lua standalone program](https://www.lua.org/manual/5.5/manual.html#7). It provides additional command flags to improve Lua tooling and is released under [the permissive MIT license](./LICENSE).
 
 It is aimed at developers who want to use Lua as a general-purpose programming language.
 
