@@ -576,7 +576,7 @@ local FF_SWISS = 32
 local ANTIALIASED_QUALITY = 4
 
 -- Structure definitions
-local WndClassExType, WndClassExError = LibFFI.newstruct(
+local WndClassExType, WndClassExError = LibFFI.newstructure(
   "WndClassEx",
   "cbSize", uint32,
   "style", uint32,
@@ -593,7 +593,7 @@ local WndClassExType, WndClassExError = LibFFI.newstruct(
 )
 assert(WndClassExType, WndClassExError)
 
-local RectType, RectTypeError = LibFFI.newstruct(
+local RectType, RectTypeError = LibFFI.newstructure(
   "Rect",
   "Left", sint32,
   "Top", sint32,
@@ -602,7 +602,7 @@ local RectType, RectTypeError = LibFFI.newstruct(
 )
 assert(RectType, RectTypeError)
 
-local MessageType, MessageTypeError = LibFFI.newstruct(
+local MessageType, MessageTypeError = LibFFI.newstructure(
   "Message",
   "Hwnd", pointer,
   "Message", uint32,
@@ -615,7 +615,7 @@ local MessageType, MessageTypeError = LibFFI.newstruct(
 )
 assert(MessageType, MessageTypeError)
 
-local PaintStructType, PaintStructTypeError = LibFFI.newstruct(
+local PaintStructType, PaintStructTypeError = LibFFI.newstructure(
   "PaintStruct",
   "DeviceContext", pointer,
   "Erase", sint32,

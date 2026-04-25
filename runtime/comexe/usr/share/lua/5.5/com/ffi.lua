@@ -21,7 +21,6 @@
 -- Limitations
 -- * Does not support 32 bits (cdecl vs stdcall)
 -- * Does not support nested/recursive callbacks
--- * Does not support struct-by-value callbacks
 
 --------------------------------------------------------------------------------
 -- MODULE                                                                     --
@@ -33,6 +32,7 @@ local StructFFI = require("com.ffi-structure")
 local append = table.insert
 local format = string.format
 local concat = table.concat
+local unpack = table.unpack
 
 local fficall             = LibFFI.call
 local loadlib             = LibFFI.loadlib
@@ -58,6 +58,10 @@ local sint64  = LibFFI.sint64
 local float   = LibFFI.float
 local double  = LibFFI.double
 local pointer = LibFFI.pointer
+
+-- Those types might not be present at runtime
+local complex_float  = LibFFI.complex_float
+local complex_double = LibFFI.complex_double
 
 -- Note that it also map Lua objects created with NewStructType to their
 -- corresponding luaffi type (lightuserdata)
@@ -93,6 +97,17 @@ local FFI_TYPE_NAME = {
   [pointer] = "pointer",
 }
 
+-- Those types might not be present at runtime
+if complex_float then
+  FFI_TYPES[complex_float]     = complex_float
+  FFI_TYPE_NAME[complex_float] = "complex_float"
+end
+
+if complex_double then
+  FFI_TYPES[complex_double]     = complex_double
+  FFI_TYPE_NAME[complex_double] = "complex_double"
+end
+
 -- FfiType -> LuaStructureObject
 local FFI_STRUCT_TYPES = {
 }
@@ -100,15 +115,6 @@ local FFI_STRUCT_TYPES = {
 --------------------------------------------------------------------------------
 -- PRIVATE FUNCTIONS                                                          --
 --------------------------------------------------------------------------------
-
--- By design, the C layer does not validate inputs
-local function ValidateFfiType (Type)
-  local ValidFfiType = FFI_TYPES[Type]
-  -- Validate inputs
-  assert(ValidFfiType, format("Invalid FFI type: %s [%q]", tostring(Type), FFI_TYPE_NAME[Type]))
-  -- Return value
-  return ValidFfiType
-end
 
 local function RegisterStructure (NewStructure)
   local FfiType  = NewStructure:getffitype()
@@ -141,6 +147,19 @@ local function NewAnonymousStructure (...)
   return NewStructTypeObject, ErrorString
 end
 
+-- "..." is composed of ReturnType and ParameterTypes
+local function BuildSignature (...)
+  local ElementCount = select("#", ...)
+  local NewSignature = {}
+  for Index = 1, ElementCount do
+    local UserType = select(Index, ...)
+    local FfiType  = FFI_TYPES[UserType]
+    assert(FfiType, format("Invalid FFI type: %s [%q]", tostring(UserType), FFI_TYPE_NAME[UserType]))
+    append(NewSignature, FfiType)
+  end
+  return NewSignature
+end
+
 --------------------------------------------------------------------------------
 -- METATABLES                                                                 --
 --------------------------------------------------------------------------------
@@ -161,6 +180,7 @@ local function LIBRARY_GarbageCollectMethod (Library)
   Library.SymbolCache  = nil
   Library.CifCache     = nil
   Library.ContextCache = nil
+  Library.VariadicCache = nil
   -- Free the library
   freelib(Library.Handle)
 end
@@ -245,18 +265,13 @@ local function MakeCallableFunction (CallContext, FunctionPointer, Signature)
   return Function
 end
 
+-- Always create and return a new function
 local function LIBRARY_MethodGetFunction (Library, ReturnType, FunctionName, ...)
   -- Extract arguments
-  local ArgumentCount = select("#", ...)
-  local Signature     = { ValidateFfiType(ReturnType) }
-  for Index = 1, ArgumentCount do
-    local Argument = select(Index, ...)
-    local FfiType  = ValidateFfiType(Argument)
-    append(Signature, FfiType)
-  end
-  local CifCache = Library.CifCache
-  local CacheKey = MakeCacheKey(Signature)
-  local Cif      = CifCache[CacheKey]
+  local Signature = BuildSignature(ReturnType, ...)
+  local CifCache  = Library.CifCache
+  local CacheKey  = MakeCacheKey(Signature)
+  local Cif       = CifCache[CacheKey]
   -- Populate Cif cache if needed
   if (Cif == nil) then
     local NewCifValue = newcif(Signature)
@@ -290,12 +305,129 @@ local function LIBRARY_MethodGetFunction (Library, ReturnType, FunctionName, ...
   return Function
 end
 
+--------------------------------------------------------------------------------
+-- FAKE VARIADICS ADDON (CONVENIENCE)                                         --
+--------------------------------------------------------------------------------
+
+-- This variadic wrapper is convenient but slower than functions created by
+-- lib:getfunction.
+
+-- Guess a FfiType based on Lua value
+local function InferFfiType (Value)
+  local ValueType = type(Value)
+  local FfiType
+  local ConvertedValue
+  if (ValueType == "nil") then
+    FfiType        = pointer
+    ConvertedValue = nil
+  elseif (ValueType == "string") then
+    FfiType        = pointer
+    ConvertedValue = Value
+  elseif (ValueType == "boolean") then
+    FfiType        = sint32
+    ConvertedValue = (Value and 1 or 0)
+  elseif (ValueType == "number") then
+    FfiType        = double
+    ConvertedValue = Value
+  elseif (ValueType == "table") then
+    local Metatable = getmetatable(Value)
+    assert(Metatable,            "Only objects created with newstructure can be infered properly (table)")
+    assert(Metatable.getpointer, "Only objects created with newstructure can be infered properly (table)")
+    FfiType        = pointer
+    ConvertedValue = Value:getpointer()
+  elseif (ValueType == "lightuserdata") then
+    FfiType        = pointer
+    ConvertedValue = Value
+  else
+    error(format("Unsupported variadic argument type: %s", ValueType))
+  end
+  return FfiType, ConvertedValue
+end
+
+local function LIBRARY_MethodGetVariadic (Library, ReturnType, FunctionName, ...)
+  -- Fixed part: types declared by the user
+  local FixedTypes     = { ... }
+  local FixedCount     = #FixedTypes
+  local FixedSignature = BuildSignature(ReturnType, unpack(FixedTypes, 1, FixedCount))
+  -- Wrapper that will handle the variadic arguments
+  local function VariadicWrapper (...)
+    local TotalArgs = select("#", ...)
+    if (TotalArgs < FixedCount) then
+      error(format("Not enough arguments: expected at least %d", FixedCount))
+    end
+    -- Separate fixed arguments from variadic ones
+    local VariadicCount  = (TotalArgs - FixedCount)
+    local VariadicTypes  = {}
+    local VariadicValues = {}
+    -- Infer type for each variadic argument
+    for VariadicIndex = 1, VariadicCount do
+      -- Get the variadic argument
+      local AbsoluteIndex    = (FixedCount + VariadicIndex)
+      local VariadicArgument = select(AbsoluteIndex, ...)
+      -- Infer the type and save the data
+      local FfiType, ConvertedValue = InferFfiType(VariadicArgument)
+      VariadicTypes[VariadicIndex]  = FfiType
+      VariadicValues[VariadicIndex] = ConvertedValue
+    end
+    -- Build the full signature: fixed types + inferred variadic types
+    local FullSignature = {}
+    -- Copy fixed types
+    for Index = 1, FixedCount do
+      FullSignature[Index] = FixedSignature[Index]
+    end
+    -- Append variadic types
+    for VariadicIndex = 1, VariadicCount do
+      local VariadicType = VariadicTypes[VariadicIndex]
+      append(FullSignature, VariadicType)
+    end
+    -- LIBRARY_MethodGetFunction will return a brand new function at each call
+    -- So we want to cache that function and reuse it when possible
+    -- Note the separator is different
+    local VariadicCache  = Library.VariadicCache
+    local CacheKey       = format("%s|%s", FunctionName, MakeCacheKey(FullSignature))
+    local CachedFunction = VariadicCache[CacheKey]
+    -- Build and cache the function if needed
+    if (CachedFunction == nil) then
+      -- Build argument list for LIBRARY_MethodGetFunction:
+      -- { ReturnType, FunctionName, FixedTypes, VariadicTypes }
+      local GetArgs = { ReturnType, FunctionName }
+      for Index = 1, FixedCount do
+        append(GetArgs, FixedTypes[Index])
+      end
+      for Index = 1, VariadicCount do
+        append(GetArgs, VariadicTypes[Index])
+      end
+      CachedFunction = LIBRARY_MethodGetFunction(Library, unpack(GetArgs, 1, #GetArgs))
+      VariadicCache[CacheKey] = CachedFunction
+    end
+    -- Prepare call arguments
+    local CallArguments = {}
+    for Index = 1, FixedCount do
+      CallArguments[Index] = select(Index, ...)
+    end
+    for VariadicIndex = 1, VariadicCount do
+      local AbsoluteIndex = (FixedCount + VariadicIndex)
+      local VariadicValue = VariadicValues[VariadicIndex]
+      CallArguments[AbsoluteIndex] = VariadicValue
+    end
+    -- Call and return
+    return CachedFunction(unpack(CallArguments, 1, TotalArgs))
+  end
+  -- Return value
+  return VariadicWrapper
+end
+
+--------------------------------------------------------------------------------
+-- METATABLE                                                                  --
+--------------------------------------------------------------------------------
+
 local LIBRARY_Metatable = {
-  -- MetatableLuaDefinedMethods
+  -- METATABLE_LuaDefinedMethods
   __gc = LIBRARY_GarbageCollectMethod,
-  -- MetatableUserDefinedMethods
+  -- METATABLE_UserDefinedMethods
   __index = {
-    getfunction = LIBRARY_MethodGetFunction
+    getfunction = LIBRARY_MethodGetFunction,
+    getvariadic = LIBRARY_MethodGetVariadic,
   }
 }
 
@@ -305,11 +437,12 @@ local function LoadLibrary (DllFilename)
   if Handle then
     -- Create a new library object
     NewLibraryObject = {
-      Filename     = DllFilename,
-      Handle       = Handle,
-      SymbolCache  = {},
-      CifCache     = {},
-      ContextCache = {},
+      Filename      = DllFilename,
+      Handle        = Handle,
+      SymbolCache   = {},
+      CifCache      = {},
+      ContextCache  = {},
+      VariadicCache = {},
     }
     -- Attach methods
     setmetatable(NewLibraryObject, LIBRARY_Metatable)
@@ -324,13 +457,7 @@ end
 -- The responsability to the caller to keep the context while necessary
 local function WrapFunction (RawSymbol, ReturnType, ...)
   -- Validate inputs
-  local ArgumentCount = select("#", ...)
-  local Signature     = { ValidateFfiType(ReturnType) }
-  for Index = 1, ArgumentCount do
-    local Argument = select(Index, ...)
-    local FfiType  = ValidateFfiType(Argument)
-    append(Signature, FfiType)
-  end
+  local Signature = BuildSignature(ReturnType, ...)
   -- Prepare the function and wrap it
   local Cif, ErrorString = newcif(Signature)
   assert(Cif, ErrorString)
@@ -352,23 +479,94 @@ local function CLOSURE_GarbageCollectMethod (ClosureObject)
 end
 
 local CLOSURE_Metatable = {
-  -- MetatableLuaDefinedMethods
+  -- METATABLE_LuaDefinedMethods
   __gc = CLOSURE_GarbageCollectMethod
 }
 
-local function CreateClosure (LuaFunction, ReturnType, ...)
-  -- Validate inputs
-  assert(type(LuaFunction)=="function", "First argument must be a Lua function")
-  local ArgumentCount = select("#", ...)
-  local Signature     = { ValidateFfiType(ReturnType) }
+-- Wrapper to support StructureByValue in callbacks:
+-- 1) Convert structure pointers into Lua structure objects
+-- 2) Call user Lua function
+-- 3) Convert a returned Lua structure object back into a pointer
+local function BuildClosureWrapper (UserFunction, Signature)
+  -- local data
+  local ReturnFfiType    = Signature[1]
+  local ReturnStructType = FFI_STRUCT_TYPES[ReturnFfiType]
+  local ElementCount     = #Signature
+  local ArgumentCount    = (ElementCount - 1)
+  -- Map argument index to either nil (not struct) either StructureType
+  local ArgumentStructMap = {}
+  -- Identify arguments which are structures
   for Index = 1, ArgumentCount do
-    local Argument = select(Index, ...)
-    local FfiType  = ValidateFfiType(Argument)
-    append(Signature, FfiType)
+    local ArgType       = Signature[Index + 1]
+    local ArgStructType = FFI_STRUCT_TYPES[ArgType]
+    ArgumentStructMap[Index] = ArgStructType
   end
+  -- Reuse over calls
+  local ConvertedArguments = {}
+  -- Wrapper: This function will be called by the C layer
+  -- Wrapper: convert structure pointers into Lua objects
+  local function WrappedFunction (...)
+    for Index = 1, ArgumentCount do
+      local Argument      = select(Index, ...)
+      local StructureType = ArgumentStructMap[Index]
+      if StructureType then
+        assert((type(Argument) == "userdata"), format("Closure argument %d should be struct pointer", Index))
+        -- Create a new Lua object
+        ConvertedArguments[Index] = StructureType:frompointer(Argument)
+      else
+        ConvertedArguments[Index] = Argument
+      end
+    end
+    -- Call the user function
+    local CallResult = UserFunction(unpack(ConvertedArguments, 1, ArgumentCount))
+    -- Evaluate result
+    local Result
+    if (ReturnStructType and type(CallResult) == "table") then
+      assert((CallResult.StructType == ReturnStructType),
+        format("Closure returned unexpected structure type, expected [%s]", ReturnStructType:gettypename()))
+      -- The result is for the C layer
+      Result = CallResult:getpointer()
+    else
+      -- Default: use CallResult directly to cover the cases
+      --   No ReturnStructType
+      --   ReturnStructType but CallResult is nil
+      --   ReturnStructType but CallResult is userdata 
+      Result = CallResult
+    end
+    -- Return value
+    return Result
+  end
+  -- Return value
+  return WrappedFunction
+end
+
+local function CreateClosure (UserFunction, ReturnType, ...)
+  -- Validate inputs
+  assert(type(UserFunction)=="function", "First argument must be a Lua function")
+  local Signature = BuildSignature(ReturnType, ...)
+  -- Check if the signature contains a structure
+  local ReturnFfiType   = Signature[1]
+  local HasStructType  = (FFI_STRUCT_TYPES[ReturnFfiType] ~= nil)
+  local SignatureCount = #Signature
+  local SignatureIndex = 2
+  while ((not HasStructType) and (SignatureIndex <= SignatureCount)) do
+    local ArgumentType = Signature[SignatureIndex]
+    HasStructType  = (FFI_STRUCT_TYPES[ArgumentType] ~= nil)
+    SignatureIndex = (SignatureIndex + 1)
+  end
+  -- Choose the right wrapper
+  local WrappedFunction
+  if HasStructType then
+    -- Call a wrapper that convert structure pointers
+    WrappedFunction = BuildClosureWrapper(UserFunction, Signature)
+  else
+    -- Directly call the user function
+    WrappedFunction = UserFunction
+  end
+  -- Create the Call Interface
   local Cif = newcif(Signature)
   assert(Cif, "Failed to create ffi cif for closure")
-  local ClosureUserdata, ClosurePointer = newclosure(Cif, LuaFunction)
+  local ClosureUserdata, ClosurePointer = newclosure(Cif, WrappedFunction)
   local NewClosureObject = {
     Cif             = Cif,
     ClosureUserdata = ClosureUserdata,
@@ -388,7 +586,7 @@ local PUBLIC_API = {
   -- High level functions
   loadlib        = LoadLibrary,
   -- Those functions are intended to work with libtcc
-  newluafunction = WrapFunction,  -- C function pointer -> Lua functions
+  newluafunction = WrapFunction,  -- C function pointer -> Lua function
   newcfunction   = CreateClosure, -- Lua function       -> C function pointer
   -- Direct imports from libffi raw bindings
   readpointer    = LibFFI.readpointer,
@@ -400,8 +598,8 @@ local PUBLIC_API = {
   pointeroffset  = LibFFI.pointeroffset,
   pointerdiff    = LibFFI.pointerdiff,
   -- structure by value
-  newstruct      = NewNamedStructure,
-  newstruct2     = NewAnonymousStructure,
+  newstructure   = NewNamedStructure,
+  newstructurea  = NewAnonymousStructure,
   -- mimalloc
   getpagesize = LibFFI.getpagesize,
   malloc      = LibFFI.malloc,
@@ -422,6 +620,9 @@ local PUBLIC_API = {
   float   = float,
   double  = double,
   pointer = pointer,
+  -- those types might resolve to nil (and be absent from PUBLIC_API)
+  complex_float  = complex_float,
+  complex_double = complex_double,
   -- helpful
   size_t = uint64
 }

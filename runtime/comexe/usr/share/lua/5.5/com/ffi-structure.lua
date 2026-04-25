@@ -163,7 +163,7 @@ local function COLLECTOR_Free (PointerList)
 end
 
 local COLLECTOR_METATABLE = {
-  -- MetatableLuaDefinedMethods
+  -- METATABLE_LuaDefinedMethods
   __gc = COLLECTOR_Free
 }
 
@@ -265,7 +265,7 @@ local function NewStructure (StructureName, FieldNames, FieldTypes)
   local NewStructureType
   local ErrorString
   -- Validate inputs
-  assert((FieldCount > 0), "newstruct requires at least one field")
+  assert((FieldCount > 0), "newstructure requires at least one field")
   -- Resolve types into FfiType
   for FieldIndex = 1, FieldCount do
     local FieldType    = FieldTypes[FieldIndex]
@@ -382,7 +382,7 @@ local function STRUCTURE_NewInstanceFromPointer (Structure, BufferPointer)
 end
 
 STRUCTURE_TYPE_METATABLE = {
-  -- MetatableUserDefinedMethods
+  -- METATABLE_UserDefinedMethods
   __index = {
     gettypename    = STRUCTURE_GetTypeName,
     getffitype     = STRUCTURE_GetFfiType,
@@ -512,7 +512,7 @@ local function STRUCTURE_INSTANCE_GetField (Instance, Name)
 end
 
 STRUCTURE_INSTANCE_METATABLE = {
-  -- MetatableUserDefinedMethods
+  -- METATABLE_UserDefinedMethods
   __index = {
     getpointer = STRUCTURE_INSTANCE_GetPointer,
     set        = STRUCTURE_INSTANCE_Set,

@@ -67,6 +67,47 @@ libffi.freecallcontext(SprintfCallContext)
 libffi.freecif(SprintfCif)
 
 --------------------------------------------------------------------------------
+-- COMPLEX [RAW C SIDE]                                                       --
+--------------------------------------------------------------------------------
+
+if libffi.complex_double then
+  assert(libffi.complex_float)
+
+  local ComplexCif = libffi.newcif({ libffi.complex_double, libffi.complex_double, libffi.complex_double })
+  assert(ComplexCif)
+
+  local ComplexClosure, ComplexAddress = libffi.newclosure(ComplexCif, function (ValueA, ValueB)
+    assert((type(ValueA) == "table"))
+    assert((type(ValueB) == "table"))
+    return {
+      (ValueA[1] + ValueB[1]),
+      (ValueA[2] + ValueB[2])
+    }
+  end)
+
+  assert(ComplexClosure)
+  assert(ComplexAddress ~= NULL)
+
+  local ComplexCallContext = libffi.newcallcontext(ComplexCif)
+  assert(ComplexCallContext)
+
+  local ComplexResult = libffi.call(ComplexCallContext,
+                                    ComplexAddress,
+                                    {
+                                      { 1.25, 2.50  },
+                                      { 3.75, -1.00 }
+                                    })
+
+  assert((type(ComplexResult) == "table"))
+  assert((math.abs(ComplexResult[1] - 5.00) < 0.000001))
+  assert((math.abs(ComplexResult[2] - 1.50) < 0.000001))
+
+  libffi.freecallcontext(ComplexCallContext)
+  libffi.freeclosure(ComplexClosure)
+  libffi.freecif(ComplexCif)
+end
+
+--------------------------------------------------------------------------------
 -- UTILITIES                                                                  --
 --------------------------------------------------------------------------------
 

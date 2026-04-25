@@ -12,15 +12,17 @@ assert(ffi)
 assert(libffi.sint32)
 assert(libffi.newstruct)
 
-local sint32 = libffi.sint32
-local NULL   = libffi.NULL
+local sint32  = libffi.sint32
+local pointer = libffi.pointer
+local NULL    = libffi.NULL
 
 --------------------------------------------------------------------------------
 -- STRUCT BY VALUE [ARGUMENTS + RETURNS]                                      --
 --------------------------------------------------------------------------------
 
-local PairStruct, PairTypeError = ffi.newstruct("Pair", "First",  sint32,
-                                                "Second", sint32)
+local PairStruct, PairTypeError = ffi.newstructure("Pair",
+                                                   "First",  sint32,
+                                                   "Second", sint32)
 assert(PairStruct, PairTypeError)
 assert(PairStruct.getsizeinbytes)
 assert(PairStruct.getalignment)
@@ -64,6 +66,18 @@ int SumPair (Pair Input)
 {
         return (Input.Left + Input.Right);
 }
+
+typedef Pair (*PairTransformCallback)(Pair Input);
+
+int CallPairAndSum (PairTransformCallback Callback, int Left, int Right)
+{
+  Pair Input;
+  Pair Output;
+  Input.Left  = Left;
+  Input.Right = Right;
+  Output = Callback(Input);
+  return (Output.Left + Output.Right);
+}
 ]]
 
 local TccState = tcc_new()
@@ -74,13 +88,17 @@ assert((tcc_relocate(TccState) == 0))
 
 local MakePairAddress = tcc_get_symbol(TccState, "MakePair")
 local SumPairAddress  = tcc_get_symbol(TccState, "SumPair")
+local CallPairAndSumAddress = tcc_get_symbol(TccState, "CallPairAndSum")
 assert(MakePairAddress ~= NULL)
 assert(SumPairAddress ~= NULL)
+assert(CallPairAndSumAddress ~= NULL)
 
 local MakePair, MakePairPrivate = ffi.newluafunction(MakePairAddress, PairStruct, sint32, sint32)
 local SumPair, SumPairPrivate = ffi.newluafunction(SumPairAddress, sint32, PairStruct)
+local CallPairAndSum, CallPairAndSumPrivate = ffi.newluafunction(CallPairAndSumAddress, sint32, pointer, sint32, sint32)
 assert(MakePair)
 assert(SumPair)
+assert(CallPairAndSum)
 
 local PairValueA = MakePair(11, 31)
 assert((type(PairValueA) == "table"))
@@ -110,7 +128,7 @@ PairSecond:setfield("Second", 4)
 assert((PairFirst:getfield("First") == 1))
 assert((PairSecond:getfield("Second") == 4))
 
-UserPair = nil
+UserPair  = nil
 PairArray = nil
 collectgarbage()
 collectgarbage()
@@ -121,25 +139,38 @@ libffi.freecallcontext(SumPairPrivate[2])
 libffi.freecif(SumPairPrivate[1])
 
 --------------------------------------------------------------------------------
--- STRUCT LIMITATION [CLOSURES]                                              --
+-- STRUCT CLOSURE [CALLBACKS]                                                --
 --------------------------------------------------------------------------------
 
-local StructClosureCif, StructClosureCifError = libffi.newcif({ sint32, PairStruct:getffitype() })
-assert(StructClosureCif, StructClosureCifError)
+local PairTransformCallbackCalled = false
 
-local SuccessClosure, ClosureError = pcall(function ()
-    libffi.newclosure(StructClosureCif, function ()
-                        return 0
-    end)
-end)
+local function PairTransformCallback (InputPair)
+  assert((type(InputPair) == "table"))
+  assert((type(InputPair.getfield) == "function"))
+  PairTransformCallbackCalled = true
+  local Left = InputPair:getfield("First")
+  local Right = InputPair:getfield("Second")
+  local OutputPair = PairStruct:newinstance()
+  OutputPair:setfield("First",  (Left  + 10))
+  OutputPair:setfield("Second", (Right + 20))
+  return OutputPair
+end
 
-local ClosureErrorMessage = tostring(ClosureError)
+local PairClosureObject, PairClosurePointer = ffi.newcfunction(PairTransformCallback, PairStruct, PairStruct)
 
-assert((SuccessClosure == false))
-assert(string.find(ClosureErrorMessage, "Struct%-by%-value is not supported for closures yet", 1, false))
+assert(PairClosureObject)
+assert(PairClosurePointer ~= NULL)
 
-libffi.freecif(StructClosureCif)
+local CallbackSum = CallPairAndSum(PairClosurePointer, 1, 2)
+assert((CallbackSum == 33))
+assert(PairTransformCallbackCalled)
+
+PairClosureObject = nil
+collectgarbage()
+collectgarbage()
+
+libffi.freecallcontext(CallPairAndSumPrivate[2])
+libffi.freecif(CallPairAndSumPrivate[1])
 tcc_delete(TccState)
-
 
 collectgarbage()
