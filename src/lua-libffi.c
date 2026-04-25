@@ -57,9 +57,8 @@
  * X86-64 Windows and Linux
  * Not supported: 32-bits FFI_STDCALL / FFI_FASTCALL / FFI_MS_CDECL
  * Not supported: ffi_type_longdouble
- * Not supported: variadics calls not supported
- * Not supported: closures with struct-by-value not supported
- * Not supported: COMPLEX not supported?
+ * Not supported: ffi_type_complex_longdouble
+ * Not supported: variadics not supported
  */
 
 /*============================================================================*/
@@ -217,28 +216,13 @@ static int FFI_FreeOffsetsBuffer (lua_State *LuaState)
   return 0; /* Number of return values */
 }
 
-static bool FFI_CifContainsStructure (struct FFI_Cif *Cif)
-{
-  bool   Contains = (Cif->ReturnType && (Cif->ReturnType->type == FFI_TYPE_STRUCT));
-  size_t Offset   = 0;
-
-  while (!Contains && (Offset < Cif->ArgCount))
-  {
-    if (Cif->ArgTypes[Offset] && (Cif->ArgTypes[Offset]->type == FFI_TYPE_STRUCT))
-    {
-      Contains = true;
-    }
-    else
-    {
-      Offset++;
-    }
-  }
-
-  return Contains;
-}
-
 static void FFI_PushValue (lua_State *LuaState, ffi_type *Type, void *Value)
 {
+#ifdef FFI_TARGET_HAS_COMPLEX_TYPE
+  float  *FloatValue;
+  double *DoubleValue;
+#endif
+
   switch (Type->type)
   {
     case FFI_TYPE_VOID:
@@ -280,6 +264,31 @@ static void FFI_PushValue (lua_State *LuaState, ffi_type *Type, void *Value)
     case FFI_TYPE_STRUCT:
       lua_pushlightuserdata(LuaState, Value);
       break;
+#ifdef FFI_TARGET_HAS_COMPLEX_TYPE
+    case FFI_TYPE_COMPLEX:
+      lua_createtable(LuaState, 2, 0);
+      if (Type->size == (sizeof(float) * 2))
+      {
+        FloatValue = Value;
+        lua_pushnumber(LuaState, FloatValue[0]);
+        lua_rawseti(LuaState, -2, 1);
+        lua_pushnumber(LuaState, FloatValue[1]);
+        lua_rawseti(LuaState, -2, 2);
+      }
+      else if (Type->size == (sizeof(double) * 2))
+      {
+        DoubleValue = Value;
+        lua_pushnumber(LuaState, DoubleValue[0]);
+        lua_rawseti(LuaState, -2, 1);
+        lua_pushnumber(LuaState, DoubleValue[1]);
+        lua_rawseti(LuaState, -2, 2);
+      }
+      else
+      {
+        luaL_error(LuaState, "Unsupported complex type size: %zu", Type->size);
+      }
+      break;
+#endif
     default:
       lua_pushnil(LuaState);
       break;
@@ -292,6 +301,13 @@ static void FFI_CopyLuaValueToCif (lua_State *LuaState,
                                    void      *Value)
 {
   void *StructPointer;
+  
+#ifdef FFI_TARGET_HAS_COMPLEX_TYPE
+  lua_Number  RealPart;
+  lua_Number  ImagPart;
+  float      *ComplexFloatValue;
+  double     *ComplexDoubleValue;
+#endif
 
   switch (Type->type)
   {
@@ -352,6 +368,33 @@ static void FFI_CopyLuaValueToCif (lua_State *LuaState,
         memcpy(Value, StructPointer, Type->size);
       }
       break;
+#ifdef FFI_TARGET_HAS_COMPLEX_TYPE
+    case FFI_TYPE_COMPLEX:
+      luaL_checktype(LuaState, Index, LUA_TTABLE);
+      lua_rawgeti(LuaState, Index, 1);
+      RealPart = luaL_checknumber(LuaState, -1);
+      lua_pop(LuaState, 1);
+      lua_rawgeti(LuaState, Index, 2);
+      ImagPart = luaL_checknumber(LuaState, -1);
+      lua_pop(LuaState, 1);
+      if (Type->size == (sizeof(float) * 2))
+      {
+        ComplexFloatValue    = Value;
+        ComplexFloatValue[0] = (float)RealPart;
+        ComplexFloatValue[1] = (float)ImagPart;
+      }
+      else if (Type->size == (sizeof(double) * 2))
+      {
+        ComplexDoubleValue    = Value;
+        ComplexDoubleValue[0] = (double)RealPart;
+        ComplexDoubleValue[1] = (double)ImagPart;
+      }
+      else
+      {
+        luaL_error(LuaState, "Unsupported complex type size: %zu", Type->size);
+      }
+      break;
+#endif
     default:
       luaL_error(LuaState, "Unsupported ffi type: %zu", Type->type);
       break;
@@ -777,12 +820,6 @@ static int FFI_NewClosure (lua_State *LuaState)
 
   /* Check parameters */
   luaL_checktype(LuaState, 2, LUA_TFUNCTION);
-
-  if (FFI_CifContainsStructure(Cif))
-  {
-    return luaL_error(LuaState,
-                      "Struct-by-value is not supported for closures yet");
-  }
   
   /* Allocate ffi closure */
   ExecutableAddress = NULL;
@@ -1111,6 +1148,12 @@ LUALIB_API int luaopen_libffiraw (lua_State *LuaState)
   lua_setfield(LuaState, -2, "double");
   lua_pushlightuserdata(LuaState, &ffi_type_pointer);
   lua_setfield(LuaState, -2, "pointer");
+#ifdef FFI_TARGET_HAS_COMPLEX_TYPE
+  lua_pushlightuserdata(LuaState, &ffi_type_complex_float);
+  lua_setfield(LuaState, -2, "complex_float");
+  lua_pushlightuserdata(LuaState, &ffi_type_complex_double);
+  lua_setfield(LuaState, -2, "complex_double");
+#endif
   lua_pushinteger(LuaState, FFI_TYPE_STRUCT);
   lua_setfield(LuaState, -2, "struct");
   lua_pushinteger(LuaState, FFI_OK);

@@ -76,14 +76,17 @@ if libffi.complex_double then
   local ComplexCif = libffi.newcif({ libffi.complex_double, libffi.complex_double, libffi.complex_double })
   assert(ComplexCif)
 
-  local ComplexClosure, ComplexAddress = libffi.newclosure(ComplexCif, function (ValueA, ValueB)
+  local function ComplexAdd (ValueA, ValueB)
     assert((type(ValueA) == "table"))
     assert((type(ValueB) == "table"))
-    return {
+    local Result = {
       (ValueA[1] + ValueB[1]),
       (ValueA[2] + ValueB[2])
     }
-  end)
+    return Result
+  end
+
+  local ComplexClosure, ComplexAddress = libffi.newclosure(ComplexCif, ComplexAdd)
 
   assert(ComplexClosure)
   assert(ComplexAddress ~= NULL)
@@ -91,16 +94,20 @@ if libffi.complex_double then
   local ComplexCallContext = libffi.newcallcontext(ComplexCif)
   assert(ComplexCallContext)
 
+  local ComplexArguments = {
+    { 1.25,  2.50 },
+    { 3.75, -1.00 }
+  }
+
   local ComplexResult = libffi.call(ComplexCallContext,
                                     ComplexAddress,
-                                    {
-                                      { 1.25, 2.50  },
-                                      { 3.75, -1.00 }
-                                    })
+                                    ComplexArguments)
 
   assert((type(ComplexResult) == "table"))
-  assert((math.abs(ComplexResult[1] - 5.00) < 0.000001))
-  assert((math.abs(ComplexResult[2] - 1.50) < 0.000001))
+
+  local abs = math.abs
+  assert((abs(ComplexResult[1] - 5.00) < 0.000001))
+  assert((abs(ComplexResult[2] - 1.50) < 0.000001))
 
   libffi.freecallcontext(ComplexCallContext)
   libffi.freeclosure(ComplexClosure)
