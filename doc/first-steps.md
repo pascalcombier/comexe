@@ -29,11 +29,12 @@ Available options are:
   -x        Enable ComEXE extended commands
 ```
 
-Each release contains two files:
+Each release contains the release binaries for Linux and Windows:
 
 ```
-lua55ce
-lua55ced
+lua55ce-x86_64-linux
+lua55ce-x86_64-windows.exe
+LICENSE
 ```
 
-The second file is the debug build, which is much larger. Most people can ignore it. It is only useful if you need a stack trace to analyse a software crash or SEGFAULT.
+After download, rename the Linux binary to `lua55ce` and the Windows binary to `lua55ce.exe`.

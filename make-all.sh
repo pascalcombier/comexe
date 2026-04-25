@@ -197,19 +197,13 @@ cat "$TARGETS_DIR/x86_64-windows-dbg.exe" $ZIP_RUNTIME > dist/lua55ced-x86_64-wi
 chmod +x dist/lua55ce-x86_64-linux
 chmod +x dist/lua55ced-x86_64-linux
 
-# Create distribution packages (linux)
+# Create distribution package
 mkdir -p dist/tmp
-cp dist/lua55ce-x86_64-linux  dist/tmp/lua55ce
-cp dist/lua55ced-x86_64-linux dist/tmp/lua55ced
-chmod +x dist/tmp/lua55ce
-chmod +x dist/tmp/lua55ced
-(cd dist/tmp && zip -9 ../lua55ce-x86_64-linux.zip lua55ce lua55ced)
-rm -f dist/tmp/*
-
-# Create distribution packages (windows)
-cp dist/lua55ce-x86_64-windows.exe  dist/tmp/lua55ce.exe
-cp dist/lua55ced-x86_64-windows.exe dist/tmp/lua55ced.exe
-(cd dist/tmp && zip -9 ../lua55ce-x86_64-windows.zip lua55ce.exe lua55ced.exe)
+cp dist/lua55ce-x86_64-linux       dist/tmp/
+cp dist/lua55ce-x86_64-windows.exe dist/tmp/
+cp LICENSE dist/tmp/LICENSE
+chmod +x dist/tmp/lua55ce-x86_64-linux
+(cd dist/tmp && zip -9 ../lua55ce.zip lua55ce-x86_64-linux lua55ce-x86_64-windows.exe LICENSE)
 rm -rf dist/tmp
 
 # Clean bin folder from packaged files
