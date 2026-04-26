@@ -597,7 +597,7 @@ local PUBLIC_API = {
   writememory    = LibFFI.writememory,
   pointeroffset  = LibFFI.pointeroffset,
   pointerdiff    = LibFFI.pointerdiff,
-  -- structure by value
+  -- structures
   newstructure   = NewNamedStructure,
   newstructurea  = NewAnonymousStructure,
   -- mimalloc
@@ -607,6 +607,9 @@ local PUBLIC_API = {
   free        = LibFFI.free,
   memset      = LibFFI.memset,
   NULL        = LibFFI.NULL,
+  -- C-string helpers
+  allocstring = LibFFI.allocstring,
+  readstring  = LibFFI.readstring,
   -- ffi types
   void    = void,
   uint8   = uint8,
