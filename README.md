@@ -1,13 +1,20 @@
-# ComEXE
+# 📋 Overview
 
-ComEXE is a statically-linked, drop-in replacement for the [Lua standalone program](https://www.lua.org/manual/5.5/manual.html#7). It provides additional command flags to improve Lua tooling and is released under [the permissive MIT license](./LICENSE).
+ComEXE is a statically linked, drop-in replacement for the [Lua standalone program](https://www.lua.org/manual/5.5/manual.html#7), with additional command options and built-in libraries for practical use.
 
-It is aimed at developers who want to use Lua as a general-purpose programming language.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)]()
+[![Lua](https://img.shields.io/badge/Lua-5.5-blue)]()
 
-Learn more:
+# 🚀 Key features
+
+- Fast edit/test loop
+- Generate [Linux and Windows binaries](./doc/standalone-executables.md)
+- [Built-in](./doc/comexe-batteries.md) libuv, luasocket and libffi
+- Integrated [Package Manager](./doc/third-party-packages.md)
+- Released under the [MIT license](./LICENSE)
+
+# ➡️ Next
+
 - [Download binaries for Windows x86-64 and Linux x86-64](https://github.com/pascalcombier/comexe/releases)
-- [First steps with lua55ce](./doc/first-steps.md)
-- [Built-in libraries](./doc/comexe-batteries.md)
-- [Install third-party Lua packages](./doc/third-party-packages.md)
-- [Generate standalone executables](./doc/standalone-executables.md)
 - [Differences with Lua PUC](./doc/differences-lua-puc.md)
