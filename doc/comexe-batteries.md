@@ -1,10 +1,18 @@
+# ComEXE builtins
+
+- [Multithreading](#multithreading)
+- [libffi](#libffi)
+- [luv: Cross-platform asynchronous I/O](#luv-cross-platform-asynchronous-io)
+- [luasocket](#luasocket)
+- [JSON](#json)
+
 # Multithreading
 
 ComEXE multithreading is based on OS-level native threads, not Lua green threads or coroutines. Each thread runs its own Lua interpreter and communicates with other threads using the event system.
 
 ## Quick start
 
-**my-thread.lua**
+**[my-thread.lua](../tests/examples/my-thread.lua)**
 
 ```lua title="my-thread.lua"
 local Event = require("com.event")
@@ -19,11 +27,14 @@ end
 
 -- Block until stoploop() is called
 Event.runloop()
+print("my-thread close")
 ```
 
-**main-program.lua**
+**[test-doc-main-thread.lua](../tests/examples/test-doc-main-thread.lua)**
 
-```lua title="main-program.lua"
+```lua title="test-doc-main-thread.lua"
+local uv = require("luv")
+
 local Thread = require("com.thread")
 local Event  = require("com.event")
 
@@ -36,14 +47,24 @@ end
 -- Create the thread by loading my-thread.lua
 local ThreadId = Thread.create("my-thread", "EventMyThreadExit")
 
-os.sleep(1)
-Event.send(ThreadId, "EventDoSomething", 1, 2, 3)
-os.sleep(1)
+uv.sleep(1000)
+Event.send(ThreadId, "EventDoSomething", 1, true, false, nil)
+uv.sleep(1000)
 
 Event.send(ThreadId, "EventExitThread")
 
 -- Block until stoploop() is called
 Event.runloop()
+print("test-doc-main-thread close")
+```
+
+This will output:
+
+```
+>lua55ce.exe tests\examples\test-doc-main-thread.lua
+EventDoSomething        1       true    false   nil
+my-thread close
+test-doc-main-thread close
 ```
 
 ## Overview
@@ -54,7 +75,7 @@ The multithreading library makes it easy to develop native multithreaded applica
 * An event is just a call to a global Lua function
 * When a thread exits, the parent is notified with a thread-exit event
 
-The event arguments currently support:
+Supported event argument types:
 - [X] nil
 - [X] booleans
 - [X] light userdata
@@ -65,7 +86,13 @@ The event arguments currently support:
 - [ ] full userdata
 - [ ] coroutines
 
-Tables and other complex Lua values are not supported because they make implementation too complicated. If you need to send a richer object between threads, serialize it to a string first using a library such as [binser](https://github.com/bakpakin/binser) or [dkjson](https://dkolf.de/dkjson-lua).
+Tables and other complex Lua values are not supported. If you need to send a more complex object between threads, serialize it to a string first using a library such as [binser](https://github.com/bakpakin/binser) or [dkjson](https://dkolf.de/dkjson-lua).
+
+# libffi
+
+ComEXE includes Sourceware [libffi](https://github.com/libffi/libffi)  through the `com.ffi` package. This is not [LuaJIT](https://luajit.org/ext_ffi.html)'s `ffi` wrapper, and the API is different.
+
+See [tests/examples/test-doc-ffi.lua](../tests/examples/test-doc-ffi.lua) for an example.
 
 # luv: Cross-platform asynchronous I/O
 
