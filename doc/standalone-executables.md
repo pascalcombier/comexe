@@ -32,7 +32,7 @@ lua55ce -x --make src\main.lua --nostdlib
 
 This removes the standard libraries and gives you a ~2 MiB executable on Windows.
 
-## Cross-compile for other systems
+## Cross-compile for other platforms
 
 ```batch
 E:\my-program>lua55ce -x --list-targets
@@ -45,23 +45,25 @@ x86_64-windows-gui
 E:\my-program>lua55ce -x --make src\main.lua -t x86_64-linux-con
 ```
 
+Cross-compilation works both ways: build Windows binaries on Linux or Linux binaries on Windows.
+
 # Important note
 
 ComEXE bundles all files from the source directory into your executable.
 
-This command bundles everything inside the src folder:
+This command bundles *everything* inside the src folder:
 
 ```sh
 lua55ce -x --make src\main.lua
 ```
 
-This command bundles everything inside the current folder (`.`):
+Similarly, the following command bundles everything inside the current folder (`.`):
 
 ```sh
 lua55ce -x --make main.lua
 ```
 
-So if your current folder has tho files:
+So if your current folder has those files:
 - main.lua
 - main.exe
 

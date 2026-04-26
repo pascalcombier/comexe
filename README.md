@@ -10,7 +10,7 @@ ComEXE is a statically linked, drop-in replacement for the [Lua standalone progr
 
 - Fast edit/test loop
 - Generate [Linux and Windows binaries](./doc/standalone-executables.md)
-- [Built-in](./doc/comexe-batteries.md) libuv, luasocket and libffi
+- [Built-in](./doc/comexe-batteries.md) multithreading, libuv, luasocket and libffi
 - Integrated [Package Manager](./doc/third-party-packages.md)
 - Released under the [MIT license](./LICENSE)
 
