@@ -47,6 +47,8 @@ E:\my-program>lua55ce -x --make src\main.lua -t x86_64-linux-con
 
 Cross-compilation works both ways: build Windows binaries on Linux or Linux binaries on Windows.
 
+*con* stands for console, intended for console applications; *gui* is Win32-only and refers to the Windows subsystem. *dbg* is the debug build, larger and includes debug symbols.
+
 # Important note
 
 ComEXE bundles all files from the source directory into your executable.

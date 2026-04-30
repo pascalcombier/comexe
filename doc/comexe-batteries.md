@@ -90,7 +90,7 @@ Tables and other complex Lua values are not supported. If you need to send a mor
 
 # libffi
 
-ComEXE includes Sourceware [libffi](https://github.com/libffi/libffi)  through the `com.ffi` package. This is not [LuaJIT](https://luajit.org/ext_ffi.html)'s `ffi` wrapper, and the API is different.
+ComEXE includes Sourceware [libffi](https://github.com/libffi/libffi)  through the `com.ffi` package. This is not [LuaJIT](https://luajit.org/ext_ffi.html)'s `ffi`, and the API is different.
 
 See [tests/examples/test-doc-ffi.lua](../tests/examples/test-doc-ffi.lua) for an example.
 
