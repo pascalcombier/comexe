@@ -4,7 +4,7 @@
 - [libffi](#libffi)
 - [luv: Cross-platform asynchronous I/O](#luv-cross-platform-asynchronous-io)
 - [luasocket](#luasocket)
-- [JSON](#json)
+- [mbedtls](#mbedtls)
 
 # Multithreading
 
@@ -100,7 +100,14 @@ ComEXE uses [libuv](https://libuv.org) for portability. [luv](https://github.com
 
 # luasocket
 
-This library is [very popular on LuaRocks](https://luarocks.org/search?q=luasocket), many packages depend on it. ComEXE's default setup lets you fetch resources from HTTP/HTTPS. LuaSocket also has a great [online documentation](https://lunarmodules.github.io/luasocket/index.html). Note that SSL support is now limited to HTTP, it may not work for FTP or SMTP.
+## Overview
+
+ComEXE embeds [LuaSocket](https://lunarmodules.github.io/luasocket/index.html):
+
+* Fetch resources from HTTP and HTTPS via `socket.http`
+* TLS support is available for HTTP but support for FTP, SMTP, and other socket protocols may be limited
+
+## Example fetching HTTPS
 
 ```lua title="test-fetch-http.lua"
 local http = require("socket.http")
@@ -120,7 +127,7 @@ print("StatusLine", StatusLine)
 
 This should give you this output:
 
-```
+```sh
 E:\my-program>lua55ce-x86_64-windows.exe test-http.lua
 Body Length      229287
 HttpCode         200
@@ -128,6 +135,61 @@ Response Headers 0
 StatusLine       HTTP/1.1 200 OK
 ```
 
-# JSON
+## Example decoding JSON data
 
-ComEXE does not include any JSON library, but we can easily install the great [dkjson](https://dkolf.de/dkjson-lua) library from the integrated [package manager](./third-party-packages.md).
+JSON is supported by [installing third-party packages](./standalone-executables.md) and [dkjson](https://dkolf.de/dkjson-lua) can be installed:
+
+```
+lua55ce.exe -x --apm install dkjson-2.8
+```
+
+Use the JSON library as [documented](https://dkolf.de/dkjson-lua/):
+
+```
+local json = require("dkjson")
+local http = require("socket.http")
+local URI  = "https://api.github.com"
+
+local JsonString, HttpCode, ResponseHeaders, StatusLine = http.request(URI)
+
+if (HttpCode == 200) then
+  local JsonObject = json.decode(JsonString)
+  if JsonObject then
+    for Key, Value in pairs(JsonObject) do
+      print(string.format("%q = %q", Key, Value))
+    end
+  end
+end
+```
+
+This should output the [GitHub JSON API](https://api.github.com):
+```
+"issue_search_url" = "https://api.github.com/search/issues?q={query}{&page,per_page,sort,order}"
+"current_user_repositories_url" = "https://api.github.com/user/repos{?type,page,per_page,sort}"
+"authorizations_url" = "https://api.github.com/authorizations"
+"repository_url" = "https://api.github.com/repos/{owner}/{repo}"
+"public_gists_url" = "https://api.github.com/gists/public"
+...
+```
+
+This example use `dkjson`, but multiple other JSON libraries can be used as well.
+
+## Example encoding JSON data
+
+```lua
+local json = require("dkjson")
+
+local LuaObject  = { Hello = "world", Answer = 42 }
+local JsonString = json.encode(LuaObject)
+print(string.format("%q", JsonString))
+```
+
+This should output:
+
+```
+"{\"Answer\":42,\"Hello\":\"world\"}"
+```
+
+# mbedtls
+
+ComEXE embeds [mbedtls](https://github.com/Mbed-TLS/mbedtls) and [lua-mbedtls](https://github.com/neoxic/lua-mbedtls)
