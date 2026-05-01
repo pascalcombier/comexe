@@ -12,6 +12,25 @@ ComEXE multithreading is based on OS-level native threads, not Lua green threads
 
 ## Quick start
 
+```mermaid
+sequenceDiagram
+  participant Main as Main Script
+  create participant Thread as my-thread
+
+  Main->>Thread: Thread.create("my-thread", "EventMyThreadExit")
+  Note over Thread: Loads my-thread.lua
+  Note over Thread: calls Event.runloop()
+
+  Main-->>Thread: Event.send(MyThreadId, "EventDoSomething", 1, true, false, nil)
+  Main-->>Thread: Event.send(MyThreadId, "EventExitThread")
+  Note over Main: calls Event.runloop()
+  Thread-->>Main: EventMyThreadExit(MyThreadId)
+  Note over Thread: Thread no longer exists
+
+  Main->>Main: EventMyThreadExit(MyThreadId): stoploop()
+  Note over Main: script exits properly
+```
+
 **[my-thread.lua](../tests/examples/my-thread.lua)**
 
 ```lua title="my-thread.lua"
