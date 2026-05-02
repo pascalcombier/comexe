@@ -27,7 +27,7 @@ Thread.create(ModuleName, ExitEventName)
 
 An **event handler**:
 - **Must be a global function**. ComEXE internally calls [lua_getglobal](https://www.lua.org/manual/5.5/manual.html#lua_getglobal), so local functions cannot be used.
-- May return values, but the system will **ignore** them
+- May return values, but the system will **ignore** them.
 
 ```lua
 function EventMyThreadExit (...)
@@ -63,7 +63,7 @@ Supported event argument types:
 
 If you need to send a complex object to a thread, serialize it to a string first with a library such as [binser](https://github.com/bakpakin/binser) or [dkjson](https://dkolf.de/dkjson-lua).
 
-**Events are only processed after calling `Event.runloop`** (or `Event.runonce`**):
+**Events are only processed after calling `Event.runloop`** (or `Event.runonce`):
 
 ```lua
 Event.runloop() -- Allow received events to be processed
