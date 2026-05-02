@@ -635,7 +635,7 @@ static int LUA_BroadcastEvent (lua_State *LuaState)
   size_t                  InstanceOffset;
   bool                    Continue;
 
-  if ((ArgumentCount >= 2) && (lua_isstring(LuaState, 2)))
+  if ((ArgumentCount >= 1) && (lua_isstring(LuaState, 1)))
   {
     InstanceOffset = 1;
     Continue       = true;
@@ -655,7 +655,7 @@ static int LUA_BroadcastEvent (lua_State *LuaState)
           {
             uv_mutex_lock(&TargetInstance->EventMutex);
             PendingEvents = TargetInstance->EventBufferReceive;
-            APP_CopyEventArguments(LuaState, PendingEvents, 2, ArgumentCount);
+            APP_CopyEventArguments(LuaState, PendingEvents, 1, ArgumentCount);
             uv_mutex_unlock(&TargetInstance->EventMutex);
 
             uv_mutex_lock(&TargetInstance->StateMutex);
