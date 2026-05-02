@@ -10,4 +10,4 @@ end
 
 -- Block until stoploop() is called
 Event.runloop()
-print("my-thread close")
+print("my-thread closed")

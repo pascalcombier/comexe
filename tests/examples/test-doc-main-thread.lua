@@ -9,7 +9,7 @@ function EventMyThreadExit (ThreadId)
   Event.stoploop()      -- Stop the loop
 end
 
--- Create the thread by loading my-thread.lua
+-- Create a new thread and load my-thread.lua
 local ThreadId = Thread.create("my-thread", "EventMyThreadExit")
 
 uv.sleep(1000)
@@ -20,4 +20,4 @@ Event.send(ThreadId, "EventExitThread")
 
 -- Block until stoploop() is called
 Event.runloop()
-print("test-doc-main-thread close")
+print("test-doc-main-thread closed")

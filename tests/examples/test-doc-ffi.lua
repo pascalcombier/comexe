@@ -58,6 +58,9 @@ local INIT_Data = {
 local Count = #INIT_Data
 local Users = UserStruct:newarray(Count)
 
+local FirstUser         = Users[1]
+local ArrayStartPointer = FirstUser:getpointer()
+
 for Index = 1, Count do
   local User        = Users[Index]
   local NamePointer = ffi.allocstring(INIT_Data[Index].Name)
@@ -69,7 +72,7 @@ local CompareClosure, CompareUserByIdPointer = ffi.newcfunction(CompareUsersById
 
 print("BEFORE qsort")
 PrintUsers(Users)
-Qsort(Users[1]:getpointer(), Count, UserStructSize, CompareUserByIdPointer)
+Qsort(ArrayStartPointer, Count, UserStructSize, CompareUserByIdPointer)
 print(" AFTER qsort")
 PrintUsers(Users)
 
