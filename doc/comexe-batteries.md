@@ -1,111 +1,9 @@
 # ComEXE builtins
 
-- [Multithreading](#multithreading)
 - [libffi](#libffi)
 - [luv: Cross-platform asynchronous I/O](#luv-cross-platform-asynchronous-io)
 - [luasocket](#luasocket)
 - [mbedtls](#mbedtls)
-
-# Multithreading
-
-ComEXE multithreading is based on OS-level native threads, not Lua green threads or coroutines. Each thread runs its own Lua interpreter and communicates with other threads using the event system.
-
-## Quick start
-
-```mermaid
-sequenceDiagram
-  participant Main as Main Script
-  create participant Thread as my-thread
-
-  Main->>Thread: Thread.create("my-thread", "EventMyThreadExit")
-  Note over Thread: Loads my-thread.lua
-  Note over Thread: calls Event.runloop()
-
-  Main-->>Thread: Event.send(MyThreadId, "EventDoSomething", 1, true, false, nil)
-  Main-->>Thread: Event.send(MyThreadId, "EventExitThread")
-  Note over Main: calls Event.runloop()
-  Thread-->>Main: EventMyThreadExit(MyThreadId)
-  Note over Thread: Thread no longer exists
-
-  Main->>Main: EventMyThreadExit(MyThreadId): stoploop()
-  Note over Main: script exits properly
-```
-
-**[my-thread.lua](../tests/examples/my-thread.lua)**
-
-```lua title="my-thread.lua"
-local Event = require("com.event")
-
-function EventDoSomething (...)
-  print("EventDoSomething", ...)
-end
-
-function EventExitThread ()
-  Event.stoploop()
-end
-
--- Block until stoploop() is called
-Event.runloop()
-print("my-thread close")
-```
-
-**[test-doc-main-thread.lua](../tests/examples/test-doc-main-thread.lua)**
-
-```lua title="test-doc-main-thread.lua"
-local uv = require("luv")
-
-local Thread = require("com.thread")
-local Event  = require("com.event")
-
--- Called when my-thread.lua exits
-function EventMyThreadExit (ThreadId)
-  Thread.join(ThreadId) -- Release the thread ID
-  Event.stoploop()      -- Stop the loop
-end
-
--- Create the thread by loading my-thread.lua
-local ThreadId = Thread.create("my-thread", "EventMyThreadExit")
-
-uv.sleep(1000)
-Event.send(ThreadId, "EventDoSomething", 1, true, false, nil)
-uv.sleep(1000)
-
-Event.send(ThreadId, "EventExitThread")
-
--- Block until stoploop() is called
-Event.runloop()
-print("test-doc-main-thread close")
-```
-
-This will output:
-
-```
->lua55ce.exe tests\examples\test-doc-main-thread.lua
-EventDoSomething        1       true    false   nil
-my-thread close
-test-doc-main-thread close
-```
-
-## Overview
-
-The multithreading library makes it easy to develop native multithreaded applications in Lua:
-* `Thread.create` spawns a new Lua interpreter in a separate OS thread and loads the requested module
-* Threads communicate with `Event.send`, which essentially enqueues an event to the target thread
-* An event is just a call to a global Lua function
-* When a thread exits, the parent is notified with a thread-exit event
-
-Supported event argument types:
-- [X] nil
-- [X] booleans
-- [X] light userdata
-- [X] numbers
-- [X] strings
-- [ ] tables
-- [ ] functions
-- [ ] full userdata
-- [ ] coroutines
-
-Tables and other complex Lua values are not supported. If you need to send a more complex object between threads, serialize it to a string first using a library such as [binser](https://github.com/bakpakin/binser) or [dkjson](https://dkolf.de/dkjson-lua).
 
 # libffi
 
@@ -156,7 +54,7 @@ StatusLine       HTTP/1.1 200 OK
 
 ## Example decoding JSON data
 
-JSON is supported by [installing third-party packages](./standalone-executables.md) and [dkjson](https://dkolf.de/dkjson-lua) can be installed:
+JSON is supported by [installing third-party packages](./comexe-reference-standalone-executables.md) and [dkjson](https://dkolf.de/dkjson-lua) can be installed:
 
 ```
 lua55ce.exe -x --apm install dkjson-2.8
