@@ -193,6 +193,18 @@ ComEXE intentionally keeps the API flexible. Thread references are simple intege
 
 Created threads are not automatically released. **Threads must be released by calling `Thread.join(ThreadId)`**. Every call to `Thread.create` should have a corresponding call to `Thread.join`. If the main program exits while a child thread is still running, ComEXE treats this as a **programming error and prints a warning**.
 
+Note that event handlers can be reused:
+```
+function EventThreadExit (ThreadId)
+  Thread.join(ThreadId) -- Release the thread ID
+end
+
+-- Create threads
+local Thread1 = Thread.create("thread-impl-1", "EventThreadExit")
+local Thread2 = Thread.create("thread-impl-2", "EventThreadExit")
+local Thread3 = Thread.create("thread-impl-3", "EventThreadExit")
+```
+
 ## Interfacing with other event loops
 
 Several libraries use event loops, including libuv, IUP, and Copas. To integrate with those libraries, use `Event.runonce()`.
