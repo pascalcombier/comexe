@@ -1,12 +1,19 @@
-# PUC Lua vs ComEXE: Unicode on Windows
+# PUC Lua vs ComEXE: Unicode support on Windows
 
-Regarding Unicode on Windows, the official Lua binaries do not handle it well. The technical reasons are well-known: `luaL_loadfilex` is implemented with [fopen](https://github.com/lua/lua/blob/master/lauxlib.c). When linked against msvcrt.dll, the fopen function uses the ANSI codepage and not Unicode.
+The official [Lua binaries on Windows](https://luabinaries.sourceforge.net) have limited UTF-8 support. ComEXE fixes some limitations.
 
-To highlight that, we have a couple of tests available [here](https://github.com/pascalcombier/comexe/tree/main/tests/basics/unicode-tests).
+| # | Function                                                              | Official Lua | ComEXE |
+|---|-----------------------------------------------------------------------|--------------|--------|
+| 1 | [`print`](https://www.lua.org/manual/5.5/manual.html#pdf-print)       | No           | Yes    |
+| 2 | [`require`](https://www.lua.org/manual/5.5/manual.html#pdf-require)   | No           | Yes    |
+| 3 | [`loadfile`](https://www.lua.org/manual/5.5/manual.html#pdf-loadfile) | No           | No     |
+| 4 | [`io.open`](https://www.lua.org/manual/5.5/manual.html#pdf-io.open)   | No           | No     |
 
-# PUC Lua on Windows
+To test points 1 and 2, we wrote a [small set of tests](https://github.com/pascalcombier/comexe/tree/main/tests/basics/unicode-tests). The workaround for points 3 and 4 is to use the built-in [luv](https://github.com/luvit/luv/blob/master/docs/docs.md#uvfs_openpath-flags-mode-callback) library instead of standard Lua functions. We also wrote [a test](https://github.com/pascalcombier/comexe/blob/main/tests/basics/test-luv-unicode.lua) for this.
 
-```sh
+## PUC Lua on Windows
+
+```console
 > lua55.exe test-greetings-привет.lua
 lua55.exe: cannot open test-greetings-??????.lua: Invalid argument
 > lua55.exe test-hello-こんにちは.lua
@@ -19,9 +26,9 @@ lua55.exe: cannot open test-?e?a-sa?.lua: Invalid argument
 lua55.exe: cannot open test-?????-world.lua: Invalid argument
 ```
 
-# ComEXE on Windows
+## ComEXE on Windows
 
-```sh
+```console
 > lua55ce.exe test-greetings-привет.lua
 arg[0]  test-greetings-привет.lua
 > lua55ce.exe test-hello-こんにちは.lua
@@ -33,7 +40,3 @@ arg[0]  test-γεια-σας.lua
 > lua55ce.exe test-안녕하세요-world.lua
 arg[0]  test-안녕하세요-world.lua
 ```
-
-# io.open on Windows does not handle UTF-8 properly
-
-Because ComEXE uses an unmodified Lua 5.5, `io.open` is also broken on Windows for UTF-8 filenames; the integrated `luv` library works well for those cases.
