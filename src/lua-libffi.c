@@ -101,6 +101,14 @@
 /* Take the biggest value (like MAX) */
 #define FFI_AT_LEAST(Value, Min) ((Value) > (Min) ? (Value) : (Min))
 
+struct FFI_Array
+{
+  struct GB_Buffer *Buffer;
+  ffi_type         *ElementType;
+  size_t            ElementSize;
+  size_t            Count;
+};
+
 /* This CIF "Call Interface" can be shared/cached between the functions sharing
  * the same signature
  */
@@ -545,6 +553,182 @@ static int FFI_GetStructInfo (lua_State *LuaState)
   lua_pushinteger(LuaState, StructType->alignment);
 
   return 2; /* Number of values returned on the stack */
+}
+
+/*============================================================================*/
+/* C ARRAYS                                                                   */
+/*============================================================================*/
+
+static int FFI_NewArray (lua_State *LuaState)
+{
+  ffi_type         *ElementType = lua_touserdata(LuaState, 1);
+  lua_Integer       Count       = luaL_checkinteger(LuaState, 2);
+  size_t            ElementSize = ElementType->size;
+  size_t            SizeInBytes = (Count * ElementSize);
+  struct FFI_Array *NewArray;
+
+  NewArray              = PLAT_SafeAlloc0(1, sizeof(struct FFI_Array));
+  NewArray->Buffer      = GB_NewBuffer(&FFI_BufferAllocator, SizeInBytes, NULL);
+  NewArray->ElementType = ElementType;
+  NewArray->ElementSize = ElementSize;
+  NewArray->Count       = Count;
+
+  lua_pushlightuserdata(LuaState, NewArray);
+
+  return 1; /* Number of values returned on the stack */
+}
+
+static int FFI_GetArrayPointer (lua_State *LuaState)
+{
+  struct FFI_Array *Array       = lua_touserdata(LuaState, 1);
+  void             *DataPointer = GB_GetData(Array->Buffer);
+
+  lua_pushlightuserdata(LuaState, DataPointer);
+
+  return 1; /* Number of values returned on the stack */
+}
+
+static int FFI_ArrayReadValue (lua_State *LuaState)
+{
+  struct FFI_Array *Array         = lua_touserdata(LuaState, 1);
+  lua_Integer       Index         = luaL_checkinteger(LuaState, 2);
+  size_t            Offset        = (Index - 1);
+  size_t            ElementOffset = (Offset * Array->ElementSize);
+  uint8_t          *DataPointer   = GB_GetData(Array->Buffer);
+
+  FFI_PushValue(LuaState, Array->ElementType, &DataPointer[ElementOffset]);
+
+  return 1; /* Number of values returned on the stack */
+}
+
+static int FFI_ArrayWriteValue (lua_State *LuaState)
+{
+  struct FFI_Array *Array         = lua_touserdata(LuaState, 1);
+  lua_Integer       Index         = luaL_checkinteger(LuaState, 2);
+  size_t            Offset        = (Index - 1);
+  size_t            ElementOffset = (Offset * Array->ElementSize);
+  uint8_t          *DataPointer   = GB_GetData(Array->Buffer);
+
+  FFI_CopyLuaValueToCif(LuaState,
+                        3,
+                        Array->ElementType,
+                        &DataPointer[ElementOffset]);
+
+  return 0; /* Number of values returned on the stack */
+}
+
+/* Read C Array into given Lua Table */
+/* ReadValues(Array, Table, IndexStart, IndexEnd) */
+static int FFI_ArrayReadValues (lua_State *LuaState)
+{
+  struct FFI_Array *Array      = lua_touserdata(LuaState, 1);
+  lua_Integer       IndexStart = luaL_optinteger(LuaState, 3, 1);
+  lua_Integer       IndexEnd   = luaL_optinteger(LuaState, 4, Array->Count);
+  size_t            OffsetStart;
+  size_t            OffsetEnd;
+  size_t            Offset;
+  size_t            ElementOffset;
+  uint8_t          *DataPointer;
+  lua_Integer       LuaIndex;
+  
+  OffsetStart = (IndexStart - 1);
+  OffsetEnd   = (IndexEnd - 1);
+  DataPointer = GB_GetData(Array->Buffer);
+
+  for (Offset = OffsetStart; (Offset <= OffsetEnd); Offset++)
+  {
+    ElementOffset = (Offset * Array->ElementSize);
+    LuaIndex      = (Offset + 1);
+    FFI_PushValue(LuaState, Array->ElementType, &DataPointer[ElementOffset]);
+    lua_rawseti(LuaState, 2, LuaIndex);
+  }
+
+  /* Return the number of values copied */
+  lua_pushinteger(LuaState, (IndexEnd - IndexStart + 1));
+
+  return 1; /* Number of values returned on the stack */
+}
+
+/* WriteValues(FfiArray, LuaTable) */
+static int FFI_ArrayWriteValues (lua_State *LuaState)
+{
+  struct FFI_Array *Array     = lua_touserdata(LuaState, 1);
+  size_t            TableSize = lua_rawlen(LuaState, 2);
+  size_t            Offset;
+  size_t            ElementOffset;
+  uint8_t          *DataPointer;
+  lua_Integer       LuaIndex;
+
+  DataPointer = GB_GetData(Array->Buffer);
+
+  for (Offset = 0; (Offset < TableSize); Offset++)
+  {
+    ElementOffset = (Offset * Array->ElementSize);
+    LuaIndex      = (Offset + 1);
+
+    /* Temporary extract value from user table */
+    lua_rawgeti(LuaState, 2, LuaIndex);
+
+    /* Copy value to C array (reuse FFI_CopyLuaValueToCif) */
+    FFI_CopyLuaValueToCif(LuaState,
+                          -1,
+                          Array->ElementType,
+                          &DataPointer[ElementOffset]);
+
+    /* Remove temporary value */
+    lua_pop(LuaState, 1);
+  }
+
+  return 0; /* Number of values returned on the stack */
+}
+
+static int FFI_ResizeArray (lua_State *LuaState)
+{
+  struct FFI_Array *Array    = lua_touserdata(LuaState, 1);
+  lua_Integer       NewCount = luaL_checkinteger(LuaState, 2);
+  size_t            OldCount;
+  size_t            OldSizeInBytes;
+  size_t            NewSizeInBytes;
+  struct GB_Buffer *NewBuffer;
+  uint8_t          *NewData;
+  size_t            AddedSize;
+
+  OldCount       = Array->Count;
+  OldSizeInBytes = (OldCount * Array->ElementSize);
+  NewSizeInBytes = (NewCount * Array->ElementSize);
+
+  NewBuffer = GB_EnsureCapacity(Array->Buffer, NewSizeInBytes);
+  Array->Buffer = NewBuffer;
+  NewData = GB_GetData(NewBuffer);
+
+  if (NewSizeInBytes > OldSizeInBytes)
+  {
+    AddedSize = (NewSizeInBytes - OldSizeInBytes);
+    memset(&NewData[OldSizeInBytes], 0, AddedSize);
+  }
+
+  Array->Count = NewCount;
+
+  return 0; /* Number of values returned on the stack */
+}
+
+static int FFI_GetArrayCount (lua_State *LuaState)
+{
+  struct FFI_Array *Array = lua_touserdata(LuaState, 1);
+
+  lua_pushinteger(LuaState, Array->Count);
+
+  return 1; /* Number of values returned on the stack */
+}
+
+static int FFI_FreeArray (lua_State *LuaState)
+{
+  struct FFI_Array *Array = lua_touserdata(LuaState, 1);
+
+  GB_FreeBuffer(Array->Buffer);
+  PLAT_Free(Array);
+
+  return 0; /* Number of values returned on the stack */
 }
 
 /*============================================================================*/
@@ -1115,6 +1299,16 @@ static const struct luaL_Reg FFI_FUNCTIONS[] =
   { "newstruct",            FFI_NewStructureType      },
   { "getstructinfo",        FFI_GetStructInfo         },
   { "getstructoffsets",     FFI_GetStructOffsets      },
+  /* C arrays */
+  { "newarray",             FFI_NewArray              },
+  { "getarraypointer",      FFI_GetArrayPointer       },
+  { "arraygetvalue",        FFI_ArrayReadValue        },
+  { "arraysetvalue",        FFI_ArrayWriteValue       },
+  { "arraygetvalues",       FFI_ArrayReadValues       },
+  { "arraysetvalues",       FFI_ArrayWriteValues      },
+  { "arrayresize",          FFI_ResizeArray           },
+  { "arraycount",           FFI_GetArrayCount         },
+  { "freearray",            FFI_FreeArray             },
   /* low-level interface to libffi */
   { "newcif",               FFI_NewCif                },
   { "getcifreturnpointer",  FFI_GetCifReturnPointer   },
@@ -1193,6 +1387,10 @@ LUALIB_API int luaopen_libffiraw (lua_State *LuaState)
   /* Add NULL constant as lightuserdata */
   lua_pushlightuserdata(LuaState, NULL);
   lua_setfield(LuaState, -2, "NULL");
+  
+  /* Add POINTER_SIZE */
+  lua_pushinteger(LuaState, sizeof(void *));
+  lua_setfield(LuaState, -2, "POINTER_SIZE");
   
   return 1; /* Number of values returned on the stack */
 }
