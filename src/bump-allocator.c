@@ -189,16 +189,16 @@ extern struct BA_Allocator *BA_NewAllocator (size_t InitialCount,
 
   struct BA_Allocator *NewAllocator = PLAT_SafeAlloc0(1, sizeof(struct BA_Allocator));
   
-  uint8_t *Storage        = PLAT_SafeAlloc0(1, PowerSizeInBytes);
-  size_t   SizeInfoInByte = PowerCount * sizeof(size_t);
-  size_t   DataInfoInByte = PowerCount * sizeof(uint8_t *);
-  uint8_t *Info           = PLAT_SafeAlloc0(1, SizeInfoInByte + DataInfoInByte);
+  uint8_t *Storage         = PLAT_SafeAlloc0(1, PowerSizeInBytes);
+  size_t   SizeInfoInBytes = PowerCount * sizeof(size_t);
+  size_t   DataInfoInBytes = PowerCount * sizeof(uint8_t *);
+  uint8_t *Info            = PLAT_SafeAlloc0(1, SizeInfoInBytes + DataInfoInBytes);
 
   NewAllocator->DataStore        = Storage;
   NewAllocator->StoreSizeInBytes = PowerSizeInBytes;
   NewAllocator->MaxBlobCount     = (PowerCount - 1); /* dummy */
   NewAllocator->BlobSizesInBytes = (size_t *)(Info + 0);
-  NewAllocator->BlobPointers     = (uint8_t **)(Info + SizeInfoInByte);
+  NewAllocator->BlobPointers     = (uint8_t **)(Info + SizeInfoInBytes);
 
   BA_Reset(NewAllocator);
 
