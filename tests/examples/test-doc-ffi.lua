@@ -22,7 +22,7 @@ local UserStructSize = UserStruct:getsizeinbytes()
 local function PrintUsers (Users)
   local Count = #Users
   for Index = 1, Count do
-    local User = Users[Index]
+    local User            = Users:get(Index)
     local UserId          = User:getfield("Id")
     local UserNamePointer = User:getfield("Name")
     local Name = ffi.readstring(UserNamePointer)
@@ -56,13 +56,13 @@ local INIT_Data = {
 }
 
 local Count = #INIT_Data
-local Users = UserStruct:newarray(Count)
+local Users = ffi.newarray(UserStruct, Count)
 
-local FirstUser         = Users[1]
+local FirstUser         = Users:get(1)
 local ArrayStartPointer = FirstUser:getpointer()
 
 for Index = 1, Count do
-  local User        = Users[Index]
+  local User        = Users:get(Index)
   local NamePointer = ffi.allocstring(INIT_Data[Index].Name)
   User:setfield("Id", INIT_Data[Index].Id)
   User:setfield("Name", NamePointer)
@@ -77,7 +77,7 @@ print(" AFTER qsort")
 PrintUsers(Users)
 
 for Index = 1, Count do
-  local User        = Users[Index]
+  local User        = Users:get(Index)
   local NamePointer = User:getfield("Name")
   ffi.free(NamePointer)
   User:setfield("Name", nil)

@@ -16,6 +16,8 @@ local sint32  = libffi.sint32
 local pointer = libffi.pointer
 local NULL    = libffi.NULL
 
+local newinstance = ffi.newinstance
+
 --------------------------------------------------------------------------------
 -- STRUCT BY VALUE [ARGUMENTS + RETURNS]                                      --
 --------------------------------------------------------------------------------
@@ -47,24 +49,23 @@ local tcc_relocate        = libtcc.tcc_relocate
 local tcc_get_symbol      = libtcc.tcc_get_symbol
 local tcc_delete          = libtcc.tcc_delete
 
-local StructProgram = [[
-typedef struct PairTag
-{
-        int Left;
-        int Right;
+local StructProgram = [[typedef struct PairTag {
+  int Left;
+  int Right;
+
 } Pair;
 
 Pair MakePair (int Left, int Right)
 {
-        Pair NewPair;
-        NewPair.Left  = Left;
-        NewPair.Right = Right;
-        return NewPair;
+  Pair NewPair;
+  NewPair.Left  = Left;
+  NewPair.Right = Right;
+  return NewPair;
 }
 
 int SumPair (Pair Input)
 {
-        return (Input.Left + Input.Right);
+  return (Input.Left + Input.Right);
 }
 
 typedef Pair (*PairTransformCallback)(Pair Input);
@@ -86,15 +87,15 @@ assert((tcc_set_output_type(TccState, "memory") == 0))
 assert((tcc_compile_string(TccState, StructProgram) == 0))
 assert((tcc_relocate(TccState) == 0))
 
-local MakePairAddress = tcc_get_symbol(TccState, "MakePair")
-local SumPairAddress  = tcc_get_symbol(TccState, "SumPair")
+local MakePairAddress       = tcc_get_symbol(TccState, "MakePair")
+local SumPairAddress        = tcc_get_symbol(TccState, "SumPair")
 local CallPairAndSumAddress = tcc_get_symbol(TccState, "CallPairAndSum")
-assert(MakePairAddress ~= NULL)
-assert(SumPairAddress ~= NULL)
+assert(MakePairAddress       ~= NULL)
+assert(SumPairAddress        ~= NULL)
 assert(CallPairAndSumAddress ~= NULL)
 
-local MakePair, MakePairPrivate = ffi.newluafunction(MakePairAddress, PairStruct, sint32, sint32)
-local SumPair, SumPairPrivate = ffi.newluafunction(SumPairAddress, sint32, PairStruct)
+local MakePair, MakePairPrivate             = ffi.newluafunction(MakePairAddress, PairStruct, sint32, sint32)
+local SumPair, SumPairPrivate               = ffi.newluafunction(SumPairAddress, sint32, PairStruct)
 local CallPairAndSum, CallPairAndSumPrivate = ffi.newluafunction(CallPairAndSumAddress, sint32, pointer, sint32, sint32)
 assert(MakePair)
 assert(SumPair)
@@ -110,17 +111,17 @@ assert((PairValueA == PairValueB))
 assert((PairValueB:getfield("First") == 7))
 assert((PairValueB:getfield("Second") == 5))
 
-local UserPair = PairStruct:newinstance()
+local UserPair = newinstance(PairStruct)
 UserPair:set(1, 40)
 UserPair:setfield("Second", 2)
 
 local PairSum = SumPair(UserPair)
 assert((PairSum == 42))
 
-local PairArray = PairStruct:newarray(2)
+local PairArray = ffi.newarray(PairStruct, 2)
 assert((#PairArray == 2))
-local PairFirst = PairArray[1]
-local PairSecond = PairArray[2]
+local PairFirst  = PairArray:get(1)
+local PairSecond = PairArray:get(2)
 PairFirst:setfield("First", 1)
 PairFirst:setfield("Second", 2)
 PairSecond:setfield("First", 3)
@@ -148,9 +149,9 @@ local function PairTransformCallback (InputPair)
   assert((type(InputPair) == "table"))
   assert((type(InputPair.getfield) == "function"))
   PairTransformCallbackCalled = true
-  local Left = InputPair:getfield("First")
-  local Right = InputPair:getfield("Second")
-  local OutputPair = PairStruct:newinstance()
+  local Left       = InputPair:getfield("First")
+  local Right      = InputPair:getfield("Second")
+  local OutputPair = newinstance(PairStruct)
   OutputPair:setfield("First",  (Left  + 10))
   OutputPair:setfield("Second", (Right + 20))
   return OutputPair

@@ -129,8 +129,6 @@ end
 
 local LibFFI = require("com.ffi")
 
-local format = string.format
-
 local NULL    = LibFFI.NULL
 local void    = LibFFI.void
 local uint16  = LibFFI.uint16
@@ -140,6 +138,8 @@ local uint64  = LibFFI.uint64
 local sint64  = LibFFI.sint64
 local pointer = LibFFI.pointer
 local cstring = LibFFI.pointer
+
+local newinstance = LibFFI.newinstance
 
 -- Retrieve DLLs
 local libc     = LibFFI.loadlib("msvcrt.dll")
@@ -653,10 +653,10 @@ local EXIT_SUCCESS = 0
 -- GLOBALS                                                                    --
 --------------------------------------------------------------------------------
 
-local GlobalPaintStruct = PaintStructType:newinstance()
-local GlobalRectangle   = RectType:newinstance()
-local WndClassElement   = WndClassExType:newinstance()
-local MessageElement    = MessageType:newinstance()
+local GlobalPaintStruct = newinstance(PaintStructType)
+local GlobalRectangle   = newinstance(RectType)
+local WndClassElement   = newinstance(WndClassExType)
+local MessageElement    = newinstance(MessageType)
 
 -- Active Win32 timer id (created later with SetTimer)
 local GlobalTimerId = 0 -- 0 is invalid timer ID

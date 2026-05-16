@@ -4,8 +4,10 @@
 
 local libffi = require("com.raw.libffi")
 assert(libffi)
-assert(libffi.sint32)
+
 assert(libffi.pointer)
+assert(libffi.sint32)
+assert(libffi.double)
 assert(libffi.uint8)
 
 local void    = libffi.void
@@ -113,6 +115,65 @@ if libffi.complex_double then
   libffi.freeclosure(ComplexClosure)
   libffi.freecif(ComplexCif)
 end
+
+--------------------------------------------------------------------------------
+-- C ARRAYS                                                                   --
+--------------------------------------------------------------------------------
+
+local IntArray = libffi.newarray(sint32, 4)
+assert(IntArray ~= NULL)
+local IntArrayPointer = libffi.getarraypointer(IntArray)
+assert((type(IntArrayPointer) == "userdata"))
+local IntArrayValues = {}
+local PartialValues = { 777, 888, 999, 111 }
+
+libffi.arraysetvalues(IntArray, { 10, 20, 30, 40 })
+libffi.arraygetvalues(IntArray, IntArrayValues)
+
+assert((IntArrayValues[1] == 10))
+assert((IntArrayValues[2] == 20))
+assert((IntArrayValues[3] == 30))
+assert((IntArrayValues[4] == 40))
+
+libffi.arraygetvalues(IntArray, PartialValues, 2, 3)
+assert((PartialValues[1] == 777))
+assert((PartialValues[2] == 20))
+assert((PartialValues[3] == 30))
+assert((PartialValues[4] == 111))
+
+local PointerArray = libffi.newarray(pointer, 2)
+assert(PointerArray ~= NULL)
+local PointerArrayPointer = libffi.getarraypointer(PointerArray)
+assert((type(PointerArrayPointer) == "userdata"))
+local PointerArrayValues = {}
+
+libffi.arraysetvalues(PointerArray, { NULL, PutsAddress })
+libffi.arraygetvalues(PointerArray, PointerArrayValues)
+
+assert((PointerArrayValues[1] == NULL))
+assert((PointerArrayValues[2] == PutsAddress))
+
+libffi.arrayresize(IntArray, 50000)
+assert((libffi.arraycount(IntArray) == 50000))
+IntArrayPointer = libffi.getarraypointer(IntArray)
+assert((type(IntArrayPointer) == "userdata"))
+libffi.arraygetvalues(IntArray, IntArrayValues)
+assert((IntArrayValues[1] == 10))
+assert((IntArrayValues[4] == 40))
+
+IntArrayValues[50000] = 99
+libffi.arraysetvalues(IntArray, IntArrayValues)
+libffi.arraygetvalues(IntArray, IntArrayValues)
+assert((IntArrayValues[50000] == 99))
+
+libffi.arrayresize(IntArray, 2)
+assert((libffi.arraycount(IntArray) == 2))
+libffi.arraygetvalues(IntArray, IntArrayValues)
+assert((IntArrayValues[1] == 10))
+assert((IntArrayValues[2] == 20))
+
+libffi.freearray(IntArray)
+libffi.freearray(PointerArray)
 
 --------------------------------------------------------------------------------
 -- UTILITIES                                                                  --
