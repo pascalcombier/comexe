@@ -36,7 +36,7 @@
 /* STATIC DATA                                                                */
 /*============================================================================*/
 
-static struct PB_Allocator MAIN_Allocator =
+static struct GB_Allocator MAIN_Allocator =
 {
   PLAT_GetPageSizeInBytes,
   PLAT_SafeAlloc0,
@@ -139,11 +139,11 @@ static void MAIN_FreeMbedtls ()
 /*============================================================================*/
 
 /* On Linux, we use uv_exepath to get the executable path */
-static char *MAIN_NormalizeArgv0 (struct PB_Buffer **BufferPointer,
+static char *MAIN_NormalizeArgv0 (struct GB_Buffer **BufferPointer,
                                   const char        *Argv0)
 {
-  /* We need a **BufferPointer because PB_EnsureCapacity may reallocate the buffer */
-  struct PB_Buffer *Buffer;
+  /* We need a **BufferPointer because GB_EnsureCapacity may reallocate the buffer */
+  struct GB_Buffer *Buffer;
   char             *PathBuffer;
   size_t            SizeInBytes;
   size_t            Argv0Length;
@@ -152,9 +152,9 @@ static char *MAIN_NormalizeArgv0 (struct PB_Buffer **BufferPointer,
   Buffer = *BufferPointer;
 
   /* Ensure buffer space */
-  Buffer      = PB_EnsureCapacity(Buffer, (PATH_MAX + 1));
-  PathBuffer  = PB_GetData(Buffer);
-  SizeInBytes = PB_GetCapacity(Buffer);
+  Buffer      = GB_EnsureCapacity(Buffer, (PATH_MAX + 1));
+  PathBuffer  = GB_GetData(Buffer);
+  SizeInBytes = GB_GetCapacity(Buffer);
 
   Result = uv_exepath(PathBuffer, &SizeInBytes);
   
@@ -162,8 +162,8 @@ static char *MAIN_NormalizeArgv0 (struct PB_Buffer **BufferPointer,
   {
     /* Fallback to Argv0 if uv_exepath fails (no procfs?) */
     Argv0Length = strlen(Argv0);
-    Buffer      = PB_EnsureCapacity(Buffer, (Argv0Length + 1));
-    PathBuffer  = PB_GetData(Buffer);
+    Buffer      = GB_EnsureCapacity(Buffer, (Argv0Length + 1));
+    PathBuffer  = GB_GetData(Buffer);
     memcpy(PathBuffer, Argv0, (Argv0Length + 1));
   }
 
@@ -189,8 +189,9 @@ static void MAIN_DeInitializeApplication ()
 int main (int argc, char **argv)
 {
   struct LUA_Application *Application;
-  struct PB_Buffer       *Buffer;
+  struct GB_Buffer       *Buffer;
   char                   *NormalizedArgv0;
+  size_t                  PageSizeInBytes;
 
   if ((argc == 2) && (strcmp(argv[1], "--comexe-version") == 0))
   {
@@ -199,13 +200,15 @@ int main (int argc, char **argv)
   }
   else
   {
-    Buffer = PB_NewBuffer(&MAIN_Allocator, 4096);
+    PageSizeInBytes = PLAT_GetPageSizeInBytes();
+
+    Buffer = GB_NewBuffer(&MAIN_Allocator, PageSizeInBytes, NULL);
 
     /* Same behavior as on Windows: we need the full qualified filename, because
      * we need to open the EXE as a ZIP file to load init.lua */
     NormalizedArgv0 = MAIN_NormalizeArgv0(&Buffer, argv[0]);
     argv[0]         = PLAT_StrDup(NormalizedArgv0);
-    PB_FreeBuffer(Buffer);
+    GB_FreeBuffer(Buffer);
 
     MAIN_InitializeApplication();
     

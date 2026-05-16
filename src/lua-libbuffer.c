@@ -13,10 +13,10 @@
 /*============================================================================*/
 
 /**
- * PB_Buffer is a buffer which grows as needed, with its ensurecapacity()
+ * GB_Buffer is a buffer which grows as needed, with its ensurecapacity()
  * function, potentially returning a new pointer like the function realloc().
  *
- * This buffer APIis simply providing a light user-data PB_Buffer, the idea was
+ * This buffer API is simply providing a light user-data GB_Buffer, the idea was
  * to provide a high-level API, implemented on the Lua side. That Lua object
  * wiil resize and update the pointer when ensurecapacity() is called. Seemed
  * pretty straight-forward.
@@ -44,7 +44,7 @@
 #include <lauxlib.h> /* luaL_newlib */
 #include <string.h>  /* memcpy      */
 
-#include "comexe.h" /* PB_Buffer */
+#include "comexe.h" /* GB_Buffer */
 
 /*============================================================================*/
 /* CONFIGURATION                                                              */
@@ -56,9 +56,8 @@
 /* PRIVATE DATA                                                               */
 /*============================================================================*/
 
-static struct PB_Allocator BUFFER_Allocator =
+static struct GB_Allocator BUFFER_Allocator =
 {
-  PLAT_GetPageSizeInBytes,
   PLAT_SafeAlloc0,
   PLAT_Free,
   PLAT_SafeRealloc
@@ -78,10 +77,10 @@ static struct PB_Allocator BUFFER_Allocator =
 static int BUFFER_NewBuffer (lua_State *LuaState)
 {
   size_t            SizeInBytes;
-  struct PB_Buffer *NewBuffer;
+  struct GB_Buffer *NewBuffer;
   
   SizeInBytes = luaL_optinteger(LuaState, 1, BUFFER_DEFAULT_INIT_SIZE);
-  NewBuffer   = PB_NewBuffer(&BUFFER_Allocator, SizeInBytes);
+  NewBuffer   = GB_NewBuffer(&BUFFER_Allocator, SizeInBytes, NULL);
 
   lua_pushlightuserdata(LuaState, NewBuffer);
 
@@ -90,8 +89,8 @@ static int BUFFER_NewBuffer (lua_State *LuaState)
 
 static int BUFFER_GetBufferCapacity (lua_State *LuaState)
 {
-  struct PB_Buffer *Buffer   = lua_touserdata(LuaState, 1);
-  size_t            Capacity = PB_GetCapacity(Buffer);
+  struct GB_Buffer *Buffer   = lua_touserdata(LuaState, 1);
+  size_t            Capacity = GB_GetCapacity(Buffer);
   
   lua_pushinteger(LuaState, Capacity);
   
@@ -100,9 +99,9 @@ static int BUFFER_GetBufferCapacity (lua_State *LuaState)
 
 static int BUFFER_EnsureBufferCapacity (lua_State *LuaState)
 {
-  struct PB_Buffer *Buffer         = lua_touserdata(LuaState, 1);
+  struct GB_Buffer *Buffer         = lua_touserdata(LuaState, 1);
   size_t            NeededCapacity = luaL_checkinteger(LuaState, 2);
-  struct PB_Buffer *NewBuffer      = PB_EnsureCapacity(Buffer, NeededCapacity);
+  struct GB_Buffer *NewBuffer      = GB_EnsureCapacity(Buffer, NeededCapacity);
   
   lua_pushlightuserdata(LuaState, NewBuffer);
   
@@ -111,9 +110,9 @@ static int BUFFER_EnsureBufferCapacity (lua_State *LuaState)
 
 static int BUFFER_GetBufferData (lua_State *LuaState)
 {
-  struct PB_Buffer *Buffer = lua_touserdata(LuaState, 1);
+  struct GB_Buffer *Buffer = lua_touserdata(LuaState, 1);
   int               Offset = luaL_optinteger(LuaState, 2, 0);
-  uint8_t          *Data   = PB_GetData(Buffer);
+  uint8_t          *Data   = GB_GetData(Buffer);
   
   lua_pushlightuserdata(LuaState, &Data[Offset]);
   
@@ -122,16 +121,16 @@ static int BUFFER_GetBufferData (lua_State *LuaState)
 
 static int BUFFER_FreeBuffer (lua_State *LuaState)
 {
-  struct PB_Buffer *Buffer = lua_touserdata(LuaState, 1);
+  struct GB_Buffer *Buffer = lua_touserdata(LuaState, 1);
   
-  PB_FreeBuffer(Buffer);
+  GB_FreeBuffer(Buffer);
 
   return 0; /* Number of values pushed on the stack */
 }
 
 static int BUFFER_ReadBuffer (lua_State *LuaState)
 {
-  struct PB_Buffer *Buffer     = lua_touserdata(LuaState, 1);
+  struct GB_Buffer *Buffer     = lua_touserdata(LuaState, 1);
   int               IndexStart = luaL_checkinteger(LuaState, 2);
   int               IndexEnd   = luaL_checkinteger(LuaState, 3);
   const uint8_t    *Data;
@@ -146,7 +145,7 @@ static int BUFFER_ReadBuffer (lua_State *LuaState)
   }
   else
   {
-    Data   = PB_GetData(Buffer);
+    Data   = GB_GetData(Buffer);
     Offset = (IndexStart - 1);
     Count  = (IndexEnd - IndexStart + 1);
 
@@ -160,7 +159,7 @@ static int BUFFER_ReadBuffer (lua_State *LuaState)
 static int BUFFER_WriteBuffer (lua_State *LuaState)
 {
   size_t            DataLen;
-  struct PB_Buffer *Buffer = lua_touserdata(LuaState, 1);
+  struct GB_Buffer *Buffer = lua_touserdata(LuaState, 1);
   const char       *Input  = luaL_checklstring(LuaState, 2, &DataLen);
   int               Index  = luaL_optinteger(LuaState, 3, 1);
   char             *Output;
@@ -173,8 +172,8 @@ static int BUFFER_WriteBuffer (lua_State *LuaState)
     Offset         = (Index - 1);
     NeededCapacity = (Offset + DataLen);
 
-    Buffer = PB_EnsureCapacity(Buffer, NeededCapacity);
-    Output = PB_GetData(Buffer);
+    Buffer = GB_EnsureCapacity(Buffer, NeededCapacity);
+    Output = GB_GetData(Buffer);
 
     memcpy(&Output[Offset], Input, DataLen);
 

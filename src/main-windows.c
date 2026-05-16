@@ -76,9 +76,8 @@ static SetProcessDpiAwarenessPointer MAIN_SetProcessDpiAwareness = NULL;
 static UINT MAIN_OldOutputCP = 0;
 static UINT MAIN_OldInputCP  = 0;
 
-static struct PB_Allocator MAIN_Allocator =
+static struct GB_Allocator MAIN_Allocator =
 {
-  PLAT_GetPageSizeInBytes,
   PLAT_SafeAlloc0,
   PLAT_Free,
   PLAT_SafeRealloc
@@ -179,10 +178,10 @@ static void MAIN_FreeMbedtls ()
 /*============================================================================*/
 
 /* Return a newly allocated UTF-8 string from the given Utf16String */
-static char *MAIN_ConvertString (struct PB_Buffer **BufferPointer,
+static char *MAIN_ConvertString (struct GB_Buffer **BufferPointer,
                                  LPCWCH             Utf16String)
 {
-  struct PB_Buffer *Buffer = *BufferPointer;
+  struct GB_Buffer *Buffer = *BufferPointer;
   int               SizeInBytes;
   char             *BufferUtf8;
   char             *NewUtf8String;
@@ -204,8 +203,8 @@ static char *MAIN_ConvertString (struct PB_Buffer **BufferPointer,
   }
 
   /* Retrieve pointer to the destination UTF-8 location */
-  Buffer     = PB_EnsureCapacity(Buffer, SizeInBytes);
-  BufferUtf8 = PB_GetData(Buffer);
+  Buffer     = GB_EnsureCapacity(Buffer, SizeInBytes);
+  BufferUtf8 = GB_GetData(Buffer);
 
   /* Convert UTF-16 into UTF-8 at the offset */
   WideCharToMultiByte(CP_UTF8,     /* CodePage          */
@@ -220,18 +219,18 @@ static char *MAIN_ConvertString (struct PB_Buffer **BufferPointer,
   /* Duplicate the resulting UTF-8 string onto the heap */
   NewUtf8String = PLAT_StrDup(BufferUtf8);
 
-  /* Buffer might have been relocated by PB_EnsureCapacity */
+  /* Buffer might have been relocated by GB_EnsureCapacity */
   *BufferPointer = Buffer;
 
   return NewUtf8String;
 }
 
 /* Use libuv for simplicity */
-static char *MAIN_NormalizeArgv0 (struct PB_Buffer **BufferPointer,
+static char *MAIN_NormalizeArgv0 (struct GB_Buffer **BufferPointer,
                                   const char        *Argv0)
 {
-  /* We need a **BufferPointer because PB_EnsureCapacity may reallocate the buffer */
-  struct PB_Buffer *Buffer;
+  /* We need a **BufferPointer because GB_EnsureCapacity may reallocate the buffer */
+  struct GB_Buffer *Buffer;
   char             *PathBuffer;
   size_t            SizeInBytes;
   size_t            Argv0Length;
@@ -240,9 +239,9 @@ static char *MAIN_NormalizeArgv0 (struct PB_Buffer **BufferPointer,
   Buffer = *BufferPointer;
 
   /* Ensure buffer space */
-  Buffer      = PB_EnsureCapacity(Buffer, (PATH_MAX + 1));
-  PathBuffer  = PB_GetData(Buffer);
-  SizeInBytes = PB_GetCapacity(Buffer);
+  Buffer      = GB_EnsureCapacity(Buffer, (PATH_MAX + 1));
+  PathBuffer  = GB_GetData(Buffer);
+  SizeInBytes = GB_GetCapacity(Buffer);
 
   Result = uv_exepath(PathBuffer, &SizeInBytes);
   
@@ -251,8 +250,8 @@ static char *MAIN_NormalizeArgv0 (struct PB_Buffer **BufferPointer,
     /* Fallback to Argv0 if uv_exepath fails, not clear why it would fail */
     /* third-party\src\libuv\src\win\util.c */
     Argv0Length = strlen(Argv0);
-    Buffer      = PB_EnsureCapacity(Buffer, (Argv0Length + 1));
-    PathBuffer  = PB_GetData(Buffer);
+    Buffer      = GB_EnsureCapacity(Buffer, (Argv0Length + 1));
+    PathBuffer  = GB_GetData(Buffer);
     memcpy(PathBuffer, Argv0, (Argv0Length + 1));
   }
 
@@ -321,12 +320,12 @@ static bool MAIN_StringEquals (const wchar_t *StringA, const wchar_t *StringB)
 /* MAIN FUNCTION                                                              */
 /*============================================================================*/
 
-static void MAIN_ConvertArguments (struct PB_Buffer  **BufferPointer,
+static void MAIN_ConvertArguments (struct GB_Buffer  **BufferPointer,
                                    int                 Argc,
                                    const wchar_t     **Argv,
                                    char             ***ArgvUtf8)
 {
-  struct PB_Buffer *Buffer = *BufferPointer;
+  struct GB_Buffer *Buffer = *BufferPointer;
   int               Offset;
   LPCWCH            ArgStringUtf16;
 
@@ -359,7 +358,7 @@ static void MAIN_FreeAllocatedArguments (char **ArgvUtf8, int Argc)
 int wmain (int argc, const wchar_t **argv)
 {
   struct LUA_Application  *Application;
-  struct PB_Buffer        *NewBuffer;
+  struct GB_Buffer        *NewBuffer;
   char                   **ArgvUtf8;
   size_t                   SizeInBytes;
   char                    *NormalizedArgv0;
@@ -379,11 +378,11 @@ int wmain (int argc, const wchar_t **argv)
     ArgvUtf8 = PLAT_SafeAlloc0((argc + 1), sizeof(char *));
       
     /* Convert the UTF-16 arguments into UTF-8 using temp buffer */
-    NewBuffer = PB_NewBuffer(&MAIN_Allocator, SizeInBytes);
+    NewBuffer = GB_NewBuffer(&MAIN_Allocator, SizeInBytes, NULL);
     MAIN_ConvertArguments(&NewBuffer, argc, argv, &ArgvUtf8);
     NormalizedArgv0 = MAIN_NormalizeArgv0(&NewBuffer, "comexe.exe");
     ArgvUtf8[0]     = PLAT_StrDup(NormalizedArgv0);
-    PB_FreeBuffer(NewBuffer);
+    GB_FreeBuffer(NewBuffer);
 
     MAIN_InitializeApplication();
     Application = LUA_CreateApplication(argc, (const char **)ArgvUtf8);

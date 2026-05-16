@@ -48,18 +48,17 @@ bool BA_SetInt64(struct BA_Allocator *Allocator,BA_Key_t Key,int64_t Value);
 bool BA_SetUint64(struct BA_Allocator *Allocator,BA_Key_t Key,uint64_t Value);
 bool BA_SetDouble(struct BA_Allocator *Allocator,BA_Key_t Key,double Value);
 bool BA_SetPointer(struct BA_Allocator *Allocator,BA_Key_t Key,void *Value);
-struct PB_Allocator {
-  size_t (*GetPageSizeInBytes)(void);
-  
+typedef size_t(*GB_Strategy_t)(size_t CurrentCapacity,size_t NeededCapacity);
+struct GB_Allocator {
   void * (*Alloc)  (size_t Count, size_t SizeInBytes);
   void   (*Free)   (void *Pointer);
   void * (*Realloc)(void *Pointer, size_t NewSizeInBytes);
 };
-struct PB_Buffer *PB_NewBuffer(struct PB_Allocator *Allocator,size_t InitialSizeInBytes);
-void PB_FreeBuffer(struct PB_Buffer *Buffer);
-struct PB_Buffer *PB_EnsureCapacity(struct PB_Buffer *Buffer,size_t NeededCapacity);
-size_t PB_GetCapacity(struct PB_Buffer *Buffer);
-void *PB_GetData(struct PB_Buffer *Buffer);
+struct GB_Buffer *GB_NewBuffer(struct GB_Allocator *Allocator,size_t InitialSizeInBytes,GB_Strategy_t UserStrategy);
+void GB_FreeBuffer(struct GB_Buffer *Buffer);
+struct GB_Buffer *GB_EnsureCapacity(struct GB_Buffer *Buffer,size_t NeededCapacity);
+size_t GB_GetCapacity(struct GB_Buffer *Buffer);
+void *GB_GetData(struct GB_Buffer *Buffer);
 struct TQU_Queue *TQU_CreateQueue(size_t InitialCapacity);
 void TQU_FreeQueue(struct TQU_Queue *Queue);
 bool TQU_Enqueue(struct TQU_Queue *Queue,size_t Value);

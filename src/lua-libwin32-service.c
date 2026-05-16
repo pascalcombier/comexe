@@ -84,9 +84,8 @@
 /* CONSTANTS                                                                  */
 /*============================================================================*/
 
-static struct PB_Allocator SERVICE_Allocator =
+static struct GB_Allocator SERVICE_Allocator =
 {
-  PLAT_GetPageSizeInBytes,
   PLAT_SafeAlloc0,
   PLAT_Free,
   PLAT_SafeRealloc
@@ -104,7 +103,7 @@ static SERVICE_STATUS_HANDLE   SERVICE_Handle;
 static SERVICE_STATUS          SERVICE_Status;
 
 /* Store all the strings inside SERVICE_Buffer */
-static struct PB_Buffer *SERVICE_Buffer;
+static struct GB_Buffer *SERVICE_Buffer;
 static size_t            SERVICE_WriteOffset;
 
 static LPWSTR SERVICE_Name;
@@ -119,19 +118,19 @@ static void SERVICE_EnsureBufferCapacity (size_t NeededSizeInBytes)
 {
   if (SERVICE_Buffer == 0)
   {
-    SERVICE_Buffer      = PB_NewBuffer(&SERVICE_Allocator, NeededSizeInBytes);
+    SERVICE_Buffer      = GB_NewBuffer(&SERVICE_Allocator, NeededSizeInBytes, NULL);
     SERVICE_WriteOffset = 0;
   }
   else
   {
-    PB_EnsureCapacity(SERVICE_Buffer, NeededSizeInBytes);
+    SERVICE_Buffer = GB_EnsureCapacity(SERVICE_Buffer, NeededSizeInBytes);
   }
 }
 
-/* Assume there is enough space (PB_EnsureCapacity already called) */
+/* Assume there is enough space (GB_EnsureCapacity already called) */
 static LPWSTR SERVICE_AllocStringUtf16 (LPCWSTR Data, size_t SizeInBytes)
 {
-  char *Buffer         = PB_GetData(SERVICE_Buffer);
+  char *Buffer         = GB_GetData(SERVICE_Buffer);
   char *NewStringBytes = (Buffer + SERVICE_WriteOffset);
 
   memcpy(NewStringBytes, (const char *)Data, SizeInBytes);
@@ -146,10 +145,10 @@ static LPWSTR SERVICE_AllocStringUtf16 (LPCWSTR Data, size_t SizeInBytes)
   return (LPWSTR)NewStringBytes;
 }
 
-/* Assume there is enough space (PB_EnsureCapacity already called) */
+/* Assume there is enough space (GB_EnsureCapacity already called) */
 static char *SERVICE_AllocStringUtf8 (const char *String, size_t SizeInBytes)
 {
-  char *Buffer    = PB_GetData(SERVICE_Buffer);
+  char *Buffer    = GB_GetData(SERVICE_Buffer);
   char *NewString = (Buffer + SERVICE_WriteOffset);
   
   memcpy(NewString, String, SizeInBytes);

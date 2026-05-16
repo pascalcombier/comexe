@@ -134,9 +134,8 @@ struct FFI_StructType
   size_t   FieldCount;
 };
 
-static struct PB_Allocator FFI_BufferAllocator =
+static struct GB_Allocator FFI_BufferAllocator =
 {
-  PLAT_GetPageSizeInBytes,
   PLAT_SafeAlloc0,
   PLAT_Free,
   PLAT_SafeRealloc
@@ -154,10 +153,10 @@ static bool STRING_Equals (const char *StringLeft, const char *StringRight)
 }
 
 /* Lazy: allocate the buffer when needed by FFI_GetStructOffsets */
-static struct PB_Buffer *FFI_GetOffsetsBuffer (lua_State *LuaState)
+static struct GB_Buffer *FFI_GetOffsetsBuffer (lua_State *LuaState)
 {
   size_t InitialSizeInBytes = (64 * sizeof(size_t)); /* 64 structure fields */
-  struct PB_Buffer *Buffer;
+  struct GB_Buffer *Buffer;
 
   lua_rawgetp(LuaState, LUA_REGISTRYINDEX, &FFI_BUFFER_KEY);
   Buffer = lua_touserdata(LuaState, -1);
@@ -165,7 +164,7 @@ static struct PB_Buffer *FFI_GetOffsetsBuffer (lua_State *LuaState)
 
   if (Buffer == NULL)
   {
-    Buffer = PB_NewBuffer(&FFI_BufferAllocator, InitialSizeInBytes);
+    Buffer = GB_NewBuffer(&FFI_BufferAllocator, InitialSizeInBytes, NULL);
 
     lua_pushlightuserdata(LuaState, Buffer);
     lua_rawsetp(LuaState, LUA_REGISTRYINDEX, &FFI_BUFFER_KEY);
@@ -179,26 +178,26 @@ static size_t *FFI_GetOffsetBufferData (lua_State *LuaState,
                                         size_t     FieldCount)
 {
   size_t  NeededSizeInBytes = (FieldCount * sizeof(size_t));
-  struct  PB_Buffer *Buffer;
+  struct  GB_Buffer *Buffer;
   size_t *OffsetArray;
 
   /* Resize buffer if needed */
   Buffer = FFI_GetOffsetsBuffer(LuaState);
-  Buffer = PB_EnsureCapacity(Buffer, NeededSizeInBytes);
+  Buffer = GB_EnsureCapacity(Buffer, NeededSizeInBytes);
 
   /* Buffer address might changed, need to update Lua registry */
   lua_pushlightuserdata(LuaState, Buffer);
   lua_rawsetp(LuaState, LUA_REGISTRYINDEX, &FFI_BUFFER_KEY);
 
   /* Return the data */
-  OffsetArray = PB_GetData(Buffer);
+  OffsetArray = GB_GetData(Buffer);
 
   return OffsetArray;
 }
 
 static int FFI_FreeOffsetsBuffer (lua_State *LuaState)
 {
-  struct PB_Buffer *Buffer;
+  struct GB_Buffer *Buffer;
 
   /* Check buffer */
   lua_rawgetp(LuaState, LUA_REGISTRYINDEX, &FFI_BUFFER_KEY);
@@ -210,7 +209,7 @@ static int FFI_FreeOffsetsBuffer (lua_State *LuaState)
   {
     lua_pushnil(LuaState);
     lua_rawsetp(LuaState, LUA_REGISTRYINDEX, &FFI_BUFFER_KEY);
-    PB_FreeBuffer(Buffer);
+    GB_FreeBuffer(Buffer);
   }
 
   return 0; /* Number of return values */
