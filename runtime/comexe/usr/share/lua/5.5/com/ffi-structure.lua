@@ -10,11 +10,11 @@
 --
 -- StructureInstance
 --   Represent a structure instance allocated on the C side
+--   With the methods to read and write fields
 --   STRUCTURE_INSTANCE_METATABLE
 --
 -- Both StructureType and StructureInstance are complex Lua object
 --
--- We also have the concept of array STRUCTURE_NewArray, but without metatable
 -- In the code below, FfiType refer to the type returned by libffi (lightuserdata)
 --
 -- Initially, we wanted to support function calls StructByValue. But for that we
@@ -27,7 +27,7 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local RawFfi = require("com.raw.libffi")
+local libffi = require("com.raw.libffi")
 
 local format = string.format
 local append = table.insert
@@ -35,35 +35,30 @@ local concat = table.concat
 local pack   = string.pack
 local unpack = string.unpack
 
-local readmemory       = RawFfi.readmemory
-local writememory      = RawFfi.writememory
-local readpointer      = RawFfi.readpointer
-local writepointer     = RawFfi.writepointer
-local convertpointer   = RawFfi.convertpointer
-local pointeroffset    = RawFfi.pointeroffset
-local safemalloc       = RawFfi.malloc
-local free             = RawFfi.free
-local memset           = RawFfi.memset
-local newstruct        = RawFfi.newstruct
-local getstructinfo    = RawFfi.getstructinfo
-local getstructoffsets = RawFfi.getstructoffsets
-local FFI_OK           = RawFfi.FFI_OK
-local NULL             = RawFfi.NULL
+local readmemory       = libffi.readmemory
+local writememory      = libffi.writememory
+local readpointer      = libffi.readpointer
+local writepointer     = libffi.writepointer
+local pointeroffset    = libffi.pointeroffset
+local newstruct        = libffi.newstruct
+local getstructinfo    = libffi.getstructinfo
+local getstructoffsets = libffi.getstructoffsets
+local FFI_OK           = libffi.FFI_OK
+local NULL             = libffi.NULL
+local POINTER_SIZE     = libffi.POINTER_SIZE
 
-local void    = RawFfi.void
-local uint8   = RawFfi.uint8
-local sint8   = RawFfi.sint8
-local uint16  = RawFfi.uint16
-local sint16  = RawFfi.sint16
-local uint32  = RawFfi.uint32
-local sint32  = RawFfi.sint32
-local uint64  = RawFfi.uint64
-local sint64  = RawFfi.sint64
-local float   = RawFfi.float
-local double  = RawFfi.double
-local pointer = RawFfi.pointer
-
-local POINTER_SIZE = #convertpointer(NULL, "string")
+local void    = libffi.void
+local uint8   = libffi.uint8
+local sint8   = libffi.sint8
+local uint16  = libffi.uint16
+local sint16  = libffi.sint16
+local uint32  = libffi.uint32
+local sint32  = libffi.sint32
+local uint64  = libffi.uint64
+local sint64  = libffi.sint64
+local float   = libffi.float
+local double  = libffi.double
+local pointer = libffi.pointer
 
 -- In this map, we will also register the sizes of StructureType created by
 -- NewNamedStructure and NewAnonymousStructure
@@ -151,35 +146,6 @@ local STRUCTURE_TYPE_METATABLE
 local STRUCTURE_INSTANCE_METATABLE
 
 --------------------------------------------------------------------------------
--- GARBAGE COLLECTOR: CALL C FREE AT THE RIGHT TIME                           --
---------------------------------------------------------------------------------
-
-local function COLLECTOR_Free (PointerList)
-  for Index, Value in ipairs(PointerList) do
-    if (type(Value) == "userdata") then
-      free(Value)
-    end
-  end
-end
-
-local COLLECTOR_METATABLE = {
-  -- METATABLE_LuaDefinedMethods
-  __gc = COLLECTOR_Free
-}
-
--- Create an object that will free the list of given pointers
-local function NewGarbageCollector (Pointer1, ...)
-  -- Create a new buffer
-  local NewPointerList = {
-    Pointer1,
-    ...
-  }
-  setmetatable(NewPointerList, COLLECTOR_METATABLE)
-  -- Return value
-  return NewPointerList
-end
-
---------------------------------------------------------------------------------
 -- PRIVATE FUNCTIONS                                                          --
 --------------------------------------------------------------------------------
 
@@ -201,12 +167,6 @@ local function NewStructureInstance (Structure, BufferPointer, InstanceOffset, P
   setmetatable(NewStructureInstance, STRUCTURE_INSTANCE_METATABLE)
   -- Return value
   return NewStructureInstance
-end
-
-local function ComputeFieldOffset (Instance, Field)
-  local InstanceOffset = Instance.InstanceOffset
-  local FieldOffset    = (InstanceOffset + Field.Offset)
-  return FieldOffset
 end
 
 local function BuildStructureFields (FieldNames, FieldTypes, FieldFfiTypes, Offsets)
@@ -338,43 +298,6 @@ local function STRUCTURE_TypeGetOffsets (Structure)
   return Offsets
 end
 
--- A fixed sized array of StructureInstance
-local function STRUCTURE_NewArray (Structure, ElementCount)
-  -- Validate inputs
-  assert((type(ElementCount) == "number"), "newarray expects an integer count")
-  assert((ElementCount >= 1), "newarray count should be >= 1")
-  -- Allocate memory
-  local StructureSize    = Structure.Size
-  local TotalSizeInBytes = (StructureSize * ElementCount)
-  local NewBuffer        = safemalloc(TotalSizeInBytes)
-  -- Erase memory
-  memset(NewBuffer, 0, TotalSizeInBytes)
-  -- The array will contains hashmap-style information
-  -- AND (below)
-  -- The array part will contains the elements
-  local NewArray = {
-    StructType     = Structure,
-    BufferPointer  = NewBuffer,
-    InstanceOffset = 0,
-    Collector      = NewGarbageCollector(NewBuffer),
-  }
-  -- Fill the array part of the array
-  for Index = 1, ElementCount do
-    local Offset         = (Index - 1)
-    local InstanceOffset = (Offset * StructureSize)
-    local NewInstance    = NewStructureInstance(Structure, NewBuffer, InstanceOffset, NewArray)
-    NewArray[Index] = NewInstance
-  end
-  -- Return value
-  return NewArray
-end
-
-local function STRUCTURE_NewInstance (Structure)
-  local NewArray    = STRUCTURE_NewArray(Structure, 1)
-  local NewInstance = NewArray[1]
-  return NewInstance
-end
-
 local function STRUCTURE_NewInstanceFromPointer (Structure, BufferPointer)
   assert((type(BufferPointer) == "userdata"), "expects pointer (lightuserdata)")
   local NewInstance = NewStructureInstance(Structure, BufferPointer, 0, nil)
@@ -389,8 +312,6 @@ STRUCTURE_TYPE_METATABLE = {
     getalignment   = STRUCTURE_GetAlignment,
     getsizeinbytes = STRUCTURE_GetSizeInBytes,
     getoffsets     = STRUCTURE_TypeGetOffsets,
-    newarray       = STRUCTURE_NewArray,
-    newinstance    = STRUCTURE_NewInstance,
     frompointer    = STRUCTURE_NewInstanceFromPointer,
   }
 }
@@ -426,13 +347,14 @@ end
 
 local function STRUCTURE_INSTANCE_Set (Instance, FieldIndex, FieldValue)
   -- Validate inputs
-  local StructureType = Instance.StructType
-  local Fields        = StructureType.Fields
-  local Field         = Fields[FieldIndex]
+  local StructureType  = Instance.StructType
+  local InstanceOffset = Instance.InstanceOffset
+  local Fields         = StructureType.Fields
+  local Field          = Fields[FieldIndex]
   assert(Field, format("Invalid field: %d", FieldIndex))
   -- Retrieve data
   local BufferPointer      = Instance.BufferPointer
-  local FieldOffset        = ComputeFieldOffset(Instance, Field)
+  local FieldOffset        = (InstanceOffset + Field.Offset)
   local FieldFfiType       = Field.FfiType
   local FieldStructureType = StructureTypeMap[FieldFfiType]
   -- Write data into C side
@@ -470,13 +392,14 @@ end
 
 local function STRUCTURE_INSTANCE_Get (Instance, Index)
   -- Validate inputs
-  local StructureType = Instance.StructType
-  local Fields        = StructureType.Fields
-  local Field         = Fields[Index]
+  local StructureType  = Instance.StructType
+  local InstanceOffset = Instance.InstanceOffset
+  local Fields         = StructureType.Fields
+  local Field          = Fields[Index]
   assert(Field, format("Invalid field: %d", Index))
   -- Retrieve data
   local BufferPointer      = Instance.BufferPointer
-  local FieldOffset        = ComputeFieldOffset(Instance, Field)
+  local FieldOffset        = (InstanceOffset + Field.Offset)
   local FieldFfiType       = Field.FfiType
   local FieldStructureType = StructureTypeMap[FieldFfiType]
   local FieldValue

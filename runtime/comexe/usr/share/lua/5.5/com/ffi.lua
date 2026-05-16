@@ -26,7 +26,7 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local LibFFI    = require("com.raw.libffi")
+local libffi    = require("com.raw.libffi")
 local StructFFI = require("com.ffi-structure")
 
 local append = table.insert
@@ -34,34 +34,44 @@ local format = string.format
 local concat = table.concat
 local unpack = table.unpack
 
-local fficall             = LibFFI.call
-local loadlib             = LibFFI.loadlib
-local getproc             = LibFFI.getproc
-local newcif              = LibFFI.newcif
-local newcallcontext      = LibFFI.newcallcontext
-local getcifreturnpointer = LibFFI.getcifreturnpointer
-local newclosure          = LibFFI.newclosure
-local freecallcontext     = LibFFI.freecallcontext
-local freecif             = LibFFI.freecif
-local freelib             = LibFFI.freelib
-local freeclosure         = LibFFI.freeclosure
+local fficall             = libffi.call
+local loadlib             = libffi.loadlib
+local getproc             = libffi.getproc
+local newcif              = libffi.newcif
+local newcallcontext      = libffi.newcallcontext
+local getcifreturnpointer = libffi.getcifreturnpointer
+local newclosure          = libffi.newclosure
+local freecallcontext     = libffi.freecallcontext
+local freecif             = libffi.freecif
+local freelib             = libffi.freelib
+local freeclosure         = libffi.freeclosure
 
-local void    = LibFFI.void
-local uint8   = LibFFI.uint8
-local sint8   = LibFFI.sint8
-local uint16  = LibFFI.uint16
-local sint16  = LibFFI.sint16
-local uint32  = LibFFI.uint32
-local sint32  = LibFFI.sint32
-local uint64  = LibFFI.uint64
-local sint64  = LibFFI.sint64
-local float   = LibFFI.float
-local double  = LibFFI.double
-local pointer = LibFFI.pointer
+local newarray        = libffi.newarray
+local getarraypointer = libffi.getarraypointer
+local arraygetvalue   = libffi.arraygetvalue
+local arraysetvalue   = libffi.arraysetvalue
+local arraygetvalues  = libffi.arraygetvalues
+local arraysetvalues  = libffi.arraysetvalues
+local arrayresize     = libffi.arrayresize
+local arraycount      = libffi.arraycount
+local freearray       = libffi.freearray
+
+local void    = libffi.void
+local uint8   = libffi.uint8
+local sint8   = libffi.sint8
+local uint16  = libffi.uint16
+local sint16  = libffi.sint16
+local uint32  = libffi.uint32
+local sint32  = libffi.sint32
+local uint64  = libffi.uint64
+local sint64  = libffi.sint64
+local float   = libffi.float
+local double  = libffi.double
+local pointer = libffi.pointer
 
 -- Those types might not be present at runtime
-local complex_float  = LibFFI.complex_float
-local complex_double = LibFFI.complex_double
+local complex_float  = libffi.complex_float
+local complex_double = libffi.complex_double
 
 -- Note that it also map Lua objects created with NewStructType to their
 -- corresponding luaffi type (lightuserdata)
@@ -161,6 +171,230 @@ local function BuildSignature (...)
 end
 
 --------------------------------------------------------------------------------
+-- C ARRAYS: SUPPORT PRIMITIVE TYPES AND STRUCTURES                           --
+--------------------------------------------------------------------------------
+
+local function ARRAY_ConvertWriteValue (Array, Value)
+  -- Identify array of structures
+  local FfiType    = Array.FfiType
+  local StructType = FFI_STRUCT_TYPES[FfiType]
+  local ConvertedValue
+  -- Case: structures
+  if StructType then
+    -- If value is nil, it will reset the memory to 0 (FFI_CopyLuaValueToCif)
+    if Value then
+      ConvertedValue = Value:getpointer()
+    end
+  -- Case: pointers
+  elseif (FfiType == pointer) then
+    local ValueType = type(Value)
+    if (Value == nil) then
+      ConvertedValue = nil
+    elseif (ValueType == "userdata") then
+      ConvertedValue = Value
+    elseif (ValueType == "table") then
+      if (type(Value.getpointer) ~= "function") then
+        error(format("pointer array expects nil, userdata, or object with getpointer() method, got %s", ValueType))
+      end
+      ConvertedValue = Value:getpointer()
+    elseif (ValueType == "string") then
+      -- TODO not good because we better propose a easy to use string array interface
+      error("pointer array expects nil, userdata, or object with getpointer() method; use allocstring() for Lua strings")
+    else
+      error(format("pointer array expects nil, userdata, or object with getpointer() method, got %s", ValueType))
+    end
+  -- Case: primitive types
+  else
+    ConvertedValue = Value
+  end
+  -- Return value
+  return ConvertedValue
+end
+
+local function ARRAY_ConvertReadValue (Array, Value)
+  -- Identify array of structures
+  local FfiType    = Array.FfiType
+  local StructType = FFI_STRUCT_TYPES[FfiType]
+  local ConvertedValue
+  if StructType then
+    -- Return a real structure instance
+    ConvertedValue = StructType:frompointer(Value)
+  else
+    -- Pointer arrays intentionally expose pointers/lightuserdata
+    ConvertedValue = Value
+  end
+  -- Return value
+  return ConvertedValue
+end
+
+local function ARRAY_ToLua (Array)
+  -- Retrieve data
+  local Handle     = Array.Handle
+  local ArrayCount = Array.Count
+  -- Create a new array
+  local NewValues  = {}
+  -- Collect the values from the C side
+  arraygetvalues(Handle, NewValues)
+  -- Convert back structures from pointers
+  for Index = 1, ArrayCount do
+    local Value = NewValues[Index]
+    NewValues[Index] = ARRAY_ConvertReadValue(Array, Value)
+  end
+  -- Return value
+  return NewValues
+end
+
+local function ARRAY_FromLua (Array, LuaTable)
+  -- Validate inputs
+  assert((type(LuaTable) == "table"), "array fromlua expects a table")
+  -- Retrieve data
+  local Handle   = Array.Handle
+  local Count    = Array.Count
+  local NewCount = #LuaTable
+  assert((NewCount >= 1), "array fromlua expects at least 1 element")
+  -- Resize C side if needed
+  if (NewCount ~= Count) then
+    -- Extend the array on the C side
+    arrayresize(Handle, NewCount)
+    -- Update
+    Array.Pointer = getarraypointer(Handle)
+    Array.Count   = arraycount(Handle)
+  end
+  -- Create a temporary array with converted values (structures)
+  local NewValues = {}
+  for Index = 1, NewCount do
+    local ComplexValue = LuaTable[Index]
+    local SimpleValue  = ARRAY_ConvertWriteValue(Array, ComplexValue)
+    NewValues[Index] = SimpleValue
+  end
+  -- Set the values
+  arraysetvalues(Handle, NewValues)
+end
+
+local function ARRAY_GetPointer (Array)
+  -- Retrieve data
+  local Handle = Array.Handle
+  -- Get pointer
+  local NewPointer = getarraypointer(Handle)
+  -- Update pointer
+  Array.Pointer = NewPointer
+  -- Return value
+  return NewPointer
+end
+
+local function ARRAY_GetCount (Array)
+  -- Retrieve data
+  local Count = Array.Count
+  -- Return value
+  return Count
+end
+
+local function ARRAY_GetValue (Array, Index)
+  -- Validate inputs
+  assert((Index >= 1) and (Index <= Array.Count), format("array index out of bounds: %d [%d-%d]", Index, 1, Array.Count))
+  -- Read a single value from the C side
+  local Handle      = Array.Handle
+  local SimpleValue = arraygetvalue(Handle, Index)
+  -- Convert pointers to high-level structures if needed
+  local ConvertedValue = ARRAY_ConvertReadValue(Array, SimpleValue)
+  -- Return value
+  return ConvertedValue
+end
+
+local function ARRAY_SetValue (Array, Index, Value)
+  -- Validate inputs
+  assert((Index >= 1), format("index must be positive: %d", Index))
+  -- Retrieve data
+  local Handle = Array.Handle
+  local Count  = Array.Count
+  -- Resize C side array if needed
+  if (Index > Count) then
+    -- Resize buffer
+    arrayresize(Handle, Index)
+    -- Update data
+    Array.Pointer = getarraypointer(Handle)
+    Array.Count   = arraycount(Handle)
+  end
+  -- Convert high-level structures to pointers if needed
+  local SimpleValue = ARRAY_ConvertWriteValue(Array, Value)
+  -- Writes the value on the C side
+  arraysetvalue(Handle, Index, SimpleValue)
+end
+
+local function ARRAY_Length (Array)
+  -- Retrieve data
+  local Count = Array.Count
+  -- Return value
+  return Count
+end
+
+local function ARRAY_CollectGarbage (Array)
+  local ArrayHandle = Array.Handle
+  if (ArrayHandle) then
+    -- Free resources
+    freearray(ArrayHandle)
+    Array.Handle  = nil
+    Array.Pointer = nil
+    Array.Count   = nil
+  end
+end
+
+local ARRAY_METATABLE = {
+  -- METATABLE_LuaDefinedMethods
+  __index = {
+    getpointer = ARRAY_GetPointer,
+    getcount   = ARRAY_GetCount,
+    get        = ARRAY_GetValue,
+    set        = ARRAY_SetValue,
+    fromlua    = ARRAY_FromLua,
+    tolua      = ARRAY_ToLua,
+  },
+  -- METATABLE_LuaDefinedMethods
+  __len = ARRAY_Length,
+  __gc  = ARRAY_CollectGarbage,
+}
+
+local function ARRAY_NewArray (ArrayType, ElementCount)
+  -- Validate inputs
+  local FfiType = FFI_TYPES[ArrayType]
+  assert(FfiType, format("Invalid FFI type for newarray: %s", tostring(ArrayType)))
+  assert((ElementCount >= 1), "newarray count should be >= 1")
+  -- Create the array on the C side
+  local NewArrayC = newarray(FfiType, ElementCount)
+  -- Create a new array
+  local NewArrayObject = {
+    FfiType = FfiType,
+    Handle  = NewArrayC,
+    Pointer = getarraypointer(NewArrayC),
+    Count   = arraycount(NewArrayC),
+  }
+  -- Attach metatable
+  setmetatable(NewArrayObject, ARRAY_METATABLE)
+  -- Return value
+  return NewArrayObject
+end
+
+local function NewInstance (Type)
+  -- Validate inputs
+  local FfiType = FFI_TYPES[Type]
+  assert(FfiType, format("Invalid type for newinstance: %s", tostring(Type)))
+  -- Allocate as an array
+  local NewArray = ARRAY_NewArray(Type, 1)
+  local Result
+  -- Primitives: return the array itself (has get/set/getpointer/GC)
+  if (FFI_STRUCT_TYPES[FfiType] == nil) then
+    Result = NewArray
+  else
+    -- Structures: return a StructureInstance anchored to the array
+    Result = NewArray:get(1)
+    -- Prevent garbage collection of the array
+    Result.parentarray = NewArray
+  end
+  -- Return value
+  return Result
+end
+
+--------------------------------------------------------------------------------
 -- METATABLES                                                                 --
 --------------------------------------------------------------------------------
 
@@ -177,9 +411,9 @@ local function LIBRARY_GarbageCollectMethod (Library)
     freecif(Cif)
   end
   -- Clear all caches
-  Library.SymbolCache  = nil
-  Library.CifCache     = nil
-  Library.ContextCache = nil
+  Library.SymbolCache   = nil
+  Library.CifCache      = nil
+  Library.ContextCache  = nil
   Library.VariadicCache = nil
   -- Free the library
   freelib(Library.Handle)
@@ -418,7 +652,7 @@ local function LIBRARY_MethodGetVariadic (Library, ReturnType, FunctionName, ...
 end
 
 --------------------------------------------------------------------------------
--- METATABLE                                                                  --
+-- LIBRARY METATABLE                                                          --
 --------------------------------------------------------------------------------
 
 local LIBRARY_Metatable = {
@@ -589,27 +823,30 @@ local PUBLIC_API = {
   newluafunction = WrapFunction,  -- C function pointer -> Lua function
   newcfunction   = CreateClosure, -- Lua function       -> C function pointer
   -- Direct imports from libffi raw bindings
-  readpointer    = LibFFI.readpointer,
-  newpointer     = LibFFI.newpointer, -- (High, Low)
-  convertpointer = LibFFI.convertpointer,
-  derefpointer   = LibFFI.derefpointer,
-  readmemory     = LibFFI.readmemory,
-  writememory    = LibFFI.writememory,
-  pointeroffset  = LibFFI.pointeroffset,
-  pointerdiff    = LibFFI.pointerdiff,
+  readpointer    = libffi.readpointer,
+  newpointer     = libffi.newpointer, -- (High, Low)
+  convertpointer = libffi.convertpointer,
+  derefpointer   = libffi.derefpointer,
+  readmemory     = libffi.readmemory,
+  writememory    = libffi.writememory,
+  pointeroffset  = libffi.pointeroffset,
+  pointerdiff    = libffi.pointerdiff,
   -- structures
   newstructure   = NewNamedStructure,
   newstructurea  = NewAnonymousStructure,
+  newarray       = ARRAY_NewArray,
+  newinstance    = NewInstance, -- alias for newarray(1)
   -- mimalloc
-  getpagesize = LibFFI.getpagesize,
-  malloc      = LibFFI.malloc,
-  realloc     = LibFFI.realloc,
-  free        = LibFFI.free,
-  memset      = LibFFI.memset,
-  NULL        = LibFFI.NULL,
+  getpagesize  = libffi.getpagesize,
+  malloc       = libffi.malloc,
+  realloc      = libffi.realloc,
+  free         = libffi.free,
+  memset       = libffi.memset,
+  NULL         = libffi.NULL,
+  POINTER_SIZE = libffi.POINTER_SIZE,
   -- C-string helpers
-  allocstring = LibFFI.allocstring,
-  readstring  = LibFFI.readstring,
+  allocstring = libffi.allocstring,
+  readstring  = libffi.readstring,
   -- ffi types
   void    = void,
   uint8   = uint8,
