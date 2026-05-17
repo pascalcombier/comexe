@@ -1278,9 +1278,20 @@ static int FFI_ReadString (lua_State *LuaState)
 {
   char   *Address = lua_touserdata(LuaState, 1);
   size_t  Offset  = luaL_optinteger(LuaState, 2, 0);
-  size_t  Length  = strlen(&Address[Offset]);
+  size_t  Length;
 
-  lua_pushlstring(LuaState, &Address[Offset], Length);
+  /* Avoid crashes for NULL pointers */
+  if (Address == NULL)
+  {
+    lua_pushnil(LuaState);
+  }
+  else
+  {
+    Offset = luaL_optinteger(LuaState, 2, 0);
+    Length = strlen(&Address[Offset]);
+
+    lua_pushlstring(LuaState, &Address[Offset], Length);
+  }
 
   return 1; /* Number of values returned on the stack */
 }
