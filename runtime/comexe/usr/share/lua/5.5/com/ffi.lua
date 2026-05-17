@@ -2,11 +2,6 @@
 -- INFORMATION                                                                --
 --------------------------------------------------------------------------------
 
--- We support structures:
---   CallStructureByValue
---   ReturnStructureByValue
---   NestedStructure are also supported
-
 -- High level interface:
 -- local libc   = LibFFI.LoadLibrary("msvcrt.dll")
 -- local malloc = libc:GetFunction(LibFFI.pointer, "malloc", LibFFI.uint64)
@@ -21,9 +16,19 @@
 -- local memset = libc:GetFunction(pointer, "memset", pointer, sint32, uint64)
 -- local strlen = libc:GetFunction(uint64,  "strlen", pointer)
 
+-- Types
+--   newcstring return a garbage-collected C-string
+
+-- Supported
+--   ReturnCString
+--   CallStructureByValue
+--   ReturnStructureByValue
+--   NestedStructure are supported
+
 -- Limitations
 -- * Does not support 32 bits (cdecl vs stdcall)
 -- * Does not support nested/recursive callbacks
+-- * Structure fields does not support C-strings
 
 --------------------------------------------------------------------------------
 -- MODULE                                                                     --
@@ -32,10 +37,11 @@
 local libffi    = require("com.raw.libffi")
 local StructFFI = require("com.ffi-structure")
 
-local append = table.insert
-local format = string.format
-local concat = table.concat
-local unpack = table.unpack
+local append     = table.insert
+local format     = string.format
+local concat     = table.concat
+local unpack     = table.unpack
+local numbertype = math.type
 
 local fficall             = libffi.call
 local loadlib             = libffi.loadlib
@@ -48,6 +54,9 @@ local freecallcontext     = libffi.freecallcontext
 local freecif             = libffi.freecif
 local freelib             = libffi.freelib
 local freeclosure         = libffi.freeclosure
+local allocstring         = libffi.allocstring
+local readstring          = libffi.readstring
+local free                = libffi.free
 
 local newarray        = libffi.newarray
 local getarraypointer = libffi.getarraypointer
@@ -72,6 +81,9 @@ local float   = libffi.float
 local double  = libffi.double
 local pointer = libffi.pointer
 
+-- Special type for automatic conversion between C strings and Lua strings
+local CSTRING = {}
+
 -- Those types might not be present at runtime
 local complex_float  = libffi.complex_float
 local complex_double = libffi.complex_double
@@ -91,6 +103,7 @@ local FFI_TYPES = {
   [float]   = float,
   [double]  = double,
   [pointer] = pointer,
+  [CSTRING] = pointer,  -- cstring resolves to pointer for libffi
 }
 
 -- Note that it also map Lua objects created with NewStructType to their
@@ -108,6 +121,7 @@ local FFI_TYPE_NAME = {
   [float]   = "float",
   [double]  = "double",
   [pointer] = "pointer",
+  [CSTRING] = "cstring",
 }
 
 -- Those types might not be present at runtime
@@ -124,6 +138,45 @@ end
 -- FfiType -> LuaStructureObject
 local FFI_STRUCT_TYPES = {
 }
+
+--------------------------------------------------------------------------------
+-- TRIVIAL C-STRING                                                           --
+--------------------------------------------------------------------------------
+
+local function CSTRING_MethodGetPointer (Object)
+  return Object.Pointer
+end
+
+local function CSTRING_MethodToString (Object)
+  return readstring(Object.Pointer)
+end
+
+local function CSTRING_MethodFree (Object)
+  free(Object.Pointer)
+end
+
+local CSTRING_Metatable = {
+  -- METATABLE_LuaDefinedMethods
+  __gc       = CSTRING_MethodFree,
+  __tostring = CSTRING_MethodToString,
+  -- METATABLE_UserDefinedMethods
+  __index = {
+    getpointer = CSTRING_MethodGetPointer,
+  },
+}
+
+local function NewCString (LuaString)
+  -- Allocate the string in the C side
+  local Pointer = allocstring(LuaString)
+  -- Create a new Lua wrapper
+  local NewStringObject = {
+    Pointer = Pointer,
+  }
+  -- Attach metatable
+  setmetatable(NewStringObject, CSTRING_Metatable)
+  -- Return value
+  return NewStringObject
+end
 
 --------------------------------------------------------------------------------
 -- PRIVATE FUNCTIONS                                                          --
@@ -201,8 +254,7 @@ local function ARRAY_ConvertWriteValue (Array, Value)
       end
       ConvertedValue = Value:getpointer()
     elseif (ValueType == "string") then
-      -- TODO not good because we better propose a easy to use string array interface
-      error("pointer array expects nil, userdata, or object with getpointer() method; use allocstring() for Lua strings")
+      error("pointer array expects nil, userdata, or object with getpointer() method; use newcstring() for Lua strings")
     else
       error(format("pointer array expects nil, userdata, or object with getpointer() method, got %s", ValueType))
     end
@@ -437,7 +489,7 @@ local function MakeCacheKey (Signature)
   return NewCacheKey
 end
 
-local function MakeCallableFunction (CallContext, FunctionPointer, Signature)
+local function MakeCallableFunction (CallContext, FunctionPointer, Signature, DoReturnString)
   -- For CallStructureByValue we have a nice API allowing user to pass Lua
   -- high-level struct objects. To implement that, we need to check and replace
   -- every LuaObject by its underlying ffi_type. For that reason, we better use
@@ -465,7 +517,7 @@ local function MakeCallableFunction (CallContext, FunctionPointer, Signature)
   -- Setup the function
   local Arguments = {}
   local Function
-  if ((not HasStructArgument) and (not HasStructReturn)) then
+  if ((not HasStructArgument) and (not HasStructReturn) and (not DoReturnString)) then
     -- Simple calls with primitive types
     Function = function (...)
       -- Copy arguments without any conversion
@@ -476,7 +528,7 @@ local function MakeCallableFunction (CallContext, FunctionPointer, Signature)
       return fficall(CallContext, FunctionPointer, Arguments)
     end
   else
-    -- Complex calls: implement CallStructureByValue
+    -- Complex calls: implement CallStructureByValue or cstring return
     Function = function (...)
       -- Convert structure StructureInstance into pointers
       for Index = 1, ArgumentCount do
@@ -494,6 +546,11 @@ local function MakeCallableFunction (CallContext, FunctionPointer, Signature)
       -- ReturnStructureByValue: Convert to an easy to use Lua object
       if HasStructReturn then
         CallResult = ReturnStructInstance
+      end
+      -- return a C-String: convert the pointer lightuserdata to Lua string
+      -- NOTE: CallResult can be NULL
+      if DoReturnString and CallResult then
+        CallResult = readstring(CallResult)
       end
       return CallResult
     end
@@ -537,7 +594,8 @@ local function LIBRARY_MethodGetFunction (Library, ReturnType, FunctionName, ...
     -- Override
     CallContext = NewCallContext
   end
-  local Function = MakeCallableFunction(CallContext, FunctionPointer, Signature)
+  local DoReturnString = (ReturnType == CSTRING)
+  local Function       = MakeCallableFunction(CallContext, FunctionPointer, Signature, DoReturnString)
   -- Return value
   return Function
 end
@@ -564,8 +622,13 @@ local function InferFfiType (Value)
     FfiType        = sint32
     ConvertedValue = (Value and 1 or 0)
   elseif (ValueType == "number") then
-    FfiType        = double
-    ConvertedValue = Value
+    if (numbertype(Value) == "integer") then
+      FfiType        = sint32
+      ConvertedValue = Value
+    else
+      FfiType        = double
+      ConvertedValue = Value
+    end
   elseif (ValueType == "table") then
     local Metatable = getmetatable(Value)
     assert(Metatable,            "Only objects created with newstructure can be infered properly (table)")
@@ -698,8 +761,9 @@ local function WrapFunction (RawSymbol, ReturnType, ...)
   -- Prepare the function and wrap it
   local Cif, ErrorString = newcif(Signature)
   assert(Cif, ErrorString)
-  local CallContext  = newcallcontext(Cif)
-  local CallFunction = MakeCallableFunction(CallContext, RawSymbol, Signature)
+  local CallContext    = newcallcontext(Cif)
+  local DoStringReturn = (ReturnType == CSTRING)
+  local CallFunction   = MakeCallableFunction(CallContext, RawSymbol, Signature, DoStringReturn)
   local NewPrivateContext = { Cif, CallContext }
   -- Return values
   return CallFunction, NewPrivateContext
@@ -850,6 +914,7 @@ local PUBLIC_API = {
   -- C-string helpers
   allocstring = libffi.allocstring,
   readstring  = libffi.readstring,
+  newcstring  = NewCString,
   -- ffi types
   void    = void,
   uint8   = uint8,
@@ -867,7 +932,8 @@ local PUBLIC_API = {
   complex_float  = complex_float,
   complex_double = complex_double,
   -- helpful
-  size_t = uint64
+  size_t  = uint64,
+  cstring = CSTRING,
 }
 
 return PUBLIC_API
