@@ -450,7 +450,7 @@ STRUCTURE_INSTANCE_METATABLE = {
 --------------------------------------------------------------------------------
 
 -- Create a named structure
--- Example: NewNamedStructure("MyStruct", "First", uint32, "Second", float)
+-- Example: NewNamedStructure("MyStruct", uint32, "First", float, "Second")
 local function NewNamedStructure (...)
   -- Validate inputs
   local ArgumentCount = select("#", ...)
@@ -463,11 +463,11 @@ local function NewNamedStructure (...)
   assert((((ArgumentCount - 1) % 2) == 0),  "expects field name/type pairs after the struct name")
   -- Collect fields
   for Index = 2, ArgumentCount, 2 do
-    local NameIndex = (Index + 0)
-    local TypeIndex = (Index + 1)
-    local FieldName = select(NameIndex, ...)
+    local TypeIndex = (Index + 0)
+    local NameIndex = (Index + 1)
     local FieldType = select(TypeIndex, ...)
-    assert((type(FieldName) == "string"), format("Argument %d should be field name", Index))
+    local FieldName = select(NameIndex, ...)
+    assert((type(FieldName) == "string"), format("Argument %d should be field name", NameIndex))
     append(FieldNames, FieldName)
     append(FieldTypes, FieldType)
   end

@@ -14,8 +14,8 @@ local size_t  = ffi.size_t
 --------------------------------------------------------------------------------
 
 local UserStruct = ffi.newstructure("User",
-  "Id",   sint32,
-  "Name", pointer)
+  sint32,  "Id",
+  pointer, "Name")
 
 local UserStructSize = UserStruct:getsizeinbytes()
 

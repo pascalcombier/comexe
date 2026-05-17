@@ -2,7 +2,10 @@
 -- INFORMATION                                                                --
 --------------------------------------------------------------------------------
 
--- We implement CallStructureByValue and ReturnStructureByValue
+-- We support structures:
+--   CallStructureByValue
+--   ReturnStructureByValue
+--   NestedStructure are also supported
 
 -- High level interface:
 -- local libc   = LibFFI.LoadLibrary("msvcrt.dll")
@@ -139,7 +142,7 @@ local function RegisterStructure (NewStructure)
   FFI_TYPE_NAME[FfiType]      = TypeName
 end
 
--- newnamedstruct("MyPoint", "x", LibFFI.uint32, "y", LibFFI.uint32)
+-- newnamedstruct("MyPoint", LibFFI.uint32, "x", LibFFI.uint32, "y")
 local function NewNamedStructure (...)
   local NewStructTypeObject, ErrorString = StructFFI.newnamedstruct(...)
   if NewStructTypeObject then
@@ -340,7 +343,7 @@ local function ARRAY_CollectGarbage (Array)
 end
 
 local ARRAY_METATABLE = {
-  -- METATABLE_LuaDefinedMethods
+  -- METATABLE_UserDefinedMethods
   __index = {
     getpointer = ARRAY_GetPointer,
     getcount   = ARRAY_GetCount,

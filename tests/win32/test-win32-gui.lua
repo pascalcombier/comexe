@@ -578,58 +578,58 @@ local ANTIALIASED_QUALITY = 4
 -- Structure definitions
 local WndClassExType, WndClassExError = LibFFI.newstructure(
   "WndClassEx",
-  "cbSize", uint32,
-  "style", uint32,
-  "lpfnWndProc", pointer,
-  "cbClsExtra", sint32,
-  "cbWndExtra", sint32,
-  "hInstance", pointer,
-  "hIcon", pointer,
-  "hCursor", pointer,
-  "hbrBackground", pointer,
-  "lpszMenuName", pointer,
-  "lpszClassName", pointer,
-  "hIconSm", pointer
+  uint32,  "cbSize",
+  uint32,  "style",
+  pointer, "lpfnWndProc",
+  sint32,  "cbClsExtra",
+  sint32,  "cbWndExtra",
+  pointer, "hInstance",
+  pointer, "hIcon",
+  pointer, "hCursor",
+  pointer, "hbrBackground",
+  pointer, "lpszMenuName",
+  pointer, "lpszClassName",
+  pointer, "hIconSm"
 )
 assert(WndClassExType, WndClassExError)
 
 local RectType, RectTypeError = LibFFI.newstructure(
   "Rect",
-  "Left", sint32,
-  "Top", sint32,
-  "Right", sint32,
-  "Bottom", sint32
+  sint32, "Left",
+  sint32, "Top",
+  sint32, "Right",
+  sint32, "Bottom"
 )
 assert(RectType, RectTypeError)
 
 local MessageType, MessageTypeError = LibFFI.newstructure(
   "Message",
-  "Hwnd", pointer,
-  "Message", uint32,
-  "WParam", uint64,
-  "LParam", sint64,
-  "Time", uint32,
-  "PtX", sint32,
-  "PtY", sint32,
-  "LPrivate", uint32
+  pointer, "Hwnd",
+  uint32,  "Message",
+  uint64,  "WParam",
+  sint64,  "LParam",
+  uint32,  "Time",
+  sint32,  "PtX",
+  sint32,  "PtY",
+  uint32,  "LPrivate"
 )
 assert(MessageType, MessageTypeError)
 
 local PaintStructType, PaintStructTypeError = LibFFI.newstructure(
   "PaintStruct",
-  "DeviceContext", pointer,
-  "Erase", sint32,
-  "Pad0", uint32,
-  "RcLeft", sint32,
-  "RcTop", sint32,
-  "RcRight", sint32,
-  "RcBottom", sint32,
-  "Restore", sint32,
-  "IncUpdate", sint32,
-  "ReservedA", uint64,
-  "ReservedB", uint64,
-  "ReservedC", uint64,
-  "ReservedD", uint64
+  pointer, "DeviceContext",
+  sint32,  "Erase",
+  uint32,  "Pad0",
+  sint32,  "RcLeft",
+  sint32,  "RcTop",
+  sint32,  "RcRight",
+  sint32,  "RcBottom",
+  sint32,  "Restore",
+  sint32,  "IncUpdate",
+  uint64,  "ReservedA",
+  uint64,  "ReservedB",
+  uint64,  "ReservedC",
+  uint64,  "ReservedD"
 )
 assert(PaintStructType, PaintStructTypeError)
 

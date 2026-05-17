@@ -20,8 +20,8 @@ local newinstance = ffi.newinstance
 --------------------------------------------------------------------------------
 
 local PairStruct, PairTypeError = ffi.newstructure("Pair",
-                                                   "First",  sint32,
-                                                   "Second", sint32)
+                                                   sint32,  "First",
+                                                   sint32, "Second")
 assert(PairStruct, PairTypeError)
 assert(PairStruct.getsizeinbytes)
 assert(PairStruct.getalignment)
