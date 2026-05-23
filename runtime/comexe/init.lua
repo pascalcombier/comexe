@@ -434,6 +434,28 @@ local function PATH_ResolveElements (Elements, IsAbsolute)
   return Resolved
 end
 
+--------------------------------------------------------------------------------
+-- PATH HELPERS                                                                --
+--------------------------------------------------------------------------------
+
+local function PATH_AppendSpecialElements (Parts, Element)
+  if (Element[1] == "ROOT") then
+    -- Tricky: by adding "", concat will see { "", "dir" } and will insert a "/"
+    -- between "" and "dir", making it "/dir" (and not "//dir" if we used { "/",
+    -- "dir" })
+    append(Parts, "")
+  elseif (Element[1] == "UNC") then
+    -- UNC: //Server/Share
+    append(Parts, "") -- Same trick as above for ROOT: add a /
+    append(Parts, "") -- Same trick as above for ROOT: add a /
+    append(Parts, Element[2])
+    append(Parts, Element[3])
+  else
+    local DriveLetter = Element[2]
+    append(Parts, format("%s:", DriveLetter))
+  end
+end
+
 local function PATH_BuildStringFromElements (Elements, StartIndex, EndIndex, Separator)
   -- local data
   local Parts        = {}
@@ -441,20 +463,7 @@ local function PATH_BuildStringFromElements (Elements, StartIndex, EndIndex, Sep
   -- Handle ROOT
   local ActualStartIndex
   if (StartIndex == 1) and PATH_IsSpecial(FirstElement) then
-    if (FirstElement[1] == "ROOT") then
-      -- Tricky: concat will see { "", "dir" } and will join with "/"
-      -- producing "/dir" (and not "//dir" if we used { "/", "dir" })
-      append(Parts, "")
-    elseif (FirstElement[1] == "UNC") then
-      -- UNC: //Server/Share
-      append(Parts, "") -- Same trick as above for ROOT: add a /
-      append(Parts, "") -- Same trick as above for ROOT: add a /
-      append(Parts, FirstElement[2])
-      append(Parts, FirstElement[3])
-    else
-      local DriveLetter = FirstElement[2]
-      append(Parts, format("%s:", DriveLetter))
-    end
+    PATH_AppendSpecialElements(Parts, FirstElement)
     -- Skip the first element as already handled
     ActualStartIndex = 2
   else
@@ -741,7 +750,12 @@ local function PATH_NewPathname (...)
       if (Metatable == PATH_Metatable) then
         -- Append all elements from the existing pathname
         for ElementIndex = 1, #Argument do
-          append(Parts, Argument[ElementIndex])
+          local Element = Argument[ElementIndex]
+          if PATH_IsSpecial(Element) then
+            PATH_AppendSpecialElements(Parts, Element)
+          else
+            append(Parts, Element)
+          end
         end
       end
     end
