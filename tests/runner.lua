@@ -2,14 +2,17 @@
 -- INFO                                                                       --
 --------------------------------------------------------------------------------
 
--- Test cases are just Lua files with the name prefixed by "test-"
--- Test cases will be run with lua55ce
--- The process return code 0 means success
+-- Test cases are just Lua files with the name prefixed by "test-" present in
+-- the directory tests:
 --
--- Those test below are tests against regressions
+-- This file will iterate over all the files recursively and will spawn a new
+-- process similar to "cd tests\function\dir && lua55ce test-function.lua"
 --
--- os.execute and io.open does not work with UTF-8
--- So we use com.runtime
+-- The process return code 0 means success. This file will simply count the all
+-- the testfiles and how many process returned 0.
+--
+-- os.execute and io.open does not work with UTF-8 pathnames, so we use
+-- com.runtime functions and luv.
 -- 
 
 --------------------------------------------------------------------------------
