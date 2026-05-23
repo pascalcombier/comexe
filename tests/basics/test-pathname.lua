@@ -438,6 +438,47 @@ EXPECT("CON-011-root-rel",        InternalPathname, "/foo")
 EXPECT("CON-012-root-rel-native", NativePathname,   nativepathname("/foo"))
 
 --------------------------------------------------------------------------------
+-- newpathname with pathname objects                                          --
+--------------------------------------------------------------------------------
+
+Reporter:block("NEWPATHNAME")
+
+-- Drive pathname + string (the exact crash case from ffi-compiler)
+Pathname         = newpathname(newpathname("C:/foo"), "bar.txt")
+InternalPathname = Pathname:tointernal()
+EXPECT("NEW-001-drive-string", InternalPathname, "C:/foo/bar.txt")
+
+-- Root pathname + string
+Pathname         = newpathname(newpathname("/home"), "user/file.txt")
+InternalPathname = Pathname:tointernal()
+EXPECT("NEW-002-root-string", InternalPathname, "/home/user/file.txt")
+
+-- Relative pathname + string
+Pathname         = newpathname(newpathname("a/b"), "c.txt")
+InternalPathname = Pathname:tointernal()
+EXPECT("NEW-003-rel-string", InternalPathname, "a/b/c.txt")
+
+-- Two pathname objects
+Pathname         = newpathname(newpathname("a/b"), newpathname("c/d"))
+InternalPathname = Pathname:tointernal()
+EXPECT("NEW-004-rel-rel", InternalPathname, "a/b/c/d")
+
+-- Drive pathname + string (Windows-specific)
+Pathname         = newpathname(newpathname("E:/workspace"), "file.lua")
+InternalPathname = Pathname:tointernal()
+EXPECT("NEW-005-drive-full-path", InternalPathname, "E:/workspace/file.lua")
+
+-- Drive-only pathname + string
+Pathname         = newpathname(newpathname("C:"), "test.txt")
+InternalPathname = Pathname:tointernal()
+EXPECT("NEW-006-drive-only", InternalPathname, "C:/test.txt")
+
+-- UNC pathname + string
+Pathname         = newpathname(newpathname("//server/share"), "file.bin")
+InternalPathname = Pathname:tointernal()
+EXPECT("NEW-007-unc", InternalPathname, "//server/share/file.bin")
+
+--------------------------------------------------------------------------------
 -- SUMMARY
 --------------------------------------------------------------------------------
 
