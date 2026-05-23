@@ -109,7 +109,7 @@ sequenceDiagram
   Note over Main: Script exits cleanly
 ```
 
-**[my-thread.lua](../tests/examples/my-thread.lua)**
+**[my-thread.lua](../tests/examples/thread/my-thread.lua)**
 
 ```lua title="my-thread.lua"
 local Event = require("com.event")
@@ -127,7 +127,7 @@ Event.runloop()
 print("my-thread closed")
 ```
 
-**[test-doc-main-thread.lua](../tests/examples/test-doc-main-thread.lua)**
+**[test-doc-main-thread.lua](../tests/examples/thread/test-doc-main-thread.lua)**
 
 ```lua title="test-doc-main-thread.lua"
 local uv = require("luv")
@@ -158,7 +158,7 @@ print("test-doc-main-thread closed")
 This outputs:
 
 ```text
->lua55ce.exe tests\examples\test-doc-main-thread.lua
+>lua55ce.exe tests\examples\thread\test-doc-main-thread.lua
 EventDoSomething        1       true    false   nil
 my-thread closed
 test-doc-main-thread closed
