@@ -419,19 +419,25 @@ static int FFI_LoadLibrary (lua_State *LuaState)
 {
   const char *DllFilename = luaL_checkstring(LuaState, 1);
   uv_lib_t   *Library     = PLAT_SafeAlloc0(1, sizeof(uv_lib_t));
-  
+  const char *ErrorString;
+
   /* return 0 on success */
-  if (uv_dlopen(DllFilename, Library) != 0)
+  if (uv_dlopen(DllFilename, Library) == 0)
   {
+    lua_pushlightuserdata(LuaState, Library);
+    lua_pushnil(LuaState);
+  }
+  else
+  {
+    ErrorString = uv_dlerror(Library);
+    lua_pushnil(LuaState);
+    lua_pushfstring(LuaState, "Failed to load library %s: %s", DllFilename, ErrorString);
+
+    uv_dlclose(Library);
     PLAT_Free(Library);
-    Library = NULL;
-    lua_pushfstring(LuaState, "Failed to load library %s: %s", DllFilename, uv_dlerror(Library));
-    lua_error(LuaState);
   }
 
-  lua_pushlightuserdata(LuaState, Library);
-
-  return 1; /* Number of values returned on the stack */  
+  return 2; /* Number of values returned on the stack */
 }
 
 static int FFI_GetProcAddress (lua_State *LuaState)
@@ -439,16 +445,20 @@ static int FFI_GetProcAddress (lua_State *LuaState)
   uv_lib_t   *Library        =  lua_touserdata(LuaState, 1);
   const char *FunctionName    = luaL_checkstring(LuaState, 2);
   void       *FunctionPointer = NULL;
-    
-  if (uv_dlsym(Library, FunctionName, &FunctionPointer) != 0)
+
+  /* return 0 on success */
+  if (uv_dlsym(Library, FunctionName, &FunctionPointer) == 0)
   {
+    lua_pushlightuserdata(LuaState, FunctionPointer);
+    lua_pushnil(LuaState);
+  }
+  else
+  {
+    lua_pushnil(LuaState);
     lua_pushfstring(LuaState, "Failed to find function '%s' in library: %s", FunctionName, uv_dlerror(Library));
-    lua_error(LuaState);
   }
 
-  lua_pushlightuserdata(LuaState, FunctionPointer);
-
-  return 1; /* Number of values returned on the stack */  
+  return 2; /* Number of values returned on the stack */
 }
 
 static int FFI_FreeLibrary (lua_State *LuaState)
