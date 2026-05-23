@@ -8,12 +8,12 @@ ComEXE is a statically linked, drop-in replacement for the [Lua standalone progr
 
 # 🚀 Key features
 
-- [Improved UTF-8 support on Windows](./doc/comexe-reference-utf8.md)
-- [Create standalone executables](./doc/comexe-reference-standalone-executables.md)
-- [Native multithreading](./doc/comexe-reference-threads.md)
-- [Built-in libffi](./doc/comexe-batteries.md#libffi), [libuv](./doc/comexe-batteries.md#luv-cross-platform-asynchronous-io), [luasocket](./doc/comexe-batteries.md#luasocket)
-- [Integrated Package Manager](./doc/third-party-packages.md)
-- [MIT license](./LICENSE)
+- [x] [Improved UTF-8 support on Windows](./doc/comexe-reference-utf8.md)
+- [x] [Create standalone executables](./doc/comexe-reference-standalone-executables.md)
+- [x] [Native multithreading](./doc/comexe-reference-threads.md)
+- [x] [Built-in libffi](./doc/comexe-batteries.md#libffi), [libuv](./doc/comexe-batteries.md#luv-cross-platform-asynchronous-io), [luasocket](./doc/comexe-batteries.md#luasocket)
+- [x] [Integrated Package Manager](./doc/third-party-packages.md)
+- [x] [MIT license](./LICENSE)
 
 # ➡️ Next
 
