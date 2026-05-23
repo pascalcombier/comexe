@@ -185,9 +185,10 @@ static struct GB_Buffer *FFI_GetOffsetsBuffer (lua_State *LuaState)
 static size_t *FFI_GetOffsetBufferData (lua_State *LuaState,
                                         size_t     FieldCount)
 {
-  size_t  NeededSizeInBytes = (FieldCount * sizeof(size_t));
+  size_t NeededSizeInBytes = (FieldCount * sizeof(size_t));
+  
   struct  GB_Buffer *Buffer;
-  size_t *OffsetArray;
+  size_t            *OffsetArray;
 
   /* Resize buffer if needed */
   Buffer = FFI_GetOffsetsBuffer(LuaState);
