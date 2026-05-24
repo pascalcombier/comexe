@@ -155,49 +155,49 @@ assert(gdi32)
 assert(shlwapi)
 
 -- Get all required functions from libc
-local malloc = libc:getfunction(pointer, "malloc", uint64)
-local free   = libc:getfunction(void, "free", pointer)
-local memset = libc:getfunction(pointer, "memset", pointer, sint32, uint64)
+local malloc = libc:bind(pointer, "malloc", uint64)
+local free   = libc:bind(void, "free", pointer)
+local memset = libc:bind(pointer, "memset", pointer, sint32, uint64)
 
 -- Get all required functions from user32
-local RegisterClassEx = user32:getfunction(uint16, "RegisterClassExA", pointer)
-local PostQuitMessage = user32:getfunction(void, "PostQuitMessage", sint32)
-local BeginPaint      = user32:getfunction(pointer, "BeginPaint", pointer, pointer)
-local GetClientRect   = user32:getfunction(sint32, "GetClientRect", pointer, pointer)
-local DrawText        = user32:getfunction(sint32, "DrawTextW", pointer, pointer, sint32, pointer, uint32)
-local EndPaint        = user32:getfunction(sint32, "EndPaint", pointer, pointer)
-local DefWindowProc   = user32:getfunction(sint64, "DefWindowProcA", pointer, uint32, uint64, sint64)
-local CreateWindowEx  = user32:getfunction(pointer, "CreateWindowExA", 
+local RegisterClassEx = user32:bind(uint16, "RegisterClassExA", pointer)
+local PostQuitMessage = user32:bind(void, "PostQuitMessage", sint32)
+local BeginPaint      = user32:bind(pointer, "BeginPaint", pointer, pointer)
+local GetClientRect   = user32:bind(sint32, "GetClientRect", pointer, pointer)
+local DrawText        = user32:bind(sint32, "DrawTextW", pointer, pointer, sint32, pointer, uint32)
+local EndPaint        = user32:bind(sint32, "EndPaint", pointer, pointer)
+local DefWindowProc   = user32:bind(sint64, "DefWindowProcA", pointer, uint32, uint64, sint64)
+local CreateWindowEx  = user32:bind(pointer, "CreateWindowExA", 
   uint32, cstring, cstring, uint32,
   sint32, sint32, sint32, sint32,
   pointer, pointer, pointer, pointer)
-local GetMessage      = user32:getfunction(sint32, "GetMessageA", pointer, pointer, uint32, uint32)
-local ShowWindow      = user32:getfunction(sint32, "ShowWindow", pointer, sint32)
-local UpdateWindow    = user32:getfunction(sint32, "UpdateWindow", pointer)
-local PeekMessage     = user32:getfunction(sint32, "PeekMessageA", pointer, pointer, uint32, uint32, uint32)
-local TranslateMessage = user32:getfunction(sint32, "TranslateMessage", pointer)
-local DispatchMessage = user32:getfunction(sint64, "DispatchMessageA", pointer)
-local LoadIcon        = user32:getfunction(pointer, "LoadIconA", pointer, pointer)
-local LoadCursor      = user32:getfunction(pointer, "LoadCursorA", pointer, pointer)
-local InvalidateRect  = user32:getfunction(sint32, "InvalidateRect", pointer, pointer, sint32)
-local FillRect        = user32:getfunction(sint32, "FillRect", pointer, pointer, pointer)
-local GetStockObject  = gdi32:getfunction(pointer, "GetStockObject", sint32)
-local SetTimer        = user32:getfunction(uint64, "SetTimer", pointer, uint64, uint32, pointer)
-local KillTimer       = user32:getfunction(sint32, "KillTimer", pointer, uint64)
+local GetMessage      = user32:bind(sint32, "GetMessageA", pointer, pointer, uint32, uint32)
+local ShowWindow      = user32:bind(sint32, "ShowWindow", pointer, sint32)
+local UpdateWindow    = user32:bind(sint32, "UpdateWindow", pointer)
+local PeekMessage     = user32:bind(sint32, "PeekMessageA", pointer, pointer, uint32, uint32, uint32)
+local TranslateMessage = user32:bind(sint32, "TranslateMessage", pointer)
+local DispatchMessage = user32:bind(sint64, "DispatchMessageA", pointer)
+local LoadIcon        = user32:bind(pointer, "LoadIconA", pointer, pointer)
+local LoadCursor      = user32:bind(pointer, "LoadCursorA", pointer, pointer)
+local InvalidateRect  = user32:bind(sint32, "InvalidateRect", pointer, pointer, sint32)
+local FillRect        = user32:bind(sint32, "FillRect", pointer, pointer, pointer)
+local GetStockObject  = gdi32:bind(pointer, "GetStockObject", sint32)
+local SetTimer        = user32:bind(uint64, "SetTimer", pointer, uint64, uint32, pointer)
+local KillTimer       = user32:bind(sint32, "KillTimer", pointer, uint64)
 
 -- Get all required functions from kernel32
-local GetModuleHandle = kernel32:getfunction(pointer, "GetModuleHandleA", cstring)
+local GetModuleHandle = kernel32:bind(pointer, "GetModuleHandleA", cstring)
 
 -- Get all required functions from gdi32
-local CreateFont = gdi32:getfunction(pointer, "CreateFontA", 
+local CreateFont = gdi32:bind(pointer, "CreateFontA", 
   sint32, sint32, sint32, sint32, sint32, uint32, uint32, uint32, 
   uint32, uint32, uint32, uint32, uint32, cstring)
-local SelectObject = gdi32:getfunction(pointer, "SelectObject", pointer, pointer)
-local DeleteObject = gdi32:getfunction(sint32, "DeleteObject", pointer)
-local SetBkMode = gdi32:getfunction(sint32, "SetBkMode", pointer, sint32)
+local SelectObject = gdi32:bind(pointer, "SelectObject", pointer, pointer)
+local DeleteObject = gdi32:bind(sint32, "DeleteObject", pointer)
+local SetBkMode = gdi32:bind(sint32, "SetBkMode", pointer, sint32)
 
 -- shlwapi
-local StrDupAFunction = shlwapi:getfunction(pointer, "StrDupA", cstring)
+local StrDupAFunction = shlwapi:bind(pointer, "StrDupA", cstring)
 
 -- Assert all functions are available
 assert(malloc)
@@ -870,7 +870,8 @@ end
 
 local function CreateWindow ()
   -- Create window procedure closure
-  local WindowProcClosure, WindowProcPtr = LibFFI.newcfunction(WindowProcedure, sint64, pointer, uint32, uint64, sint64)
+  local WindowProcClosure = LibFFI.newcfunction(WindowProcedure, sint64, pointer, uint32, uint64, sint64)
+  local WindowProcPtr     = WindowProcClosure:getpointer()
   assert(WindowProcPtr)  
   -- Write WNDCLASSEX structure
   WndClassElement:setfield("cbSize", WndClassSize)
