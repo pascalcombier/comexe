@@ -937,8 +937,8 @@ local PUBLIC_API = {
   loadlibsimple      = LoadLibrarySimple,
   loadlibcandidates  = LoadLibraryCandidates,
   -- Those functions are intended to work with libtcc
-  newluafunction = WrapFunction,  -- C function pointer -> Lua function
-  newcfunction   = CreateClosure, -- Lua function       -> C function pointer
+  importfunction = WrapFunction,  -- C function pointer -> Lua function
+  newcallback    = CreateClosure, -- Lua function       -> C function pointer
   -- Direct imports from libffi raw bindings
   readpointer    = libffi.readpointer,
   newpointer     = libffi.newpointer, -- (High, Low)
