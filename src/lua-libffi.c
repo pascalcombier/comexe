@@ -556,14 +556,23 @@ static int FFI_GetStructOffsets (lua_State *LuaState)
 }
 
 /* Note: inputs must be validated by caller */
-static int FFI_GetStructInfo (lua_State *LuaState)
+static int FFI_GetTypeSize (lua_State *LuaState)
 {
-  ffi_type *StructType = lua_touserdata(LuaState, 1);
+  ffi_type *Type = lua_touserdata(LuaState, 1);
 
-  lua_pushinteger(LuaState, StructType->size);
-  lua_pushinteger(LuaState, StructType->alignment);
+  lua_pushinteger(LuaState, Type->size);
 
-  return 2; /* Number of values returned on the stack */
+  return 1; /* Number of values returned on the stack */
+}
+
+/* Note: inputs must be validated by caller */
+static int FFI_GetTypeAlignment (lua_State *LuaState)
+{
+  ffi_type *Type = lua_touserdata(LuaState, 1);
+
+  lua_pushinteger(LuaState, Type->alignment);
+
+  return 1; /* Number of values returned on the stack */
 }
 
 /*============================================================================*/
@@ -1319,7 +1328,8 @@ static const struct luaL_Reg FFI_FUNCTIONS[] =
   { "freelib",              FFI_FreeLibrary           },
   /* Struct-by-value support */
   { "newstruct",            FFI_NewStructureType      },
-  { "getstructinfo",        FFI_GetStructInfo         },
+  { "gettypesize",          FFI_GetTypeSize           },
+  { "gettypealignment",     FFI_GetTypeAlignment      },
   { "getstructoffsets",     FFI_GetStructOffsets      },
   /* C arrays */
   { "newarray",             FFI_NewArray              },
@@ -1409,10 +1419,6 @@ LUALIB_API int luaopen_libffiraw (lua_State *LuaState)
   /* Add NULL constant as lightuserdata */
   lua_pushlightuserdata(LuaState, NULL);
   lua_setfield(LuaState, -2, "NULL");
-  
-  /* Add POINTER_SIZE */
-  lua_pushinteger(LuaState, sizeof(void *));
-  lua_setfield(LuaState, -2, "POINTER_SIZE");
-  
+
   return 1; /* Number of values returned on the stack */
 }

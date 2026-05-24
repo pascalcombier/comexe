@@ -27,7 +27,8 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local libffi = require("com.raw.libffi")
+local libffi     = require("com.raw.libffi")
+local fficstring = require("com.ffi-cstring")
 
 local format = string.format
 local append = table.insert
@@ -41,24 +42,31 @@ local readpointer      = libffi.readpointer
 local writepointer     = libffi.writepointer
 local pointeroffset    = libffi.pointeroffset
 local newstruct        = libffi.newstruct
-local getstructinfo    = libffi.getstructinfo
+local gettypesize      = libffi.gettypesize
+local gettypealignment = libffi.gettypealignment
 local getstructoffsets = libffi.getstructoffsets
 local FFI_OK           = libffi.FFI_OK
 local NULL             = libffi.NULL
-local POINTER_SIZE     = libffi.POINTER_SIZE
+local void             = libffi.void
+local uint8            = libffi.uint8
+local sint8            = libffi.sint8
+local uint16           = libffi.uint16
+local sint16           = libffi.sint16
+local uint32           = libffi.uint32
+local sint32           = libffi.sint32
+local uint64           = libffi.uint64
+local sint64           = libffi.sint64
+local float            = libffi.float
+local double           = libffi.double
+local pointer          = libffi.pointer
+local readstring       = libffi.readstring
+local allocstring      = libffi.allocstring
+local free             = libffi.free
 
-local void    = libffi.void
-local uint8   = libffi.uint8
-local sint8   = libffi.sint8
-local uint16  = libffi.uint16
-local sint16  = libffi.sint16
-local uint32  = libffi.uint32
-local sint32  = libffi.sint32
-local uint64  = libffi.uint64
-local sint64  = libffi.sint64
-local float   = libffi.float
-local double  = libffi.double
-local pointer = libffi.pointer
+-- The CString type constant (shared from ffi-cstring)
+local cstring = fficstring.cstring
+
+local POINTER_SIZE = gettypesize(pointer)
 
 -- In this map, we will also register the sizes of StructureType created by
 -- NewNamedStructure and NewAnonymousStructure
@@ -74,6 +82,7 @@ local FFI_TYPE_SIZE = {
   [float]   = 4,
   [double]  = 8,
   [pointer] = POINTER_SIZE,
+  [cstring] = POINTER_SIZE,
 }
 
 local FFI_TYPE_PACK = {
@@ -104,6 +113,7 @@ local FfiTypeNameMap = {
   [float]   = "float",
   [double]  = "double",
   [pointer] = "pointer",
+  [cstring] = "cstring",
 }
 
 -- Map FfiType to StructureType (created by NewNamedStructure or
@@ -134,6 +144,7 @@ local FfiTypeMap = {
   [float]   = float,
   [double]  = double,
   [pointer] = pointer,
+  [cstring] = pointer,
 }
 
 -- Used for auto-naming structures created by NewAnonymousStructure
@@ -162,6 +173,7 @@ local function NewStructureInstance (Structure, BufferPointer, InstanceOffset, P
     BufferPointer  = BufferPointer,
     InstanceOffset = InstanceOffset,
     Parent         = Parent,
+    TrackedStrings = {},
   }
   -- Attach metatable
   setmetatable(NewStructureInstance, STRUCTURE_INSTANCE_METATABLE)
@@ -188,6 +200,7 @@ local function BuildStructureFields (FieldNames, FieldTypes, FieldFfiTypes, Offs
     local NewField = {
       Index      = FieldIndex,
       Name       = Name,
+      Type       = FieldTypes[FieldIndex],
       FfiType    = FieldFfiType,
       Size       = FieldSize,
       Offset     = Offsets[FieldIndex],
@@ -239,8 +252,9 @@ local function NewStructure (StructureName, FieldNames, FieldTypes)
   -- Calculate offsets
   local ReturnCode, Offsets = getstructoffsets(StructureFfiType)
   if (ReturnCode == FFI_OK) then
-    -- getstructinfo cannot fail
-    local SizeInBytes, Alignment = getstructinfo(StructureFfiType)
+    -- get type size and alignment
+    local SizeInBytes = gettypesize(StructureFfiType)
+    local Alignment   = gettypealignment(StructureFfiType)
     -- Register type size
     FFI_TYPE_SIZE[StructureFfiType] = SizeInBytes
     -- Create the high level Lua object
@@ -312,7 +326,7 @@ STRUCTURE_TYPE_METATABLE = {
     getalignment   = STRUCTURE_GetAlignment,
     getsizeinbytes = STRUCTURE_GetSizeInBytes,
     getoffsets     = STRUCTURE_TypeGetOffsets,
-    frompointer    = STRUCTURE_NewInstanceFromPointer,
+    cast           = STRUCTURE_NewInstanceFromPointer,
   }
 }
 
@@ -366,6 +380,24 @@ local function STRUCTURE_INSTANCE_Set (Instance, FieldIndex, FieldValue)
     local ValueBlob     = readmemory(SourcePointer, SourceOffset, SizeInBytes)
     assert(SizeInBytes == #ValueBlob, "Invalid structure size")
     writememory(BufferPointer, FieldOffset, ValueBlob)
+  elseif (Field.Type == cstring) then
+    -- Handle cstring field: accept Lua string or nil
+    local TrackedStrings = Instance.TrackedStrings
+    local OldPointer     = TrackedStrings[FieldIndex]
+    -- Free previously tracked string
+    if OldPointer then
+      free(OldPointer)
+      TrackedStrings[FieldIndex] = nil
+    end
+    if (FieldValue == nil) then
+      writepointer(BufferPointer, FieldOffset, NULL)
+    elseif (type(FieldValue) == "string") then
+      local NewPointer = allocstring(FieldValue)
+      writepointer(BufferPointer, FieldOffset, NewPointer)
+      TrackedStrings[FieldIndex] = NewPointer
+    else
+      error(format("cstring field expects nil or string, got %s", type(FieldValue)))
+    end
   elseif (FieldFfiType == pointer) then
     -- Overwrite the pointer on the C side
     local PointerValue = ResolvePointerValue(FieldValue)
@@ -407,6 +439,12 @@ local function STRUCTURE_INSTANCE_Get (Instance, Index)
   if FieldStructureType then
     -- Get StructureByValue (aka nested structure)
     FieldValue = NewStructureInstance(FieldStructureType, BufferPointer, FieldOffset, (Instance.Parent or Instance))
+  elseif (Field.Type == cstring) then
+    -- Read cstring: read pointer then convert to Lua string
+    local StringPointer = readpointer(BufferPointer, FieldOffset)
+    if (StringPointer ~= NULL) then
+      FieldValue = readstring(StringPointer)
+    end
   elseif (FieldFfiType == pointer) then
     -- Read the pointer value
     FieldValue = readpointer(BufferPointer, FieldOffset)
@@ -434,7 +472,16 @@ local function STRUCTURE_INSTANCE_GetField (Instance, Name)
   return FieldValue
 end
 
+local function STRUCTURE_INSTANCE_FreeTrackedStrings (Instance)
+  local TrackedStrings = Instance.TrackedStrings
+  for FieldIndex, PointerValue in pairs(TrackedStrings) do
+    free(PointerValue)
+  end
+end
+
 STRUCTURE_INSTANCE_METATABLE = {
+  -- METATABLE_LuaDefinedMethods
+  __gc = STRUCTURE_INSTANCE_FreeTrackedStrings,
   -- METATABLE_UserDefinedMethods
   __index = {
     getpointer = STRUCTURE_INSTANCE_GetPointer,

@@ -34,14 +34,18 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local libffi    = require("com.raw.libffi")
-local StructFFI = require("com.ffi-structure")
+local runtime      = require("com.runtime")
+local libffi       = require("com.raw.libffi")
+local fficstring   = require("com.ffi-cstring")
+local ffistructure = require("com.ffi-structure")
 
 local append     = table.insert
 local format     = string.format
 local concat     = table.concat
 local unpack     = table.unpack
 local numbertype = math.type
+
+local getparam = runtime.getparam
 
 local fficall             = libffi.call
 local loadlib             = libffi.loadlib
@@ -54,9 +58,7 @@ local freecallcontext     = libffi.freecallcontext
 local freecif             = libffi.freecif
 local freelib             = libffi.freelib
 local freeclosure         = libffi.freeclosure
-local allocstring         = libffi.allocstring
 local readstring          = libffi.readstring
-local free                = libffi.free
 
 local newarray        = libffi.newarray
 local getarraypointer = libffi.getarraypointer
@@ -81,8 +83,19 @@ local float   = libffi.float
 local double  = libffi.double
 local pointer = libffi.pointer
 
+-- Those are not strictly required, but we want to expose C-style types as part
+-- of the public API
+local int8_t   = libffi.sint8
+local uint8_t  = libffi.uint8
+local int16_t  = libffi.sint16
+local uint16_t = libffi.uint16
+local int32_t  = libffi.sint32
+local uint32_t = libffi.uint32
+local int64_t  = libffi.sint64
+local uint64_t = libffi.uint64
+
 -- Special type for automatic conversion between C strings and Lua strings
-local CSTRING = {}
+local CSTRING = fficstring.cstring
 
 -- Those types might not be present at runtime
 local complex_float  = libffi.complex_float
@@ -104,6 +117,15 @@ local FFI_TYPES = {
   [double]  = double,
   [pointer] = pointer,
   [CSTRING] = pointer,  -- cstring resolves to pointer for libffi
+  -- Not strictly required, C-style, see comment above
+  [int8_t]   = sint8,
+  [uint8_t]  = uint8,
+  [int16_t]  = sint16,
+  [uint16_t] = uint16,
+  [int32_t]  = sint32,
+  [uint32_t] = uint32,
+  [int64_t]  = sint64,
+  [uint64_t] = uint64,
 }
 
 -- Note that it also map Lua objects created with NewStructType to their
@@ -122,6 +144,15 @@ local FFI_TYPE_NAME = {
   [double]  = "double",
   [pointer] = "pointer",
   [CSTRING] = "cstring",
+  -- Not strictly required, C-style, see comment above
+  [int8_t]   = "int8_t",
+  [uint8_t]  = "uint8_t",
+  [int16_t]  = "int16_t",
+  [uint16_t] = "uint16_t",
+  [int32_t]  = "int32_t",
+  [uint32_t] = "uint32_t",
+  [int64_t]  = "int64_t",
+  [uint64_t] = "uint64_t",
 }
 
 -- Those types might not be present at runtime
@@ -136,51 +167,19 @@ if complex_double then
 end
 
 -- FfiType -> LuaStructureObject
-local FFI_STRUCT_TYPES = {
-}
-
---------------------------------------------------------------------------------
--- TRIVIAL C-STRING                                                           --
---------------------------------------------------------------------------------
-
-local function CSTRING_MethodGetPointer (Object)
-  return Object.Pointer
-end
-
-local function CSTRING_MethodToString (Object)
-  return readstring(Object.Pointer)
-end
-
-local function CSTRING_MethodFree (Object)
-  free(Object.Pointer)
-end
-
-local CSTRING_Metatable = {
-  -- METATABLE_LuaDefinedMethods
-  __gc       = CSTRING_MethodFree,
-  __tostring = CSTRING_MethodToString,
-  -- METATABLE_UserDefinedMethods
-  __index = {
-    getpointer = CSTRING_MethodGetPointer,
-  },
-}
-
-local function NewCString (LuaString)
-  -- Allocate the string in the C side
-  local Pointer = allocstring(LuaString)
-  -- Create a new Lua wrapper
-  local NewStringObject = {
-    Pointer = Pointer,
-  }
-  -- Attach metatable
-  setmetatable(NewStringObject, CSTRING_Metatable)
-  -- Return value
-  return NewStringObject
-end
+local FFI_STRUCT_TYPES = {}
 
 --------------------------------------------------------------------------------
 -- PRIVATE FUNCTIONS                                                          --
 --------------------------------------------------------------------------------
+
+local function SizeOf (Type)
+  local FfiType = FFI_TYPES[Type]
+  assert(FfiType, format("Invalid FFI type for sizeof: %s", tostring(Type)))
+  local SizeInBytes = libffi.gettypesize(FfiType)
+  -- Return value
+  return SizeInBytes
+end
 
 local function RegisterStructure (NewStructure)
   local FfiType  = NewStructure:getffitype()
@@ -197,7 +196,7 @@ end
 
 -- newnamedstruct("MyPoint", LibFFI.uint32, "x", LibFFI.uint32, "y")
 local function NewNamedStructure (...)
-  local NewStructTypeObject, ErrorString = StructFFI.newnamedstruct(...)
+  local NewStructTypeObject, ErrorString = ffistructure.newnamedstruct(...)
   if NewStructTypeObject then
     RegisterStructure(NewStructTypeObject)
   end
@@ -206,7 +205,7 @@ end
 
 -- newanonymousstruct(LibFFI.uint32, LibFFI.uint32)
 local function NewAnonymousStructure (...)
-  local NewStructTypeObject, ErrorString = StructFFI.newanonymousstruct(...)
+  local NewStructTypeObject, ErrorString = ffistructure.newanonymousstruct(...)
   if NewStructTypeObject then
     RegisterStructure(NewStructTypeObject)
   end
@@ -273,7 +272,7 @@ local function ARRAY_ConvertReadValue (Array, Value)
   local ConvertedValue
   if StructType then
     -- Return a real structure instance
-    ConvertedValue = StructType:frompointer(Value)
+    ConvertedValue = StructType:cast(Value)
   else
     -- Pointer arrays intentionally expose pointers/lightuserdata
     ConvertedValue = Value
@@ -282,7 +281,7 @@ local function ARRAY_ConvertReadValue (Array, Value)
   return ConvertedValue
 end
 
-local function ARRAY_ToLua (Array)
+local function ARRAY_ToTable (Array)
   -- Retrieve data
   local Handle     = Array.Handle
   local ArrayCount = Array.Count
@@ -299,14 +298,14 @@ local function ARRAY_ToLua (Array)
   return NewValues
 end
 
-local function ARRAY_FromLua (Array, LuaTable)
+local function ARRAY_CopyFrom (Array, LuaTable)
   -- Validate inputs
-  assert((type(LuaTable) == "table"), "array fromlua expects a table")
+  assert((type(LuaTable) == "table"), "array copyfrom expects a table")
   -- Retrieve data
   local Handle   = Array.Handle
   local Count    = Array.Count
   local NewCount = #LuaTable
-  assert((NewCount >= 1), "array fromlua expects at least 1 element")
+  assert((NewCount >= 1), "array copyfrom expects at least 1 element")
   -- Resize C side if needed
   if (NewCount ~= Count) then
     -- Extend the array on the C side
@@ -401,8 +400,8 @@ local ARRAY_METATABLE = {
     getcount   = ARRAY_GetCount,
     get        = ARRAY_GetValue,
     set        = ARRAY_SetValue,
-    fromlua    = ARRAY_FromLua,
-    tolua      = ARRAY_ToLua,
+    copyfrom   = ARRAY_CopyFrom,
+    totable    = ARRAY_ToTable,
   },
   -- METATABLE_LuaDefinedMethods
   __len = ARRAY_Length,
@@ -454,15 +453,12 @@ end
 --------------------------------------------------------------------------------
 
 local function LIBRARY_GarbageCollectMethod (Library)
-  print(format("[GC] Releasing library resource: [%s]", Library.Filename))
   -- Clean up cached call contexts
   for CacheKey, CallContext in pairs(Library.ContextCache) do
-    print(format("[GC] Releasing call context: [%s]", CacheKey))
     freecallcontext(CallContext)
   end
   -- Clean up cached Cif objects
   for CacheKey, Cif in pairs(Library.CifCache) do
-    print(format("[GC] Releasing Cif: [%s]", CacheKey))
     freecif(Cif)
   end
   -- Clear all caches
@@ -512,7 +508,7 @@ local function MakeCallableFunction (CallContext, FunctionPointer, Signature, Do
   local ReturnStructInstance
   if HasStructReturn then
     local ReturnPointer = getcifreturnpointer(CallContext)
-    ReturnStructInstance = ReturnStructType:frompointer(ReturnPointer)
+    ReturnStructInstance = ReturnStructType:cast(ReturnPointer)
   end
   -- Setup the function
   local Arguments = {}
@@ -560,7 +556,7 @@ local function MakeCallableFunction (CallContext, FunctionPointer, Signature, Do
 end
 
 -- Always create and return a new function
-local function LIBRARY_MethodGetFunction (Library, ReturnType, FunctionName, ...)
+local function LIBRARY_MethodBind (Library, ReturnType, FunctionName, ...)
   -- Extract arguments
   local Signature = BuildSignature(ReturnType, ...)
   local CifCache  = Library.CifCache
@@ -605,7 +601,7 @@ end
 --------------------------------------------------------------------------------
 
 -- This variadic wrapper is convenient but slower than functions created by
--- lib:getfunction.
+-- lib:bind.
 
 -- Guess a FfiType based on Lua value
 local function InferFfiType (Value)
@@ -644,7 +640,7 @@ local function InferFfiType (Value)
   return FfiType, ConvertedValue
 end
 
-local function LIBRARY_MethodGetVariadic (Library, ReturnType, FunctionName, ...)
+local function LIBRARY_MethodVariadicBind (Library, ReturnType, FunctionName, ...)
   -- Fixed part: types declared by the user
   local FixedTypes     = { ... }
   local FixedCount     = #FixedTypes
@@ -680,7 +676,7 @@ local function LIBRARY_MethodGetVariadic (Library, ReturnType, FunctionName, ...
       local VariadicType = VariadicTypes[VariadicIndex]
       append(FullSignature, VariadicType)
     end
-    -- LIBRARY_MethodGetFunction will return a brand new function at each call
+    -- LIBRARY_MethodBind will return a brand new function at each call
     -- So we want to cache that function and reuse it when possible
     -- Note the separator is different
     local VariadicCache  = Library.VariadicCache
@@ -688,7 +684,7 @@ local function LIBRARY_MethodGetVariadic (Library, ReturnType, FunctionName, ...
     local CachedFunction = VariadicCache[CacheKey]
     -- Build and cache the function if needed
     if (CachedFunction == nil) then
-      -- Build argument list for LIBRARY_MethodGetFunction:
+      -- Build argument list for LIBRARY_MethodBind:
       -- { ReturnType, FunctionName, FixedTypes, VariadicTypes }
       local GetArgs = { ReturnType, FunctionName }
       for Index = 1, FixedCount do
@@ -697,7 +693,7 @@ local function LIBRARY_MethodGetVariadic (Library, ReturnType, FunctionName, ...
       for Index = 1, VariadicCount do
         append(GetArgs, VariadicTypes[Index])
       end
-      CachedFunction = LIBRARY_MethodGetFunction(Library, unpack(GetArgs, 1, #GetArgs))
+      CachedFunction = LIBRARY_MethodBind(Library, unpack(GetArgs, 1, #GetArgs))
       VariadicCache[CacheKey] = CachedFunction
     end
     -- Prepare call arguments
@@ -718,6 +714,17 @@ local function LIBRARY_MethodGetVariadic (Library, ReturnType, FunctionName, ...
 end
 
 --------------------------------------------------------------------------------
+-- LIBRARY METHOD: LOAD GENERATED BINDINGS                                    --
+--------------------------------------------------------------------------------
+
+local function LIBRARY_MethodLoad (Library, ModuleName)
+  -- "require" without pcall will emit an error
+  local Module = require(ModuleName)
+  assert(Module.bind, "FFI binding module does not export bind function")
+  Module.bind(Library)
+end
+
+--------------------------------------------------------------------------------
 -- LIBRARY METATABLE                                                          --
 --------------------------------------------------------------------------------
 
@@ -726,12 +733,13 @@ local LIBRARY_Metatable = {
   __gc = LIBRARY_GarbageCollectMethod,
   -- METATABLE_UserDefinedMethods
   __index = {
-    getfunction = LIBRARY_MethodGetFunction,
-    getvariadic = LIBRARY_MethodGetVariadic,
+    bind         = LIBRARY_MethodBind,
+    variadicbind = LIBRARY_MethodVariadicBind,
+    load         = LIBRARY_MethodLoad,
   }
 }
 
-local function LoadLibrary (DllFilename)
+local function LoadLibrarySimple (DllFilename)
   local Handle = loadlib(DllFilename)
   local NewLibraryObject
   if Handle then
@@ -746,6 +754,38 @@ local function LoadLibrary (DllFilename)
     }
     -- Attach methods
     setmetatable(NewLibraryObject, LIBRARY_Metatable)
+  end
+  -- Return value
+  return NewLibraryObject
+end
+
+local function LoadLibraryCandidates (...)
+  -- Validate inputs
+  local ArgumentCount = select("#", ...)
+  assert(((ArgumentCount % 2) == 0), "LoadLibraryCandidates expects even number of arguments (os, dll pairs)")
+  -- Find the first match in the candidates list
+  local NewLibraryObject
+  local CurrentOS = getparam("OS")
+  local PairIndex = 1
+  while (NewLibraryObject == nil) and (PairIndex <= ArgumentCount) do
+    local CandidateOS  = select((PairIndex + 0), ...)
+    local CandidateDLL = select((PairIndex + 1), ...)
+    if (CandidateOS == CurrentOS) then
+      NewLibraryObject = LoadLibrarySimple(CandidateDLL)
+    end
+    PairIndex = (PairIndex + 2)
+  end
+  -- Return value
+  return NewLibraryObject
+end
+
+local function LoadLibrary (...)
+  local ArgumentCount = select("#", ...)
+  local NewLibraryObject
+  if (ArgumentCount == 1) then
+    NewLibraryObject = LoadLibrarySimple(...)
+  else
+    NewLibraryObject = LoadLibraryCandidates(...)
   end
   -- Return value
   return NewLibraryObject
@@ -770,7 +810,6 @@ local function WrapFunction (RawSymbol, ReturnType, ...)
 end
 
 local function CLOSURE_GarbageCollectMethod (ClosureObject)
-  print(format("[GC] Releasing FFI closure resource"))
   -- Retrieve data
   local ClosureUserdata = ClosureObject.ClosureUserdata
   local Cif             = ClosureObject.Cif
@@ -779,7 +818,16 @@ local function CLOSURE_GarbageCollectMethod (ClosureObject)
   freecif(Cif)
 end
 
+local function CLOSURE_MethodGetPointer (ClosureObject)
+  local ClosurePointer = ClosureObject.ClosurePointer
+  return ClosurePointer
+end
+
 local CLOSURE_Metatable = {
+  -- METATABLE_UserDefinedMethods
+  __index = {
+    getpointer = CLOSURE_MethodGetPointer
+  },
   -- METATABLE_LuaDefinedMethods
   __gc = CLOSURE_GarbageCollectMethod
 }
@@ -813,7 +861,7 @@ local function BuildClosureWrapper (UserFunction, Signature)
       if StructureType then
         assert((type(Argument) == "userdata"), format("Closure argument %d should be struct pointer", Index))
         -- Create a new Lua object
-        ConvertedArguments[Index] = StructureType:frompointer(Argument)
+        ConvertedArguments[Index] = StructureType:cast(Argument)
       else
         ConvertedArguments[Index] = Argument
       end
@@ -876,7 +924,7 @@ local function CreateClosure (UserFunction, ReturnType, ...)
   -- Attach metatable with garbage collector
   setmetatable(NewClosureObject, CLOSURE_Metatable)
   -- Return value
-  return NewClosureObject, ClosurePointer
+  return NewClosureObject
 end
 
 --------------------------------------------------------------------------------
@@ -885,7 +933,9 @@ end
 
 local PUBLIC_API = {
   -- High level functions
-  loadlib        = LoadLibrary,
+  loadlib            = LoadLibrary,
+  loadlibsimple      = LoadLibrarySimple,
+  loadlibcandidates  = LoadLibraryCandidates,
   -- Those functions are intended to work with libtcc
   newluafunction = WrapFunction,  -- C function pointer -> Lua function
   newcfunction   = CreateClosure, -- Lua function       -> C function pointer
@@ -910,11 +960,10 @@ local PUBLIC_API = {
   free         = libffi.free,
   memset       = libffi.memset,
   NULL         = libffi.NULL,
-  POINTER_SIZE = libffi.POINTER_SIZE,
   -- C-string helpers
   allocstring = libffi.allocstring,
   readstring  = libffi.readstring,
-  newcstring  = NewCString,
+  newcstring  = fficstring.newcstring,
   -- ffi types
   void    = void,
   uint8   = uint8,
@@ -932,8 +981,18 @@ local PUBLIC_API = {
   complex_float  = complex_float,
   complex_double = complex_double,
   -- helpful
+  sizeof  = SizeOf,
   size_t  = uint64,
   cstring = CSTRING,
+  -- Not strictly required, C-style, see comment above
+  int8_t   = int8_t,
+  uint8_t  = uint8_t,
+  int16_t  = int16_t,
+  uint16_t = uint16_t,
+  int32_t  = int32_t,
+  uint32_t = uint32_t,
+  int64_t  = int64_t,
+  uint64_t = uint64_t,
 }
 
 return PUBLIC_API
