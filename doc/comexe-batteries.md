@@ -1,15 +1,8 @@
 # ComEXE builtins
 
-- [libffi](#libffi)
 - [luv: Cross-platform asynchronous I/O](#luv-cross-platform-asynchronous-io)
 - [luasocket](#luasocket)
 - [mbedtls](#mbedtls)
-
-# libffi
-
-ComEXE includes Sourceware [libffi](https://github.com/libffi/libffi)  through the `com.ffi` package. This is not [LuaJIT](https://luajit.org/ext_ffi.html)'s `ffi`, and the API is different.
-
-See [tests/examples/test-doc-ffi.lua](../tests/examples/test-doc-ffi.lua) for an example.
 
 # luv: Cross-platform asynchronous I/O
 
