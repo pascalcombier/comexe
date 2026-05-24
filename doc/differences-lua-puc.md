@@ -1,37 +1,5 @@
 # Differences with Lua PUC
 
-## Unicode on Windows
-
-Regarding Unicode on Windows, the official Lua binaries do not handle it well. The technical reasons are well-known: luaL_loadfilex is implemented with [fopen](https://github.com/lua/lua/blob/master/lauxlib.c). When linked against msvcrt.dll, the fopen function uses the ANSI codepage and not Unicode.
-
-```
-> lua55.exe test-greetings-привет.lua
-lua55.exe: cannot open test-greetings-??????.lua: Invalid argument
-> lua55.exe test-hello-こんにちは.lua
-lua55.exe: cannot open test-hello-?????.lua: Invalid argument
-> lua55.exe test-hola-世界.lua
-lua55.exe: cannot open test-hola-??.lua: Invalid argument
-> lua55.exe test-γεια-σας.lua
-lua55.exe: cannot open test-?e?a-sa?.lua: Invalid argument
-> lua55.exe test-안녕하세요-world.lua
-lua55.exe: cannot open test-?????-world.lua: Invalid argument
-```
-
-With ComEXE, the experience is improved:
-
-```
-> lua55ce.exe test-greetings-привет.lua
-arg[0]  test-greetings-привет.lua
-> lua55ce.exe test-hello-こんにちは.lua
-arg[0]  test-hello-こんにちは.lua
-> lua55ce.exe test-hola-世界.lua
-arg[0]  test-hola-世界.lua
-> lua55ce.exe test-γεια-σας.lua
-arg[0]  test-γεια-σας.lua
-> lua55ce.exe test-안녕하세요-world.lua
-arg[0]  test-안녕하세요-world.lua
-```
-
 ## Default paths
 
 Another difference in ComEXE is the way [package.path](https://www.lua.org/manual/5.5/manual.html#pdf-package.path) and [package.searchers](https://www.lua.org/manual/5.5/manual.html#pdf-package.searchers) are initialized. The main point is that ComEXE has been designed to develop *portable* programs — portable in the sense that a program can be moved across the filesystem and continue to work properly. The behavior of ComEXE on Windows and Linux is identical.
