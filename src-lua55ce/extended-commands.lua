@@ -23,6 +23,7 @@ local MiniHttpLib = require("com.mini-httpd-lib")
 local Url         = require("socket.url")
 local Fennel      = require("fennel")
 local ApmClient   = require("apm-client")
+local FfiCompiler = require("ffi-compiler")
 
 local format           = string.format
 local open             = io.open
@@ -544,13 +545,15 @@ local function HandleCompileFennel (FennelFilename)
 end
 
 local function HandleCompile (Filename)
-  assert(Filename, "compile requires an input .lua or .fnl file")
+  assert(Filename, "compile requires an input .lua, .fnl, or .h file")
   if hassuffix(Filename, ".lua") then
     HandleCompileLua(Filename)
   elseif hassuffix(Filename, ".fnl") then
     HandleCompileFennel(Filename)
+  elseif hassuffix(Filename, ".h") then
+    FfiCompiler.Compile(Filename)
   else
-    error(format("Unsupported file extension: %s (expected .lua or .fnl)", Filename))
+    error(format("Unsupported file extension: %s (expected .lua, .fnl, or .h)", Filename))
   end
 end
 
