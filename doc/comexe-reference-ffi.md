@@ -15,13 +15,7 @@
   * [Structure type objects](#structure-type-objects)
   * [Structure instance objects](#structure-instance-objects)
   * [Callback objects](#callback-objects)
-* [Memory allocation](#memory-allocation)
-  * [Built-in allocation (mimalloc-backed)](#built-in-allocation-mimalloc-backed)
-  * [External C-library allocation](#external-c-library-allocation)
-  * [Comparing pointers and NULL](#comparing-pointers-and-null)
-  * [Memory ownership](#memory-ownership)
 * [Technical Notes](#technical-notes)
-  * [Callback lifetime](#callback-lifetime)
   * [Limitations](#limitations)
 
 # Overview
