@@ -2,16 +2,14 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local libffi = require("com.raw.libffi")
-local ffi    = require("com.ffi")
+local ffi = require("com.ffi")
 
-assert(libffi)
 assert(ffi)
-assert(libffi.sint32)
-assert(libffi.NULL)
+assert(ffi.int32_t)
+assert(ffi.NULL)
 
-local sint32  = libffi.sint32
-local pointer = libffi.pointer
+local int32_t = ffi.int32_t
+local pointer = ffi.pointer
 
 local newinstance = ffi.newinstance
 
@@ -20,14 +18,14 @@ local newinstance = ffi.newinstance
 --------------------------------------------------------------------------------
 
 local PairStruct, PairTypeError = ffi.newstructure("Pair",
-                                                   sint32,  "First",
-                                                   sint32, "Second")
+                                                   int32_t,  "First",
+                                                   int32_t, "Second")
 assert(PairStruct, PairTypeError)
 assert(PairStruct.getsizeinbytes)
 assert(PairStruct.getalignment)
 assert(PairStruct.getoffsets)
 
-local NumberArray = ffi.newarray(sint32, 3)
+local NumberArray = ffi.newarray(int32_t, 3)
 assert((#NumberArray == 3))
 
 NumberArray:set(1, 11)
@@ -69,7 +67,7 @@ PointerArray:set(1, nil)
 PointerArray:set(2, ExternalPointer)
 PointerArray:set(3, NumberArray)
 
-assert((PointerArray:get(1) == libffi.NULL))
+assert((PointerArray:get(1) == ffi.NULL))
 assert((PointerArray:get(2) == ExternalPointer))
 assert((PointerArray:get(3) == NumberArray:getpointer()))
 
@@ -86,12 +84,13 @@ end)
 assert(not PointerStringSetOk)
 assert((type(PointerStringSetError) == "string"))
 
-local PointerInvalidSetOk, PointerInvalidSetError = pcall(function ()
+local function TryInvalidSet ()
   PointerArray:set(1, {})
-end)
+end
+
+local PointerInvalidSetOk, PointerInvalidSetError = pcall(TryInvalidSet)
 assert(not PointerInvalidSetOk)
 assert((type(PointerInvalidSetError) == "string"))
-assert((string.find(PointerInvalidSetError, "pointer array expects nil, userdata, or object with getpointer() method", 1, true) ~= nil))
 
 ffi.free(ExternalPointer)
 

@@ -25,10 +25,10 @@ local BufferSize = 256
 local Buffer = libffi.malloc(BufferSize)
 assert(Buffer ~= NULL)
 
-local Sprintf = Libc:getvariadic(sint32, "sprintf", pointer)
+local Sprintf = Libc:variadicbind(sint32, "sprintf", pointer)
 assert(Sprintf)
 
-local SprintfS = Libc:getvariadic(sint32, "sprintf_s", pointer, uint64, pointer)
+local SprintfS = Libc:variadicbind(sint32, "sprintf_s", pointer, uint64, pointer)
 assert(SprintfS)
 
 local function CheckSprintf (Expected, FormatString, ...)

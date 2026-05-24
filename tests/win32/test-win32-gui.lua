@@ -870,13 +870,13 @@ end
 
 local function CreateWindow ()
   -- Create window procedure closure
-  local WindowProcClosure = LibFFI.newcfunction(WindowProcedure, sint64, pointer, uint32, uint64, sint64)
-  local WindowProcPtr     = WindowProcClosure:getpointer()
-  assert(WindowProcPtr)  
+  local WindowProcClosure = LibFFI.newcallback(WindowProcedure, sint64, pointer, uint32, uint64, sint64)
+  local WindowProcPointer = WindowProcClosure:getpointer()
+  assert(WindowProcPointer)  
   -- Write WNDCLASSEX structure
   WndClassElement:setfield("cbSize", WndClassSize)
   WndClassElement:setfield("style", (CS_HREDRAW | CS_VREDRAW | CS_OWNDC))
-  WndClassElement:setfield("lpfnWndProc", WindowProcPtr)
+  WndClassElement:setfield("lpfnWndProc", WindowProcPointer)
   WndClassElement:setfield("cbClsExtra", 0)
   WndClassElement:setfield("cbWndExtra", 0)
   WndClassElement:setfield("hInstance", HInstance)

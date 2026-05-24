@@ -9,12 +9,12 @@ local ffi    = require("com.ffi")
 assert(libffi)
 assert(libtcc)
 assert(ffi)
-assert(libffi.sint32)
+assert(ffi.int32_t)
 assert(libffi.newstruct)
 
-local sint32  = libffi.sint32
-local pointer = libffi.pointer
-local NULL    = libffi.NULL
+local int32_t = ffi.int32_t
+local pointer = ffi.pointer
+local NULL    = ffi.NULL
 
 local newinstance = ffi.newinstance
 
@@ -23,8 +23,8 @@ local newinstance = ffi.newinstance
 --------------------------------------------------------------------------------
 
 local PairStruct, PairTypeError = ffi.newstructure("Pair",
-                                                   sint32,  "First",
-                                                   sint32, "Second")
+                                                   int32_t,  "First",
+                                                   int32_t, "Second")
 assert(PairStruct, PairTypeError)
 assert(PairStruct.getsizeinbytes)
 assert(PairStruct.getalignment)
@@ -94,9 +94,9 @@ assert(MakePairAddress       ~= NULL)
 assert(SumPairAddress        ~= NULL)
 assert(CallPairAndSumAddress ~= NULL)
 
-local MakePair, MakePairPrivate             = ffi.newluafunction(MakePairAddress, PairStruct, sint32, sint32)
-local SumPair, SumPairPrivate               = ffi.newluafunction(SumPairAddress, sint32, PairStruct)
-local CallPairAndSum, CallPairAndSumPrivate = ffi.newluafunction(CallPairAndSumAddress, sint32, pointer, sint32, sint32)
+local MakePair, MakePairPrivate             = ffi.importfunction(MakePairAddress, PairStruct, int32_t, int32_t)
+local SumPair, SumPairPrivate               = ffi.importfunction(SumPairAddress, int32_t, PairStruct)
+local CallPairAndSum, CallPairAndSumPrivate = ffi.importfunction(CallPairAndSumAddress, int32_t, pointer, int32_t, int32_t)
 assert(MakePair)
 assert(SumPair)
 assert(CallPairAndSum)
@@ -140,7 +140,7 @@ libffi.freecallcontext(SumPairPrivate[2])
 libffi.freecif(SumPairPrivate[1])
 
 --------------------------------------------------------------------------------
--- STRUCT CLOSURE [CALLBACKS]                                                --
+-- STRUCT CALLBACK                                                            --
 --------------------------------------------------------------------------------
 
 local PairTransformCallbackCalled = false
@@ -157,16 +157,17 @@ local function PairTransformCallback (InputPair)
   return OutputPair
 end
 
-local PairClosureObject, PairClosurePointer = ffi.newcfunction(PairTransformCallback, PairStruct, PairStruct)
+local PairCallback        = ffi.newcallback(PairTransformCallback, PairStruct, PairStruct)
+local PairCallbackPointer = PairCallback:getpointer()
 
-assert(PairClosureObject)
-assert(PairClosurePointer ~= NULL)
+assert(PairCallback)
+assert(PairCallbackPointer ~= NULL)
 
-local CallbackSum = CallPairAndSum(PairClosurePointer, 1, 2)
+local CallbackSum = CallPairAndSum(PairCallbackPointer, 1, 2)
 assert((CallbackSum == 33))
 assert(PairTransformCallbackCalled)
 
-PairClosureObject = nil
+PairCallback = nil
 collectgarbage()
 collectgarbage()
 
