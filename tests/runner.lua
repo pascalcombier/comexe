@@ -58,6 +58,7 @@ local newpathname      = Runtime.newpathname
 
 local OS     = getparam("OS")
 local LuaExe = getparam("LUA-EXE")
+local FAST   = (arg[1] == "--fast")
 
 --------------------------------------------------------------------------------
 -- REWORKED FROM RUNTIME_ExecuteCommand                                       --
@@ -158,24 +159,33 @@ local function FindAndExecuteTestFiles ()
       if hasprefix(Name, "test-") and (Extension == "lua")
         and (not ShouldSkipTest(FullPath))
       then
-        print("PROCESS", FullPath)
-        TestTimer:Start()
-        local Success, Command = ProcessTest(FullPath)
-        TestTimer:Stop()
-        local ElapsedTime = TestTimer:GetElapsedSeconds()
-        TestTimer:Reset()
-        -- Result
-        local NewTestResult = {
-          Passed      = Success,
-          Line        = FullPath,
-          Command     = Command,
-          ElapsedTime = ElapsedTime,
-        }
-        append(TestResults, NewTestResult)
-        if Success then
-          print("PASSED", FullPath)
+        if (FAST and contains(Name, "-perf")) then
+          append(TestResults, {
+            Skipped     = true,
+            Line        = FullPath,
+            ElapsedTime = 0,
+          })
+          print("SKIPPED", FullPath)
         else
-          print("FAILED", FullPath)
+          print("PROCESS", FullPath)
+          TestTimer:Start()
+          local Success, Command = ProcessTest(FullPath)
+          TestTimer:Stop()
+          local ElapsedTime = TestTimer:GetElapsedSeconds()
+          TestTimer:Reset()
+          -- Result
+          local NewTestResult = {
+            Passed      = Success,
+            Line        = FullPath,
+            Command     = Command,
+            ElapsedTime = ElapsedTime,
+          }
+          append(TestResults, NewTestResult)
+          if Success then
+            print("PASSED", FullPath)
+          else
+            print("FAILED", FullPath)
+          end
         end
       end
     end
@@ -199,7 +209,9 @@ local ElapsedTimeSec = 0
 print("== NON-REGRESSION SUMMARY ==")
 for Index, Result in ipairs(Results) do
   ElapsedTimeSec = (ElapsedTimeSec + Result.ElapsedTime)
-  if Result.Passed then
+  if Result.Skipped then
+    print(format("SKIPPED %s", Result.Line))
+  elseif Result.Passed then
     print(format("PASSED %8.4fs %s", Result.ElapsedTime, Result.Line))
     Success = (Success + 1)
   else
