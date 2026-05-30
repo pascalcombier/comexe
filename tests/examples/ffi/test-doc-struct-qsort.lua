@@ -18,16 +18,16 @@ local UserStruct = ffi.newstructure("User",
 local function CompareByAge (PointerA, PointerB)
   local UserA = UserStruct:cast(PointerA)
   local UserB = UserStruct:cast(PointerB)
-  return (UserA:getfield("Age") - UserB:getfield("Age"))
+  return (UserA:get("Age") - UserB:get("Age"))
 end
 
 local CompareCallback = ffi.newcallback(CompareByAge, ffi.int32_t, ffi.pointer, ffi.pointer)
 
 local function ConfigureUser (Array, Index, Id, Name, Age)
   local User = Array:get(Index)
-  User:setfield("Id",   Id)
-  User:setfield("Name", Name)
-  User:setfield("Age",  Age)
+  User:set("Id",   Id)
+  User:set("Name", Name)
+  User:set("Age",  Age)
 end
 
 local function PrintUsers (Array, Label)
@@ -35,8 +35,8 @@ local function PrintUsers (Array, Label)
   local ElementCount = Array:getcount()
   for Index = 1, ElementCount do
     local User = Array:get(Index)
-    local Name = User:getfield("Name")
-    local Age  = User:getfield("Age")
+    local Name = User:get("Name")
+    local Age  = User:get("Age")
     print(format("  %4.4s - Age %d", Name, Age))
   end
 end
