@@ -15,7 +15,8 @@
 --
 -- Both StructureType and StructureInstance are complex Lua object
 --
--- In the code below, FfiType refer to the type returned by libffi (lightuserdata)
+-- In the code below, FfiType refer to the type returned by libffi
+-- (lightuserdata)
 --
 -- Initially, we wanted to support function calls StructByValue. But for that we
 -- essentially need to implement structure fields, offset, etc. So finally it's
@@ -32,14 +33,11 @@ local fficstring = require("com.ffi-cstring")
 
 local format = string.format
 local append = table.insert
-local concat = table.concat
-local pack   = string.pack
-local unpack = string.unpack
 
 local readmemory       = libffi.readmemory
 local writememory      = libffi.writememory
-local readpointer      = libffi.readpointer
-local writepointer     = libffi.writepointer
+local readvalue        = libffi.readvalue
+local writevalue       = libffi.writevalue
 local pointeroffset    = libffi.pointeroffset
 local newstruct        = libffi.newstruct
 local gettypesize      = libffi.gettypesize
@@ -69,7 +67,7 @@ local cstring = fficstring.cstring
 local POINTER_SIZE = gettypesize(pointer)
 
 -- In this map, we will also register the sizes of StructureType created by
--- NewNamedStructure and NewAnonymousStructure
+-- NewStructure
 local FFI_TYPE_SIZE = {
   [uint8]   = 1,
   [sint8]   = 1,
@@ -98,26 +96,9 @@ local FFI_TYPE_PACK = {
   [double] = "<d",
 }
 
--- In this map, we will also register the names of StructureType created by
--- NewNamedStructure and NewAnonymousStructure
-local FfiTypeNameMap = {
-  [void]    = "void",
-  [uint8]   = "uint8",
-  [sint8]   = "sint8",
-  [uint16]  = "uint16",
-  [sint16]  = "sint16",
-  [uint32]  = "uint32",
-  [sint32]  = "sint32",
-  [uint64]  = "uint64",
-  [sint64]  = "sint64",
-  [float]   = "float",
-  [double]  = "double",
-  [pointer] = "pointer",
-  [cstring] = "cstring",
-}
 
--- Map FfiType to StructureType (created by NewNamedStructure or
--- NewAnonymousStructure) and also map StructureType to itself
+-- Map FfiType to StructureType (created by NewStructure)
+-- and also map StructureType to itself
 --
 -- So we can get StructureType from either:
 --   a FfiType
@@ -146,9 +127,6 @@ local FfiTypeMap = {
   [pointer] = pointer,
   [cstring] = pointer,
 }
-
--- Used for auto-naming structures created by NewAnonymousStructure
-local StructureCountBySignature = {}
 
 -- Metatable for StructureType
 local STRUCTURE_TYPE_METATABLE
@@ -217,7 +195,8 @@ end
 local function CreateStructureType (StructureName, FfiType, FieldNames, FieldTypes, FieldFfiTypes, StructureSize, StructureAlignment, Offsets)
   -- Create fields
   local Fields, NameMap = BuildStructureFields(FieldNames, FieldTypes, FieldFfiTypes, Offsets)
-  -- Create the Lua structure object
+  -- Create the Lua structure object. We keep Fields to know the order of the
+  -- fields, allowing potential manual offset changes from the user
   local NewStructureType = {
     Name        = StructureName,
     FfiType     = FfiType,
@@ -232,7 +211,7 @@ local function CreateStructureType (StructureName, FfiType, FieldNames, FieldTyp
   return NewStructureType
 end
 
-local function NewStructure (StructureName, FieldNames, FieldTypes)
+local function CreateStructure (StructureName, FieldNames, FieldTypes)
   local FieldCount    = #FieldTypes
   local FieldFfiTypes = {}
   local NewStructureType
@@ -263,8 +242,6 @@ local function NewStructure (StructureName, FieldNames, FieldTypes)
     StructureTypeMap[StructureFfiType] = NewStructureType
     StructureTypeMap[NewStructureType] = NewStructureType
     FfiTypeMap[NewStructureType]       = StructureFfiType
-    FfiTypeNameMap[StructureFfiType]   = StructureName
-    FfiTypeNameMap[NewStructureType]   = StructureName
   else
     ErrorString = format("getstructoffsets return %d instead of FFI_OK", ReturnCode)
   end
@@ -312,6 +289,57 @@ local function STRUCTURE_TypeGetOffsets (Structure)
   return Offsets
 end
 
+local function STRUCTURE_ValidateOffsets (Structure, NewOffsets)
+  -- Retrieve data
+  local Fields     = Structure.Fields
+  local FieldCount = #Fields
+  local ErrorString
+  -- Validate length
+  if (#NewOffsets == FieldCount) then
+    -- Validate each offset
+    for Index = 1, FieldCount do
+      local NewOffset = NewOffsets[Index]
+      if (NewOffset >= 0) then
+        if (Index > 1) then
+          local PreviousField = Fields[Index - 1]
+          local PreviousEnd   = (PreviousField.Offset + PreviousField.Size)
+          if (NewOffset < PreviousEnd) then
+            ErrorString = format("Field %d offset %d would overlap previous field", Index, NewOffset)
+          end
+        end
+      else
+        ErrorString = format("Field %d offset %d cannot be negative", Index, NewOffset)
+      end
+    end
+  else
+    ErrorString = format("Expected %d offsets, got %d", FieldCount, #NewOffsets)
+  end
+  -- Return value
+  return ErrorString
+end
+
+-- Override offsets computed by libffi
+-- Needed if the DLL has been compiled with specifics flags (alignment, pack, etc)
+local function STRUCTURE_SetOffsets (Structure, NewOffsets)
+  -- Retrieve data
+  local Fields      = Structure.Fields
+  local FieldCount  = #Fields
+  local ErrorString = STRUCTURE_ValidateOffsets(Structure, NewOffsets)
+  -- Apply offsets if valid
+  if (not ErrorString) then
+    for Index = 1, FieldCount do
+      Fields[Index].Offset = NewOffsets[Index]
+    end
+    -- Update structure size
+    local LastField = Fields[FieldCount]
+    Structure.Size = (LastField.Offset + LastField.Size)
+  end
+  -- Evaluate success
+  local Success = (ErrorString == nil)
+  -- Return value
+  return Success, ErrorString
+end
+
 local function STRUCTURE_NewInstanceFromPointer (Structure, BufferPointer)
   assert((type(BufferPointer) == "userdata"), "expects pointer (lightuserdata)")
   local NewInstance = NewStructureInstance(Structure, BufferPointer, 0, nil)
@@ -326,6 +354,7 @@ STRUCTURE_TYPE_METATABLE = {
     getalignment   = STRUCTURE_GetAlignment,
     getsizeinbytes = STRUCTURE_GetSizeInBytes,
     getoffsets     = STRUCTURE_TypeGetOffsets,
+    setoffsets     = STRUCTURE_SetOffsets,
     cast           = STRUCTURE_NewInstanceFromPointer,
   }
 }
@@ -344,132 +373,85 @@ local function STRUCTURE_INSTANCE_GetPointer (Instance)
   return PointerValue
 end
 
-local function ResolvePointerValue (Value)
-  local PointerValue
-  if (Value == nil) then
-    PointerValue = NULL
-  elseif (type(Value) == "userdata") then
-    PointerValue = Value
-  elseif IsStructureInstance(Value) then
-    PointerValue = Value:getpointer()
-  else
-    error(format("Invalid pointer value type: %s (%q)", type(Value), Value))
-  end
-  -- Return value
-  return PointerValue
-end
-
-local function STRUCTURE_INSTANCE_Set (Instance, FieldIndex, FieldValue)
-  -- Validate inputs
-  local StructureType  = Instance.StructType
-  local InstanceOffset = Instance.InstanceOffset
-  local Fields         = StructureType.Fields
-  local Field          = Fields[FieldIndex]
-  assert(Field, format("Invalid field: %d", FieldIndex))
+local function STRUCTURE_INSTANCE_Get (Instance, Name)
+  local FieldByName = Instance.StructType.FieldByName
+  local Field       = FieldByName[Name]
+  assert(Field, format("Unknown field: %q (%s)", Name, type(Name)))
   -- Retrieve data
-  local BufferPointer      = Instance.BufferPointer
+  local BufferPointer  = Instance.BufferPointer
+  local InstanceOffset = Instance.InstanceOffset
+  -- Calculate offset
   local FieldOffset        = (InstanceOffset + Field.Offset)
   local FieldFfiType       = Field.FfiType
   local FieldStructureType = StructureTypeMap[FieldFfiType]
-  -- Write data into C side
+  local FieldValue
   if FieldStructureType then
-    -- Set StructureByValue
-    local SourcePointer = FieldValue.BufferPointer
-    local SourceOffset  = FieldValue.InstanceOffset
+    FieldValue = NewStructureInstance(FieldStructureType, BufferPointer, FieldOffset, (Instance.Parent or Instance))
+  elseif (Field.Type == cstring) then
+    local StringPointer = readvalue(BufferPointer, FieldOffset, pointer)
+    if (StringPointer ~= NULL) then
+      FieldValue = readstring(StringPointer)
+    end
+  elseif (FieldFfiType == pointer) then
+    FieldValue = readvalue(BufferPointer, FieldOffset, pointer)
+  else
+    FieldValue = readvalue(BufferPointer, FieldOffset, FieldFfiType)
+  end
+  return FieldValue
+end
+
+local function STRUCTURE_INSTANCE_Set (Instance, Name, Value)
+  -- Validate inputs
+  local StructType  = Instance.StructType
+  local FieldByName = StructType.FieldByName
+  local Field       = FieldByName[Name]
+  assert(Field, format("Unknown field: %q (%s)", Name, Name))
+  -- Retrieve data
+  local BufferPointer      = Instance.BufferPointer
+  local InstanceOffset     = Instance.InstanceOffset
+  local FieldOffset        = (InstanceOffset + Field.Offset)
+  local FieldFfiType       = Field.FfiType
+  local FieldStructureType = StructureTypeMap[FieldFfiType]
+  if FieldStructureType then
+    -- Write StructureByValue
+    local SourcePointer = Value.BufferPointer
+    local SourceOffset  = Value.InstanceOffset
     local SizeInBytes   = FieldStructureType.Size
     local ValueBlob     = readmemory(SourcePointer, SourceOffset, SizeInBytes)
     assert(SizeInBytes == #ValueBlob, "Invalid structure size")
     writememory(BufferPointer, FieldOffset, ValueBlob)
   elseif (Field.Type == cstring) then
-    -- Handle cstring field: accept Lua string or nil
     local TrackedStrings = Instance.TrackedStrings
+    local FieldIndex     = Field.Index
     local OldPointer     = TrackedStrings[FieldIndex]
-    -- Free previously tracked string
     if OldPointer then
       free(OldPointer)
       TrackedStrings[FieldIndex] = nil
     end
-    if (FieldValue == nil) then
-      writepointer(BufferPointer, FieldOffset, NULL)
-    elseif (type(FieldValue) == "string") then
-      local NewPointer = allocstring(FieldValue)
-      writepointer(BufferPointer, FieldOffset, NewPointer)
+    if (Value == nil) then
+      writevalue(BufferPointer, FieldOffset, pointer, nil)
+    elseif (type(Value) == "string") then
+      local NewPointer = allocstring(Value)
+      writevalue(BufferPointer, FieldOffset, pointer, NewPointer)
       TrackedStrings[FieldIndex] = NewPointer
     else
-      error(format("cstring field expects nil or string, got %s", type(FieldValue)))
+      error(format("cstring field expects nil or string, got %s", type(Value)))
     end
   elseif (FieldFfiType == pointer) then
-    -- Overwrite the pointer on the C side
-    local PointerValue = ResolvePointerValue(FieldValue)
-    writepointer(BufferPointer, FieldOffset, PointerValue)
-  else
-    -- Pack the value in to a binary string and write it on the C side
-    local FieldFormat = Field.PackFormat
-    assert(FieldFormat, format("Field %s does not support write", Field.Name))
-    local PackedValue = pack(FieldFormat, FieldValue)
-    writememory(BufferPointer, FieldOffset, PackedValue)
-  end
-end
-
-local function STRUCTURE_INSTANCE_SetField (Instance, Name, Value)
-  -- Validate inputs
-  local StructureType = Instance.StructType
-  local FieldByName   = StructureType.FieldByName
-  local Field         = FieldByName[Name]
-  assert(Field, format("Unknown field: %q (%s)", Name, type(Name)))
-  -- Set the field value
-  local FieldIndex = Field.Index
-  STRUCTURE_INSTANCE_Set(Instance, FieldIndex, Value)
-end
-
-local function STRUCTURE_INSTANCE_Get (Instance, Index)
-  -- Validate inputs
-  local StructureType  = Instance.StructType
-  local InstanceOffset = Instance.InstanceOffset
-  local Fields         = StructureType.Fields
-  local Field          = Fields[Index]
-  assert(Field, format("Invalid field: %d", Index))
-  -- Retrieve data
-  local BufferPointer      = Instance.BufferPointer
-  local FieldOffset        = (InstanceOffset + Field.Offset)
-  local FieldFfiType       = Field.FfiType
-  local FieldStructureType = StructureTypeMap[FieldFfiType]
-  local FieldValue
-  -- Read data from C side
-  if FieldStructureType then
-    -- Get StructureByValue (aka nested structure)
-    FieldValue = NewStructureInstance(FieldStructureType, BufferPointer, FieldOffset, (Instance.Parent or Instance))
-  elseif (Field.Type == cstring) then
-    -- Read cstring: read pointer then convert to Lua string
-    local StringPointer = readpointer(BufferPointer, FieldOffset)
-    if (StringPointer ~= NULL) then
-      FieldValue = readstring(StringPointer)
+    local PointerValue
+    if (Value == nil) then
+      PointerValue = NULL
+    elseif (type(Value) == "userdata") then
+      PointerValue = Value
+    elseif IsStructureInstance(Value) then
+      PointerValue = Value:getpointer()
+    else
+      error(format("Invalid pointer value type: %s (%q)", type(Value), Value))
     end
-  elseif (FieldFfiType == pointer) then
-    -- Read the pointer value
-    FieldValue = readpointer(BufferPointer, FieldOffset)
+    writevalue(BufferPointer, FieldOffset, pointer, PointerValue)
   else
-    -- Read as binary string and unpack
-    local FieldSize   = Field.Size
-    local FieldFormat = Field.PackFormat
-    local FieldBlob   = readmemory(BufferPointer, FieldOffset, FieldSize)
-    FieldValue = unpack(FieldFormat, FieldBlob, 1)
+    writevalue(BufferPointer, FieldOffset, FieldFfiType, Value)
   end
-  -- Return value
-  return FieldValue
-end
-
-local function STRUCTURE_INSTANCE_GetField (Instance, Name)
-  -- Validate inputs
-  local StructureType = Instance.StructType
-  local FieldByName   = StructureType.FieldByName
-  local Field         = FieldByName[Name]
-  assert(Field, format("Unknown field: %q (%s)", Name, type(Name)))
-  -- Read the field value
-  local FieldIndex = Field.Index
-  local FieldValue = STRUCTURE_INSTANCE_Get(Instance, FieldIndex)
-  -- Return value
-  return FieldValue
 end
 
 local function STRUCTURE_INSTANCE_FreeTrackedStrings (Instance)
@@ -487,8 +469,6 @@ STRUCTURE_INSTANCE_METATABLE = {
     getpointer = STRUCTURE_INSTANCE_GetPointer,
     set        = STRUCTURE_INSTANCE_Set,
     get        = STRUCTURE_INSTANCE_Get,
-    setfield   = STRUCTURE_INSTANCE_SetField,
-    getfield   = STRUCTURE_INSTANCE_GetField,
   }
 }
 
@@ -497,8 +477,8 @@ STRUCTURE_INSTANCE_METATABLE = {
 --------------------------------------------------------------------------------
 
 -- Create a named structure
--- Example: NewNamedStructure("MyStruct", uint32, "First", float, "Second")
-local function NewNamedStructure (...)
+-- Example: NewStructure("MyStruct", uint32, "First", float, "Second")
+local function NewStructure (...)  
   -- Validate inputs
   local ArgumentCount = select("#", ...)
   assert((ArgumentCount >= 3), "expects struct name followed by at least one field pair")
@@ -519,76 +499,16 @@ local function NewNamedStructure (...)
     append(FieldTypes, FieldType)
   end
   -- Create the new structure
-  local NewStructureType, ErrorString = NewStructure(StructureName, FieldNames, FieldTypes)
+  local NewStructureType, ErrorString = CreateStructure(StructureName, FieldNames, FieldTypes)
   -- Return value
   return NewStructureType, ErrorString
 end
-
--- Return a string like "uint32-uint32"
-local function BuildStructureSignatureString (FieldTypes)
-  -- local data
-  local SignatureParts = {}
-  local FieldCount     = #FieldTypes
-  -- Collect type names 
-  for Index = 1, FieldCount do
-    local FieldType = FieldTypes[Index]
-    local FieldName = FfiTypeNameMap[FieldType]
-    assert(FieldName, format("Unexpected field type: %s", tostring(FieldType)))
-    append(SignatureParts, FieldName)
-  end
-  -- Format type name
-  local StructureTypeName = concat(SignatureParts, "-")
-  return StructureTypeName
-end
-
--- Return: struct-uint32-uint32-0001, struct-uint32-uint32-0002, etc
-local function CreateStructureName (FieldTypes)
-  -- Build a signature string
-  local SignatureString = BuildStructureSignatureString(FieldTypes)
-  -- How many of Structure with the same signature exists?
-  local Count = StructureCountBySignature[SignatureString]
-  local StructureTypeId
-  if Count then
-    StructureTypeId = (Count + 1)
-  else
-    StructureTypeId = 1
-  end
-  local AutoName = format("struct-%s-%4.4d",  SignatureString, StructureTypeId)
-  -- Update signature count
-  StructureCountBySignature[SignatureString] = StructureTypeId
-  -- Return value
-  return AutoName
-end
-
--- Create structure from anonymous fields
--- Example: NewStructType(uint32, float)
-local function NewAnonymousStructure (...)
-  -- local data
-  local FieldCount = select("#", ...)
-  local FieldTypes = {}
-  local FieldNames = {}
-  -- Collect fields from the stack
-  for Index = 1, FieldCount do
-    -- Type can be either a FfiType or LuaStructureObject
-    local Type = select(Index, ...)
-    FieldTypes[Index] = Type
-    FieldNames[Index] = format("Field-%d", Index)
-  end
-  -- Infer a structure name from structure fields
-  local StructureName = CreateStructureName(FieldTypes)
-  -- Create the new structure type
-  local NewStructureType, ErrorString = NewStructure(StructureName, FieldNames, FieldTypes)
-  -- return values
-  return NewStructureType, ErrorString
-end
-
 --------------------------------------------------------------------------------
 -- PUBLIC API                                                                 --
 --------------------------------------------------------------------------------
 
 local PUBLIC_API = {
-  newnamedstruct     = NewNamedStructure,
-  newanonymousstruct = NewAnonymousStructure,
+  newstruct = NewStructure,
 }
 
 return PUBLIC_API

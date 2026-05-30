@@ -600,10 +600,13 @@ static int FFI_NewArray (lua_State *LuaState)
 
 static int FFI_GetArrayPointer (lua_State *LuaState)
 {
-  struct FFI_Array *Array       = lua_touserdata(LuaState, 1);
-  void             *DataPointer = GB_GetData(Array->Buffer);
+  struct FFI_Array *Array          = lua_touserdata(LuaState, 1);
+  lua_Integer       Index          = luaL_optinteger(LuaState, 2, 1);
+  uint8_t          *DataPointer    = GB_GetData(Array->Buffer);
+  size_t            Offset         = ((Index - 1) * Array->ElementSize);
+  uint8_t          *ElementPointer = &DataPointer[Offset];
 
-  lua_pushlightuserdata(LuaState, DataPointer);
+  lua_pushlightuserdata(LuaState, ElementPointer);
 
   return 1; /* Number of values returned on the stack */
 }
@@ -1108,6 +1111,166 @@ static int FFI_WriteMemory (lua_State *LuaState)
   return 0; /* Number of values returned on the stack */
 }
 
+/* value read: (Address, Offset, FfiType) */
+static int FFI_ReadValue (lua_State *LuaState)
+{
+  char     *Address = lua_touserdata(LuaState, 1);
+  size_t    Offset  = luaL_checkinteger(LuaState, 2);
+  ffi_type *Type    = lua_touserdata(LuaState, 3);
+
+  if (Type)
+  {
+    switch (Type->type)
+    {
+    case FFI_TYPE_UINT8:
+      lua_pushinteger(LuaState, *(uint8_t *)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_SINT8:
+      lua_pushinteger(LuaState, *(int8_t *)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_UINT16:
+      lua_pushinteger(LuaState, *(uint16_t *)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_SINT16:
+      lua_pushinteger(LuaState, *(int16_t *)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_UINT32:
+      lua_pushinteger(LuaState, *(uint32_t *)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_SINT32:
+      lua_pushinteger(LuaState, *(int32_t *)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_UINT64:
+      lua_pushinteger(LuaState, *(uint64_t *)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_SINT64:
+      lua_pushinteger(LuaState, *(int64_t *)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_FLOAT:
+      lua_pushnumber(LuaState, *(float *)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_DOUBLE:
+      lua_pushnumber(LuaState, *(double *)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_POINTER:
+      lua_pushlightuserdata(LuaState, *(void **)(&Address[Offset]));
+      lua_pushnil(LuaState);
+      break;
+    default:
+      lua_pushnil(LuaState);
+      lua_pushfstring(LuaState, "readvalue: unsupported type %d", Type->type);
+      break;
+    }
+  }
+  else
+  {
+    lua_pushnil(LuaState);
+    lua_pushfstring(LuaState, "Invalid FFI type");
+  }
+
+  return 2; /* Number of values returned on the stack */
+}
+
+/* value write: (Address, Offset, FfiType, Value) */
+static int FFI_WriteValue (lua_State *LuaState)
+{
+  char     *Address = lua_touserdata(LuaState, 1);
+  size_t    Offset  = luaL_checkinteger(LuaState, 2);
+  ffi_type *Type    = lua_touserdata(LuaState, 3);
+  void     *PointerValue;
+
+  if (Type)
+  {
+    switch (Type->type)
+    {
+    case FFI_TYPE_UINT8:
+      *(uint8_t *)(&Address[Offset]) = (uint8_t)luaL_checkinteger(LuaState, 4);
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_SINT8:
+      *(int8_t *)(&Address[Offset]) = (int8_t)luaL_checkinteger(LuaState, 4);
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_UINT16:
+      *(uint16_t *)(&Address[Offset]) = (uint16_t)luaL_checkinteger(LuaState, 4);
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_SINT16:
+      *(int16_t *)(&Address[Offset]) = (int16_t)luaL_checkinteger(LuaState, 4);
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_UINT32:
+      *(uint32_t *)(&Address[Offset]) = (uint32_t)luaL_checkinteger(LuaState, 4);
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_SINT32:
+      *(int32_t *)(&Address[Offset]) = (int32_t)luaL_checkinteger(LuaState, 4);
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_UINT64:
+      *(uint64_t *)(&Address[Offset]) = (uint64_t)luaL_checkinteger(LuaState, 4);
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_SINT64:
+      *(int64_t *)(&Address[Offset]) = (int64_t)luaL_checkinteger(LuaState, 4);
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_FLOAT:
+      *(float *)(&Address[Offset]) = (float)luaL_checknumber(LuaState, 4);
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_DOUBLE:
+      *(double *)(&Address[Offset]) = (double)luaL_checknumber(LuaState, 4);
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    case FFI_TYPE_POINTER:
+      if (lua_isnil(LuaState, 4))
+      {
+        PointerValue = NULL;
+      }
+      else
+      {
+        PointerValue = lua_touserdata(LuaState, 4);
+      }
+      *(void **)(&Address[Offset]) = PointerValue;
+      lua_pushboolean(LuaState, true);
+      lua_pushnil(LuaState);
+      break;
+    default:
+      lua_pushboolean(LuaState, false);
+      lua_pushfstring(LuaState, "writevalue: unsupported type %d", Type->type);
+      break;
+    }
+  }
+  else
+  {
+    lua_pushboolean(LuaState, false);
+    lua_pushfstring(LuaState, "Invalid FFI type");
+  }
+
+  return 2; /* Number of values returned on the stack */
+}
+
 static int FFI_NewPointerFromLuaInts (lua_State *LuaState)
 {
   int32_t  HighValue = luaL_checkinteger(LuaState, 1);
@@ -1121,32 +1284,6 @@ static int FFI_NewPointerFromLuaInts (lua_State *LuaState)
   lua_pushlightuserdata(LuaState, Pointer);
 
   return 1; /* Number of values returned on the stack */
-}
-
-/* read pointer value from memory and return it as lightuserdata */
-static int FFI_ReadPointer (lua_State *LuaState)
-{
-  char   *Address = lua_touserdata(LuaState, 1);
-  size_t  Offset  = luaL_checkinteger(LuaState, 2);
-  void   *Value   = NULL;
-
-  memcpy(&Value, &Address[Offset], sizeof(void *));
-  
-  lua_pushlightuserdata(LuaState, Value);
-
-  return 1; /* Number of values returned on the stack */
-}
-
-/* write pointer from lightuserdata */
-static int FFI_WritePointer (lua_State *LuaState)
-{
-  char   *Address = lua_touserdata(LuaState, 1);
-  size_t  Offset  = luaL_checkinteger(LuaState, 2);
-  void   *Value   = lua_touserdata(LuaState, 3);
-
-  memcpy(&Address[Offset], &Value, sizeof(void *));
-  
-  return 0; /* Number of values returned on the stack */
 }
 
 static int FFI_ConvertPointer (lua_State *LuaState)
@@ -1353,8 +1490,8 @@ static const struct luaL_Reg FFI_FUNCTIONS[] =
   /* Memory and pointers */
   { "readmemory",           FFI_ReadMemory            },
   { "writememory",          FFI_WriteMemory           },
-  { "readpointer",          FFI_ReadPointer           },
-  { "writepointer",         FFI_WritePointer          },
+  { "readvalue",            FFI_ReadValue             },
+  { "writevalue",           FFI_WriteValue            },
   { "newpointer",           FFI_NewPointerFromLuaInts },
   { "convertpointer",       FFI_ConvertPointer        },
   { "derefpointer",         FFI_DereferencePointer    },

@@ -194,18 +194,9 @@ local function RegisterStructure (NewStructure)
   FFI_TYPE_NAME[FfiType]      = TypeName
 end
 
--- newnamedstruct("MyPoint", LibFFI.uint32, "x", LibFFI.uint32, "y")
-local function NewNamedStructure (...)
-  local NewStructTypeObject, ErrorString = ffistructure.newnamedstruct(...)
-  if NewStructTypeObject then
-    RegisterStructure(NewStructTypeObject)
-  end
-  return NewStructTypeObject, ErrorString
-end
-
--- newanonymousstruct(LibFFI.uint32, LibFFI.uint32)
-local function NewAnonymousStructure (...)
-  local NewStructTypeObject, ErrorString = ffistructure.newanonymousstruct(...)
+-- newstruct("MyPoint", LibFFI.uint32, "x", LibFFI.uint32, "y")
+local function NewStructure (...)
+  local NewStructTypeObject, ErrorString = ffistructure.newstruct(...)
   if NewStructTypeObject then
     RegisterStructure(NewStructTypeObject)
   end
@@ -283,12 +274,12 @@ end
 
 local function ARRAY_ToTable (Array)
   -- Retrieve data
-  local Handle     = Array.Handle
+  local ArrayC     = Array.ArrayC
   local ArrayCount = Array.Count
   -- Create a new array
-  local NewValues  = {}
+  local NewValues = {}
   -- Collect the values from the C side
-  arraygetvalues(Handle, NewValues)
+  arraygetvalues(ArrayC, NewValues)
   -- Convert back structures from pointers
   for Index = 1, ArrayCount do
     local Value = NewValues[Index]
@@ -302,17 +293,17 @@ local function ARRAY_CopyFrom (Array, LuaTable)
   -- Validate inputs
   assert((type(LuaTable) == "table"), "array copyfrom expects a table")
   -- Retrieve data
-  local Handle   = Array.Handle
+  local ArrayC   = Array.ArrayC
   local Count    = Array.Count
   local NewCount = #LuaTable
   assert((NewCount >= 1), "array copyfrom expects at least 1 element")
   -- Resize C side if needed
   if (NewCount ~= Count) then
     -- Extend the array on the C side
-    arrayresize(Handle, NewCount)
+    arrayresize(ArrayC, NewCount)
     -- Update
-    Array.Pointer = getarraypointer(Handle)
-    Array.Count   = arraycount(Handle)
+    Array.Pointer = getarraypointer(ArrayC)
+    Array.Count   = arraycount(ArrayC)
   end
   -- Create a temporary array with converted values (structures)
   local NewValues = {}
@@ -322,14 +313,15 @@ local function ARRAY_CopyFrom (Array, LuaTable)
     NewValues[Index] = SimpleValue
   end
   -- Set the values
-  arraysetvalues(Handle, NewValues)
+  arraysetvalues(ArrayC, NewValues)
 end
 
-local function ARRAY_GetPointer (Array)
+local function ARRAY_GetPointer (Array, UserIndex)
+  -- Handle defaults
+  local Index = (UserIndex or 1)
   -- Retrieve data
-  local Handle = Array.Handle
-  -- Get pointer
-  local NewPointer = getarraypointer(Handle)
+  local ArrayC     = Array.ArrayC
+  local NewPointer = getarraypointer(ArrayC, 1)
   -- Update pointer
   Array.Pointer = NewPointer
   -- Return value
@@ -347,8 +339,8 @@ local function ARRAY_GetValue (Array, Index)
   -- Validate inputs
   assert((Index >= 1) and (Index <= Array.Count), format("array index out of bounds: %d [%d-%d]", Index, 1, Array.Count))
   -- Read a single value from the C side
-  local Handle      = Array.Handle
-  local SimpleValue = arraygetvalue(Handle, Index)
+  local ArrayC      = Array.ArrayC
+  local SimpleValue = arraygetvalue(ArrayC, Index)
   -- Convert pointers to high-level structures if needed
   local ConvertedValue = ARRAY_ConvertReadValue(Array, SimpleValue)
   -- Return value
@@ -359,20 +351,20 @@ local function ARRAY_SetValue (Array, Index, Value)
   -- Validate inputs
   assert((Index >= 1), format("index must be positive: %d", Index))
   -- Retrieve data
-  local Handle = Array.Handle
+  local ArrayC = Array.ArrayC
   local Count  = Array.Count
   -- Resize C side array if needed
   if (Index > Count) then
     -- Resize buffer
-    arrayresize(Handle, Index)
+    arrayresize(ArrayC, Index)
     -- Update data
-    Array.Pointer = getarraypointer(Handle)
-    Array.Count   = arraycount(Handle)
+    Array.Pointer = getarraypointer(ArrayC)
+    Array.Count   = arraycount(ArrayC)
   end
   -- Convert high-level structures to pointers if needed
   local SimpleValue = ARRAY_ConvertWriteValue(Array, Value)
   -- Writes the value on the C side
-  arraysetvalue(Handle, Index, SimpleValue)
+  arraysetvalue(ArrayC, Index, SimpleValue)
 end
 
 local function ARRAY_Length (Array)
@@ -383,11 +375,11 @@ local function ARRAY_Length (Array)
 end
 
 local function ARRAY_CollectGarbage (Array)
-  local ArrayHandle = Array.Handle
-  if (ArrayHandle) then
+  local ArrayC = Array.ArrayC
+  if (ArrayC) then
     -- Free resources
-    freearray(ArrayHandle)
-    Array.Handle  = nil
+    freearray(ArrayC)
+    Array.ArrayC  = nil
     Array.Pointer = nil
     Array.Count   = nil
   end
@@ -418,7 +410,7 @@ local function ARRAY_NewArray (ArrayType, ElementCount)
   -- Create a new array
   local NewArrayObject = {
     FfiType = FfiType,
-    Handle  = NewArrayC,
+    ArrayC  = NewArrayC,
     Pointer = getarraypointer(NewArrayC),
     Count   = arraycount(NewArrayC),
   }
@@ -940,17 +932,17 @@ local PUBLIC_API = {
   importfunction = WrapFunction,  -- C function pointer -> Lua function
   newcallback    = CreateClosure, -- Lua function       -> C function pointer
   -- Direct imports from libffi raw bindings
-  readpointer    = libffi.readpointer,
   newpointer     = libffi.newpointer, -- (High, Low)
   convertpointer = libffi.convertpointer,
   derefpointer   = libffi.derefpointer,
   readmemory     = libffi.readmemory,
   writememory    = libffi.writememory,
+  readvalue      = libffi.readvalue,
+  writevalue     = libffi.writevalue,
   pointeroffset  = libffi.pointeroffset,
   pointerdiff    = libffi.pointerdiff,
   -- structures
-  newstructure   = NewNamedStructure,
-  newstructurea  = NewAnonymousStructure,
+  newstructure   = NewStructure,
   newarray       = ARRAY_NewArray,
   newinstance    = NewInstance, -- alias for newarray(1)
   -- mimalloc
