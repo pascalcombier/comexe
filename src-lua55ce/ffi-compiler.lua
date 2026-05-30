@@ -181,9 +181,18 @@ local PrimitiveFfiToken = {
   ["double"]                 = "libffi.double",
   ["long double"]            = "libffi.double",
   ["size_t"]                 = "libffi.uint64",
+  -- standard types from C headers
   ["intptr_t"]               = "libffi.sint64",
   ["uintptr_t"]              = "libffi.uint64",
   ["ptrdiff_t"]              = "libffi.sint64",
+  ["int8_t"]                 = "libffi.sint8",
+  ["uint8_t"]                = "libffi.uint8",
+  ["int16_t"]                = "libffi.sint16",
+  ["uint16_t"]               = "libffi.uint16",
+  ["int32_t"]                = "libffi.sint32",
+  ["uint32_t"]               = "libffi.uint32",
+  ["int64_t"]                = "libffi.sint64",
+  ["uint64_t"]               = "libffi.uint64",
 }
 
 if (getparam("OS") == "windows") then
