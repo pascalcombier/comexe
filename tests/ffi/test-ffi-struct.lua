@@ -103,17 +103,17 @@ assert(CallPairAndSum)
 
 local PairValueA = MakePair(11, 31)
 assert((type(PairValueA) == "table"))
-assert((PairValueA:getfield("First") == 11))
-assert((PairValueA:getfield("Second") == 31))
+assert((PairValueA:get("First") == 11))
+assert((PairValueA:get("Second") == 31))
 
 local PairValueB = MakePair(7, 5)
 assert((PairValueA == PairValueB))
-assert((PairValueB:getfield("First") == 7))
-assert((PairValueB:getfield("Second") == 5))
+assert((PairValueB:get("First") == 7))
+assert((PairValueB:get("Second") == 5))
 
 local UserPair = newinstance(PairStruct)
-UserPair:set(1, 40)
-UserPair:setfield("Second", 2)
+UserPair:set("First", 40)
+UserPair:set("Second", 2)
 
 local PairSum = SumPair(UserPair)
 assert((PairSum == 42))
@@ -122,12 +122,12 @@ local PairArray = ffi.newarray(PairStruct, 2)
 assert((#PairArray == 2))
 local PairFirst  = PairArray:get(1)
 local PairSecond = PairArray:get(2)
-PairFirst:setfield("First", 1)
-PairFirst:setfield("Second", 2)
-PairSecond:setfield("First", 3)
-PairSecond:setfield("Second", 4)
-assert((PairFirst:getfield("First") == 1))
-assert((PairSecond:getfield("Second") == 4))
+PairFirst:set("First", 1)
+PairFirst:set("Second", 2)
+PairSecond:set("First", 3)
+PairSecond:set("Second", 4)
+assert((PairFirst:get("First") == 1))
+assert((PairSecond:get("Second") == 4))
 
 UserPair  = nil
 PairArray = nil
@@ -147,13 +147,13 @@ local PairTransformCallbackCalled = false
 
 local function PairTransformCallback (InputPair)
   assert((type(InputPair) == "table"))
-  assert((type(InputPair.getfield) == "function"))
+  assert((type(InputPair.get) == "function"))
   PairTransformCallbackCalled = true
-  local Left       = InputPair:getfield("First")
-  local Right      = InputPair:getfield("Second")
+  local Left  = InputPair:get("First")
+  local Right = InputPair:get("Second")
   local OutputPair = newinstance(PairStruct)
-  OutputPair:setfield("First",  (Left  + 10))
-  OutputPair:setfield("Second", (Right + 20))
+  OutputPair:set("First",  (Left  + 10))
+  OutputPair:set("Second", (Right + 20))
   return OutputPair
 end
 

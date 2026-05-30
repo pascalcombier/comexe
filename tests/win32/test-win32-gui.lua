@@ -874,18 +874,18 @@ local function CreateWindow ()
   local WindowProcPointer = WindowProcClosure:getpointer()
   assert(WindowProcPointer)  
   -- Write WNDCLASSEX structure
-  WndClassElement:setfield("cbSize", WndClassSize)
-  WndClassElement:setfield("style", (CS_HREDRAW | CS_VREDRAW | CS_OWNDC))
-  WndClassElement:setfield("lpfnWndProc", WindowProcPointer)
-  WndClassElement:setfield("cbClsExtra", 0)
-  WndClassElement:setfield("cbWndExtra", 0)
-  WndClassElement:setfield("hInstance", HInstance)
-  WndClassElement:setfield("hIcon", HIcon)
-  WndClassElement:setfield("hCursor", HCursor)
-  WndClassElement:setfield("hbrBackground", WindowColorBrushId)
-  WndClassElement:setfield("lpszMenuName", NULL)
-  WndClassElement:setfield("lpszClassName", ClassNamePtr)
-  WndClassElement:setfield("hIconSm", HIcon)
+  WndClassElement:set("cbSize", WndClassSize)
+  WndClassElement:set("style", (CS_HREDRAW | CS_VREDRAW | CS_OWNDC))
+  WndClassElement:set("lpfnWndProc", WindowProcPointer)
+  WndClassElement:set("cbClsExtra", 0)
+  WndClassElement:set("cbWndExtra", 0)
+  WndClassElement:set("hInstance", HInstance)
+  WndClassElement:set("hIcon", HIcon)
+  WndClassElement:set("hCursor", HCursor)
+  WndClassElement:set("hbrBackground", WindowColorBrushId)
+  WndClassElement:set("lpszMenuName", NULL)
+  WndClassElement:set("lpszClassName", ClassNamePtr)
+  WndClassElement:set("hIconSm", HIcon)
 
   -- Register the window class
   local ClassAtom = RegisterClassEx(WndClassElement:getpointer())
@@ -921,7 +921,7 @@ local function CreateWindow ()
       Continue = false
     else
       -- Get message type
-      local ReceivedMessageType = MessageElement:getfield("Message")
+      local ReceivedMessageType = MessageElement:get("Message")
       print(format("LOOP received 0x%04X %s", ReceivedMessageType, Win32Messages[ReceivedMessageType] or "Unknown"))
       TranslateMessage(MessageElement:getpointer())
       DispatchMessage(MessageElement:getpointer())
@@ -929,7 +929,7 @@ local function CreateWindow ()
   end
   
   -- Return the wParam from the WM_QUIT message
-  return MessageElement:getfield("WParam")
+  return MessageElement:get("WParam")
 end
 
 -- Clean up global structures at the end of the program

@@ -113,11 +113,11 @@ assert(UserStructV1, UserErrorV1)
 local UserInstanceV1 = ffi.newinstance(UserStructV1)
 local UserName       = ffi.newcstring("Zoe")
 
-UserInstanceV1:setfield("Id", 42)
-UserInstanceV1:setfield("Name", UserName:getpointer())
+UserInstanceV1:set("Id", 42)
+UserInstanceV1:set("Name", UserName:getpointer())
 
-assert((UserInstanceV1:getfield("Id") == 42))
-local NameFieldPtrV1 = UserInstanceV1:getfield("Name")
+assert((UserInstanceV1:get("Id") == 42))
+local NameFieldPtrV1 = UserInstanceV1:get("Name")
 assert((type(NameFieldPtrV1) == "userdata"))
 assert((ffi.readstring(NameFieldPtrV1) == "Zoe"))
 
@@ -131,52 +131,36 @@ local UserStruct, UserError = ffi.newstructure("TestUser",
                                                cstring, "Name")
 assert(UserStruct, UserError)
 
--- Anonymous structure with cstring field
-local AnonStruct, AnonError = ffi.newstructurea(cstring, sint32)
-assert(AnonStruct, AnonError)
-
 -- Create instance and set fields
 local UserInstance = ffi.newinstance(UserStruct)
 assert((type(UserInstance) == "table"))
 assert(UserInstance.getpointer)
 
 -- Set cstring field with Lua string
-UserInstance:setfield("Id", 42)
-UserInstance:setfield("Name", "Zoe")
-assert((UserInstance:getfield("Id") == 42))
+UserInstance:set("Id", 42)
+UserInstance:set("Name", "Zoe")
+assert((UserInstance:get("Id") == 42))
 
 -- Read cstring field: should return Lua string automatically
-local NameValue = UserInstance:getfield("Name")
+local NameValue = UserInstance:get("Name")
 assert((type(NameValue) == "string"), format("cstring field get should return string, got %s", type(NameValue)))
 assert((NameValue == "Zoe"), format("Expected 'Zoe', got %q", NameValue))
 
 -- Set cstring field to nil (NULL pointer)
-UserInstance:setfield("Name", nil)
-local NilName = UserInstance:getfield("Name")
+UserInstance:set("Name", nil)
+local NilName = UserInstance:get("Name")
 assert((NilName == nil), format("cstring field with NULL should return nil, got %s", tostring(NilName)))
 
 -- Re-set cstring field (old allocation should be freed, new one allocated)
-UserInstance:setfield("Name", "Alice")
-local ReSetName = UserInstance:getfield("Name")
+UserInstance:set("Name", "Alice")
+local ReSetName = UserInstance:get("Name")
 assert((ReSetName == "Alice"), format("Expected 'Alice', got %q", ReSetName))
 
 -- Multiple re-sets should not leak memory
-UserInstance:setfield("Name", "Bob")
-assert((UserInstance:getfield("Name") == "Bob"))
-UserInstance:setfield("Name", "Charlie")
-assert((UserInstance:getfield("Name") == "Charlie"))
-
--- Anonymous structure: set by index
-local AnonInstance = ffi.newinstance(AnonStruct)
-AnonInstance:set(1, "Hello")
-AnonInstance:set(2, 99)
-local AnonStr = AnonInstance:get(1)
-assert((type(AnonStr) == "string"), "anonymous cstring field get should return string")
-assert((AnonStr == "Hello"))
-assert((AnonInstance:get(2) == 99))
-
-AnonInstance:set(1, nil)
-assert((AnonInstance:get(1) == nil), "anonymous cstring field nil should return nil")
+UserInstance:set("Name", "Bob")
+assert((UserInstance:get("Name") == "Bob"))
+UserInstance:set("Name", "Charlie")
+assert((UserInstance:get("Name") == "Charlie"))
 
 -- Structure with multiple cstring fields
 local MultiStringStruct, MultiError = ffi.newstructure("MultiCString",
@@ -185,27 +169,25 @@ local MultiStringStruct, MultiError = ffi.newstructure("MultiCString",
 assert(MultiStringStruct, MultiError)
 
 local MultiInstance = ffi.newinstance(MultiStringStruct)
-MultiInstance:setfield("First", "One")
-MultiInstance:setfield("Second", "Two")
-assert((MultiInstance:getfield("First") == "One"))
-assert((MultiInstance:getfield("Second") == "Two"))
+MultiInstance:set("First", "One")
+MultiInstance:set("Second", "Two")
+assert((MultiInstance:get("First") == "One"))
+assert((MultiInstance:get("Second") == "Two"))
 
 -- Partial nil
-MultiInstance:setfield("First", nil)
-assert((MultiInstance:getfield("First") == nil))
-assert((MultiInstance:getfield("Second") == "Two"))
+MultiInstance:set("First", nil)
+assert((MultiInstance:get("First") == nil))
+assert((MultiInstance:get("Second") == "Two"))
 
 -- Set back
-MultiInstance:setfield("First", "Updated")
-assert((MultiInstance:getfield("First") == "Updated"))
+MultiInstance:set("First", "Updated")
+assert((MultiInstance:get("First") == "Updated"))
 
 -- GC cleanup: instance GC should free tracked cstring allocations
 UserInstanceV1    = nil
 UserInstance      = nil
-AnonInstance      = nil
 MultiInstance     = nil
 MultiStringStruct = nil
-AnonStruct        = nil
 UserStruct        = nil
 UserStructV1      = nil
 
