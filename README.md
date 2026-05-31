@@ -17,7 +17,11 @@ ComEXE is a statically linked, drop-in replacement for the [Lua standalone progr
 - [x] [Improved UTF-8 support on Windows](./doc/comexe-reference-utf8.md)
 - [x] [MIT license](./LICENSE)
 
+# 📘 Guides & Notes
+
+- [Wrapping SQLite with the FFI](./doc/page-ffi-sqlite.md)
+- [Differences with Lua PUC](./doc/differences-lua-puc.md)
+
 # ➡️ Next
 
 - [Download binaries for Windows x86-64 and Linux x86-64](https://github.com/pascalcombier/comexe/releases)
-- [Differences with Lua PUC](./doc/differences-lua-puc.md)
