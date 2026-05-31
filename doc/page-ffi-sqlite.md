@@ -1,4 +1,4 @@
-# FFI Guide: Wrapping SQLite
+# Using the FFI to wrap a C library
 
 * [Introduction](#introduction)
 * [Gathering the needed functions into a C header](#gathering-the-needed-functions-into-a-c-header)

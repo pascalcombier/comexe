@@ -19,7 +19,7 @@ ComEXE is a statically linked, drop-in replacement for the [Lua standalone progr
 
 # 📘 Guides & Notes
 
-- [Wrapping SQLite with the FFI](./doc/page-ffi-sqlite.md)
+- [Using FFI to wrap a C library](./doc/page-ffi-sqlite.md)
 - [Differences with Lua PUC](./doc/differences-lua-puc.md)
 
 # ➡️ Next
