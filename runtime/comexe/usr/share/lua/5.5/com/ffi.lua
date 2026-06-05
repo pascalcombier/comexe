@@ -169,6 +169,9 @@ end
 -- FfiType -> LuaStructureObject
 local FFI_STRUCT_TYPES = {}
 
+-- Pre-declare LoadLibrary, implemented in LoadLibraryImpl
+local LoadLibrary
+
 --------------------------------------------------------------------------------
 -- PRIVATE FUNCTIONS                                                          --
 --------------------------------------------------------------------------------
@@ -458,8 +461,11 @@ local function LIBRARY_GarbageCollectMethod (Library)
   Library.CifCache      = nil
   Library.ContextCache  = nil
   Library.VariadicCache = nil
-  -- Free the library
-  freelib(Library.Handle)
+  -- Library.HandleList contain a list of objects attached to LIBRARY_Metatable
+  -- created from LIBRARY_MethodAddLibrary. They will be released automatically
+  local LibraryHandle = HandleList[1]
+  freelib(LibraryHandle)
+  Library.HandleList = nil
 end
 
 -- Return a string like "ReturnType-ParamType1-ParamType2-..."
@@ -547,6 +553,19 @@ local function MakeCallableFunction (CallContext, FunctionPointer, Signature, Do
   return Function
 end
 
+local function FindFunctionInList (HandleList, FunctionName)
+  -- Init
+  local Index       = 1
+  local HandleCount = #HandleList
+  local FunctionPointer
+  while (FunctionPointer == nil) and (Index <= HandleCount) do
+    FunctionPointer = getproc(HandleList[Index], FunctionName)
+    Index           = (Index + 1)
+  end
+  -- Return value
+  return FunctionPointer
+end
+
 -- Always create and return a new function
 local function LIBRARY_MethodBind (Library, ReturnType, FunctionName, ...)
   -- Extract arguments
@@ -565,7 +584,7 @@ local function LIBRARY_MethodBind (Library, ReturnType, FunctionName, ...)
   local FunctionPointer = Library.SymbolCache[FunctionName]
   -- Populate symbol cache if needed
   if (FunctionPointer == nil) then
-    FunctionPointer = getproc(Library.Handle, FunctionName)
+    FunctionPointer = FindFunctionInList(Library.HandleList, FunctionName)
     if FunctionPointer then
       Library.SymbolCache[FunctionName] = FunctionPointer
     else
@@ -709,6 +728,18 @@ end
 -- LIBRARY METHOD: LOAD GENERATED BINDINGS                                    --
 --------------------------------------------------------------------------------
 
+local function LIBRARY_MethodAddLibrary (Library, ...)
+  local NewLibrary = LoadLibrary(...)
+  local Result, ErrorMessage
+  if NewLibrary then
+    append(Library.HandleList, NewLibrary.Handle)
+    Result = true
+  else
+    ErrorMessage = "Failed to load library"
+  end
+  return Result, ErrorMessage
+end
+
 local function LIBRARY_MethodLoad (Library, ModuleName)
   -- "require" without pcall will emit an error
   local Module = require(ModuleName)
@@ -725,6 +756,7 @@ local LIBRARY_Metatable = {
   __gc = LIBRARY_GarbageCollectMethod,
   -- METATABLE_UserDefinedMethods
   __index = {
+    addlibrary   = LIBRARY_MethodAddLibrary,
     bind         = LIBRARY_MethodBind,
     variadicbind = LIBRARY_MethodVariadicBind,
     load         = LIBRARY_MethodLoad,
@@ -739,6 +771,7 @@ local function LoadLibrarySimple (DllFilename)
     NewLibraryObject = {
       Filename      = DllFilename,
       Handle        = Handle,
+      HandleList    = { Handle },
       SymbolCache   = {},
       CifCache      = {},
       ContextCache  = {},
@@ -771,7 +804,7 @@ local function LoadLibraryCandidates (...)
   return NewLibraryObject
 end
 
-local function LoadLibrary (...)
+local function LoadLibraryImpl (...)
   local ArgumentCount = select("#", ...)
   local NewLibraryObject
   if (ArgumentCount == 1) then
@@ -782,6 +815,7 @@ local function LoadLibrary (...)
   -- Return value
   return NewLibraryObject
 end
+LoadLibrary = LoadLibraryImpl
 
 -- Wrap a C function pointer into a callable Lua function. Typical use is libtcc
 -- functions.
