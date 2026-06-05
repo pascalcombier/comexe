@@ -38,7 +38,6 @@
 
 static struct GB_Allocator MAIN_Allocator =
 {
-  PLAT_GetPageSizeInBytes,
   PLAT_SafeAlloc0,
   PLAT_Free,
   PLAT_SafeRealloc
