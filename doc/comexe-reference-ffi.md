@@ -297,6 +297,7 @@ Library objects are returned by `ffi.loadlib`.
 | `lib:bind(ReturnType, "Name", ParamType1, ...)`              | Return a Lua function that calls the named symbol with the given signature.                                                          |
 | `lib:variadicbind(ReturnType, "Name", FixedParamType1, ...)` | Return a Lua variadic wrapper. Types of variadic arguments are inferred on each call and wrappers are cached per inferred signature. |
 | `lib:load("ModuleName")`                                     | Load a binding module that registers functions on this library.                                                                      |
+| `lib:addlibrary(...)`                                        | Load an additional shared library. Symbols resolve across all loaded libraries. Accepts same args as `ffi.loadlib`.                  |
 
 Example:
 
@@ -324,6 +325,16 @@ For `variadicbind`, C types are inferred:
 | `lightuserdata`      | `pointer`       |                                                                           |
 | structure instance   | `pointer`       | Via `instance:getpointer()`                                               |
 | array                | `pointer`       | Via `array:getpointer()`                                                  |
+
+`lib:addlibrary` loads additional shared libraries. This allows a single binding file to link multiple DLLs. Symbols are looked up across all loaded libraries:
+
+```lua
+local win32 = ffi.loadlib("kernel32.dll")
+win32:addlibrary("user32.dll")
+win32:addlibrary("advapi32.dll")
+win32:addlibrary("shell32.dll")
+win32:load("win32-ffi")
+```
 
 ## Array objects
 
