@@ -64,6 +64,12 @@ local writefile   = Runtime.writefile
 local newpathname = Runtime.newpathname
 local getparam    = Runtime.getparam
 
+-- Keep structures, if not known structure, it will fallback to pointer
+local KnownStructTypes
+
+-- Generate the structures in the same order they have been declared
+local StructDeclarationOrder
+
 --------------------------------------------------------------------------------
 -- CPARSER OPTIONS                                                            --
 --------------------------------------------------------------------------------
@@ -283,6 +289,8 @@ local function ResolveFieldType (AstType)
     local FfiTypeString = PrimitiveFfiToken[Current.n]
     if FfiTypeString then
       Result = FfiTypeString
+    elseif KnownStructTypes[Current.n] then
+      Result = format("Library.%s", Current.n)
     else
       Result = "libffi.pointer"
     end
@@ -310,6 +318,10 @@ end
 --------------------------------------------------------------------------------
 
 local function ParseHeader (Content, InputFilename)
+  -- Init structures order
+  KnownStructTypes       = {}
+  StructDeclarationOrder = {}
+  -- Parse
   local Functions    = {}
   local Constants    = {}
   local Structures   = {}
@@ -341,12 +353,14 @@ local function ParseHeader (Content, InputFilename)
           append(Functions, NewFunction)
         end
       end
-    elseif (ActionTag == "TypeDef") and (Action.sclass == "[typetag]") then
+    elseif (ActionTag == "TypeDef") and ((Action.sclass == "[typetag]") or (Action.sclass == "typedef")) then
       local BaseType = UnwrapBaseType(Action.type)
       if BaseType then
         if (BaseType.tag == "Struct") then
           if (#BaseType > 0) then
             Structures[ActionName] = Action
+            KnownStructTypes[ActionName] = true
+            append(StructDeclarationOrder, ActionName)
           end
         elseif (BaseType.tag == "Union") then
           print(format("WARNING: union '%s' not supported", ActionName))
@@ -400,6 +414,9 @@ local function EmitStructType (Stream, StructName, StructAction)
   -- StructNode: {tag="Struct", n="Point", ...}
   local StructNode = UnwrapBaseType(StructAction.type)
   local TagName    = StructNode.n
+  if (TagName == nil) then
+    TagName = StructName
+  end
   -- Write structure
   Stream:write(format("  Library.%s = libffi.newstructure(%q,", TagName, TagName))
   local FieldLines = {}
@@ -505,7 +522,7 @@ local function GenerateOutput (Constants, Structures, Functions, InputPath)
     end
   end
   -- STRUCTURES
-  local StructureNames = GetSortedKeys(Structures)
+  local StructureNames = StructDeclarationOrder
   if (#StructureNames > 0) then
     Stream:write("  -- Structures")
     for StructureIndex = 1, #StructureNames do
