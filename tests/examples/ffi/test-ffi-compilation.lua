@@ -9,6 +9,7 @@ local LuaExe = getparam("LUA-EXE")
 local HEADERS = {
   "tiny-libc.h",
   "tiny-sqlite3.h",
+  "tiny-win32.h",
 }
 
 for Index, HeaderFilename in ipairs(HEADERS) do
