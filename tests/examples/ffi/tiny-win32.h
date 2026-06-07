@@ -31,6 +31,9 @@
 #define WM_SIZE    0x0005
 #define WM_COMMAND 0x0111
 
+/* System parameters */
+#define SPI_GETNONCLIENTMETRICS 41
+
 /* DrawText format */
 #define DT_SINGLELINE 0x00000020
 #define DT_CENTER     0x00000001
@@ -46,6 +49,43 @@
 #define TRANSPARENT         1
 
 /* Structures */
+
+typedef struct {
+  int           lfHeight;
+  int           lfWidth;
+  int           lfEscapement;
+  int           lfOrientation;
+  int           lfWeight;
+  unsigned char lfItalic;
+  unsigned char lfUnderline;
+  unsigned char lfStrikeOut;
+  unsigned char lfCharSet;
+  unsigned char lfOutPrecision;
+  unsigned char lfClipPrecision;
+  unsigned char lfQuality;
+  unsigned char lfPitchAndFamily;
+  char          lfFaceName[32];
+  
+} LOGFONTA;
+
+typedef struct {
+  unsigned int cbSize;
+  int          iBorderWidth;
+  int          iScrollWidth;
+  int          iScrollHeight;
+  int          iCaptionWidth;
+  int          iCaptionHeight;
+  LOGFONTA     lfCaptionFont;
+  int          iSmCaptionWidth;
+  int          iSmCaptionHeight;
+  LOGFONTA     lfSmCaptionFont;
+  int          iMenuWidth;
+  int          iMenuHeight;
+  LOGFONTA     lfMenuFont;
+  LOGFONTA     lfStatusFont;
+  LOGFONTA     lfMessageFont;
+  
+} NONCLIENTMETRICSA;
 
 typedef struct {
   int x;
@@ -128,10 +168,12 @@ int FillRect(void *hdc, const void *lprc, void *hbr);
 unsigned long long SetTimer(void *hWnd, unsigned long long nIDEvent, unsigned int uElapse, void *lpTimerFunc);
 int KillTimer(void *hWnd, unsigned long long uIDEvent);
 int ReleaseDC(void *hWnd, void *hdc);
+int SystemParametersInfoA(unsigned int uiAction, unsigned int uiParam, void *pvParam, unsigned int fWinIni);
 
 /* gdi32.dll */
 void *GetStockObject(int i);
 void *CreateFontA(int cHeight, int cWidth, int cEscapement, int cOrientation, int cWeight, unsigned int bItalic, unsigned int bUnderline, unsigned int bStrikeOut, unsigned int iCharSet, unsigned int iOutPrecision, unsigned int iClipPrecision, unsigned int iQuality, unsigned int iPitchAndFamily, const char* pszFaceName);
+void *CreateFontIndirectA(const void *lplf);
 void *SelectObject(void *hdc, void *h);
 int DeleteObject(void *h);
 int SetBkMode(void *hdc, int mode);
