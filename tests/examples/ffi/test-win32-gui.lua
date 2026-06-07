@@ -5,13 +5,16 @@
 -- This example show how to use ComEXE's libffi to use the native Win32 API for:
 -- Creating a window
 -- Creating buttons (displayed using the proper styling)
--- Positioning the widgets in the main window (trivial, without clay or layout.h)
+-- Positioning the widgets in the main window
 -- Convert and draw unicode strings
 -- Use timers
 --
 -- For more serious work, we would need to build a middleware in Lua that would
 -- simplify the API. The main thing would be a proper generic layout hbox/vbox
 -- and the wrapping of native controls (window, buttons, checkbox, etc).
+--
+-- We could have a deeper look at the projects clay or layout.h
+--
 
 --------------------------------------------------------------------------------
 -- MODULE                                                                     --
@@ -40,37 +43,59 @@ win32:addlibrary("gdi32.dll")
 
 win32:load("tiny-win32-ffi")
 
-local GetMessageA         = win32.GetMessageA
-local TranslateMessage    = win32.TranslateMessage
-local DispatchMessageA    = win32.DispatchMessageA
-local PostQuitMessage     = win32.PostQuitMessage
-local KillTimer           = win32.KillTimer
-local InvalidateRect      = win32.InvalidateRect
-local MoveWindow          = win32.MoveWindow
-local BeginPaint          = win32.BeginPaint
-local EndPaint            = win32.EndPaint
-local SelectObject        = win32.SelectObject
-local DeleteObject        = win32.DeleteObject
-local SetBkMode           = win32.SetBkMode
-local GetClientRect       = win32.GetClientRect
-local GetDC               = win32.GetDC
-local ReleaseDC           = win32.ReleaseDC
-local DrawTextW           = win32.DrawTextW
-local DefWindowProcA      = win32.DefWindowProcA
-local MultiByteToWideChar = win32.MultiByteToWideChar
-local WM_DESTROY          = win32.WM_DESTROY
-local WM_TIMER            = win32.WM_TIMER
-local WM_SIZE             = win32.WM_SIZE
-local WM_PAINT            = win32.WM_PAINT
-local WM_COMMAND          = win32.WM_COMMAND
-local WS_CHILD            = win32.WS_CHILD
-local WS_VISIBLE          = win32.WS_VISIBLE
-local WS_CLIPCHILDREN     = win32.WS_CLIPCHILDREN
-local TRANSPARENT         = win32.TRANSPARENT
-local DT_SINGLELINE       = win32.DT_SINGLELINE
-local DT_CENTER           = win32.DT_CENTER
-local DT_VCENTER          = win32.DT_VCENTER
-local DT_CALCRECT         = win32.DT_CALCRECT
+local GetMessageA             = win32.GetMessageA
+local TranslateMessage        = win32.TranslateMessage
+local DispatchMessageA        = win32.DispatchMessageA
+local PostQuitMessage         = win32.PostQuitMessage
+local KillTimer               = win32.KillTimer
+local InvalidateRect          = win32.InvalidateRect
+local MoveWindow              = win32.MoveWindow
+local BeginPaint              = win32.BeginPaint
+local EndPaint                = win32.EndPaint
+local SelectObject            = win32.SelectObject
+local DeleteObject            = win32.DeleteObject
+local SetBkMode               = win32.SetBkMode
+local GetClientRect           = win32.GetClientRect
+local GetDC                   = win32.GetDC
+local ReleaseDC               = win32.ReleaseDC
+local DrawTextW               = win32.DrawTextW
+local DefWindowProcA          = win32.DefWindowProcA
+local MultiByteToWideChar     = win32.MultiByteToWideChar
+local WM_DESTROY              = win32.WM_DESTROY
+local WM_TIMER                = win32.WM_TIMER
+local WM_SIZE                 = win32.WM_SIZE
+local WM_PAINT                = win32.WM_PAINT
+local WM_COMMAND              = win32.WM_COMMAND
+local WS_CHILD                = win32.WS_CHILD
+local WS_VISIBLE              = win32.WS_VISIBLE
+local WS_CLIPCHILDREN         = win32.WS_CLIPCHILDREN
+local TRANSPARENT             = win32.TRANSPARENT
+local DT_SINGLELINE           = win32.DT_SINGLELINE
+local DT_CENTER               = win32.DT_CENTER
+local DT_VCENTER              = win32.DT_VCENTER
+local DT_CALCRECT             = win32.DT_CALCRECT
+local LOGFONTA                = win32.LOGFONTA
+local NONCLIENTMETRICSA       = win32.NONCLIENTMETRICSA
+local SystemParametersInfoA   = win32.SystemParametersInfoA
+local CreateFontIndirectA     = win32.CreateFontIndirectA
+local SPI_GETNONCLIENTMETRICS = win32.SPI_GETNONCLIENTMETRICS
+
+--------------------------------------------------------------------------------
+-- QUERY WIN32 SYSTEM FONT                                                    --
+--------------------------------------------------------------------------------
+
+local SystemNcm = newinstance(NONCLIENTMETRICSA)
+SystemNcm:set("cbSize", NONCLIENTMETRICSA:getsizeinbytes())
+
+-- Collect default font
+SystemParametersInfoA(
+  SPI_GETNONCLIENTMETRICS,
+  NONCLIENTMETRICSA:getsizeinbytes(),
+  SystemNcm:getpointer(),
+  0)
+
+local DefaultFont = SystemNcm:get("lfMessageFont")
+local SystemFont  = CreateFontIndirectA(DefaultFont:getpointer())
 
 --------------------------------------------------------------------------------
 -- CONSTANTS AND GLOBAL VARIABLES                                             --
@@ -113,19 +138,21 @@ local RectPointer  = Rect:getpointer()
 local TEXT_BUFFER_SIZE_IN_BYTES = 256
 local TEXT_BUFFER_SIZE_IN_WCHAR = (TEXT_BUFFER_SIZE_IN_BYTES / 2)
 local TextBuffer                = ffi.malloc(TEXT_BUFFER_SIZE_IN_BYTES)
+local MeasureBuffer             = ffi.malloc(TEXT_BUFFER_SIZE_IN_BYTES)
 
-local CONTROL_RESET_ID = 1
-local CONTROL_PAUSE_ID = 2
-local CONTROL_EXIT_ID  = 3
+local CONTROL_RESET_ID = 1 -- Win32 ID for button "Reset"
+local CONTROL_PAUSE_ID = 2 -- Win32 ID for button "Pause"
+local CONTROL_EXIT_ID  = 3 -- Win32 ID for button "Exit"
 
-local ButtonReset
-local ButtonPause
-local ButtonExit
+local ButtonResetWindow
+local ButtonPauseWindow
+local ButtonExitWindow
 
 local UI_ButtonWidth  = 0
 local UI_ButtonHeight = 0
 local UI_ButtonGap    = 15
 local UI_BlockGap     = 15
+local UI_TextHeight   = 0
 
 --------------------------------------------------------------------------------
 -- STATE MACHINE                                                              --
@@ -138,7 +165,7 @@ local STRINGS = {
   "hola-世界",
   "γεια-σας",
   "안녕하세요-world",
-  "closing"
+  "Closing"
 }
 
 local APP_StateTextIndex
@@ -147,11 +174,26 @@ local APP_Paused
 
 local function SM_Reset ()
   APP_StateTextIndex = 1
-  APP_StateCounter   = 3
+  APP_StateCounter   = 0
   APP_Paused         = false
 end
 
 SM_Reset()
+
+local function FindLongestString (Strings)
+  local MaxLen = 0
+  local Result = ""
+  for Index, String in ipairs(Strings) do
+    local Length = #String
+    if (Length > MaxLen) then
+      MaxLen = Length
+      Result = String
+    end
+  end
+  return Result
+end
+
+local MaxString = format("%s...", FindLongestString(STRINGS))
 
 local function SM_Tick ()
   local Result
@@ -166,7 +208,7 @@ local function SM_Tick ()
     if (APP_StateTextIndex > #STRINGS) then
       Result = "QUIT"
     else
-      APP_StateCounter = 1
+      APP_StateCounter = 0
       Result = "UPDATE"
     end
   end
@@ -180,8 +222,9 @@ end
 
 local function SM_GetString ()
   local CurrentString   = STRINGS[APP_StateTextIndex]
-  local Dots = string.rep(".", APP_StateCounter)
-  local FormattedString = format("%s%-3s", CurrentString, Dots)
+  local Dots            = string.rep(".", APP_StateCounter)
+  local Spaces          = string.rep(" ", (3 - APP_StateCounter))
+  local FormattedString = format("%s%s%s", CurrentString, Dots, Spaces)
   return FormattedString
 end
 
@@ -195,42 +238,50 @@ local UI_TempPointer   = UI_TempRectangle:getpointer()
 local function InitButtonSizes (Window)
   -- Create a pain context
   local Hdc = GetDC(Window)
-  -- Evaluate the size of the string "Pause" if it was paint
+  -- Evaluate "Pause" string size
+  SelectObject(Hdc, SystemFont)
   DrawTextW(Hdc, "Pause", -1, UI_TempPointer, (DT_CALCRECT | DT_SINGLELINE))
-  -- Button size is propertional
   UI_ButtonWidth  = (UI_TempRectangle:get("right")  * 2)
   UI_ButtonHeight = (UI_TempRectangle:get("bottom") * 2)
+  -- Text height (measured once with GlobalFont, stable across all strings)
+  SelectObject(Hdc, GlobalFont)
+  DrawTextW(Hdc, "World!", -1, UI_TempPointer, (DT_CALCRECT | DT_SINGLELINE))
+  UI_TextHeight = UI_TempRectangle:get("bottom")
   -- Release
   ReleaseDC(Window, Hdc)
 end
 
-local function ComputeLayout (Window, Hdc)
-  -- Measure text
-  DrawTextW(Hdc, SM_GetString(), -1, UI_TempPointer, (DT_CALCRECT | DT_SINGLELINE))
-  local TextWidth  = UI_TempRectangle:get("right")
-  local TextHeight = UI_TempRectangle:get("bottom")
+local function ApplyLayout (Window, Hdc)
+  -- Measure base text width (without dots) via UTF-16
+  MultiByteToWideChar(win32.CP_UTF8, 0, MaxString, -1, MeasureBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
+  UI_TempRectangle:set("left", 0)
+  DrawTextW(Hdc, MeasureBuffer, -1, UI_TempPointer, (DT_CALCRECT | DT_SINGLELINE))
+  local BaseWidth = UI_TempRectangle:get("right")
+  local TextWidth = BaseWidth
   -- Button row
   local TotalButtonWidth  = (3 * UI_ButtonWidth + 2 * UI_ButtonGap)
   local BlockWidth        = math.max(TextWidth, TotalButtonWidth)
-  local BlockHeight       = (TextHeight + UI_BlockGap + UI_ButtonHeight)
+  local BlockHeight       = (UI_TextHeight + UI_BlockGap + UI_ButtonHeight)
   -- Center block in client
   GetClientRect(Window, RectPointer)
   local ClientWidth  = Rect:get("right")
   local ClientHeight = Rect:get("bottom")
   local BlockX = ((ClientWidth - BlockWidth) // 2)
   local BlockY = ((ClientHeight - BlockHeight) // 2)
-  -- Store text rect
+  -- Store text rect (full block width, DT_CENTER keeps text visually centered)
   UI_TempRectangle:set("left",   BlockX)
   UI_TempRectangle:set("top",    BlockY)
   UI_TempRectangle:set("right",  (BlockX + BlockWidth))
-  UI_TempRectangle:set("bottom", (BlockY + TextHeight))
-  -- Position buttons centered below text
-  local ButtonsX = (BlockX + ((BlockWidth - TotalButtonWidth) // 2))
-  local ButtonsY = (BlockY + TextHeight + UI_BlockGap)
+  UI_TempRectangle:set("bottom", (BlockY + UI_TextHeight))
+  -- Position buttons centered below text (fixed X based on TotalButtonWidth, not BlockWidth)
+  local ButtonsX = ((ClientWidth - TotalButtonWidth) // 2)
+  local ButtonsY = (BlockY + UI_TextHeight + UI_BlockGap)
+  print(string.format("CNT=%d Base=%d TextW=%d BlkW=%d BlkX=%d BtnX=%d",
+    APP_StateCounter, BaseWidth, TextWidth, BlockWidth, BlockX, ButtonsX))
   -- Move the buttons
-  MoveWindow(ButtonReset, ButtonsX,                                        ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
-  MoveWindow(ButtonPause, (ButtonsX + UI_ButtonWidth + UI_ButtonGap),      ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
-  MoveWindow(ButtonExit,  (ButtonsX + 2 * (UI_ButtonWidth + UI_ButtonGap)), ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
+  MoveWindow(ButtonResetWindow, ButtonsX,                                        ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
+  MoveWindow(ButtonPauseWindow, (ButtonsX + UI_ButtonWidth + UI_ButtonGap),      ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
+  MoveWindow(ButtonExitWindow,  (ButtonsX + 2 * (UI_ButtonWidth + UI_ButtonGap)), ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
 end
 
 --------------------------------------------------------------------------------
@@ -272,12 +323,14 @@ local function WindowProcedure (Window, Message, WParam, LParam)
     end
     Result = 0
   elseif (Message == WM_SIZE) then
+    local LayoutDc = GetDC(Window)
+    ApplyLayout(Window, LayoutDc)
+    ReleaseDC(Window, LayoutDc)
     InvalidateRect(Window, NULL, 1)
     Result = 0
   elseif (Message == WM_PAINT) then
     local DeviceContext = BeginPaint(Window, PaintPointer)
     local OldFont       = SelectObject(DeviceContext, GlobalFont)
-    ComputeLayout(Window, DeviceContext)
     SetBkMode(DeviceContext, TRANSPARENT)
     DrawTextW(
       DeviceContext,
@@ -331,23 +384,22 @@ local function Init ()
   assert((Window ~= NULL), "CreateWindowExA failed")
   -- Compute button sizes from font metrics
   InitButtonSizes(Window)
-  -- Create control buttons
+  -- Create control buttons (positioned later by ApplyLayout)
   local ButtonResetPointer = newpointer(0, CONTROL_RESET_ID)
   local ButtonPausePointer = newpointer(0, CONTROL_PAUSE_ID)
   local ButtonExitPointer  = newpointer(0, CONTROL_EXIT_ID)
-  ButtonReset = win32.CreateWindowExA(0, "BUTTON", "Reset", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonResetPointer, HInstance, NULL)
-  ButtonPause = win32.CreateWindowExA(0, "BUTTON", "Pause", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonPausePointer, HInstance, NULL)
-  ButtonExit  = win32.CreateWindowExA(0, "BUTTON", "Exit",  (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonExitPointer, HInstance, NULL)
-  -- Position buttons before window is shown
-  local LayoutDC = GetDC(Window)
-  SelectObject(LayoutDC, GlobalFont)
-  ComputeLayout(Window, LayoutDC)
-  ReleaseDC(Window, LayoutDC)
-  -- Update window state
+  ButtonResetWindow = win32.CreateWindowExA(0, "BUTTON", "Reset", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonResetPointer, HInstance, NULL)
+  ButtonPauseWindow = win32.CreateWindowExA(0, "BUTTON", "Pause", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonPausePointer, HInstance, NULL)
+  ButtonExitWindow  = win32.CreateWindowExA(0, "BUTTON", "Exit",  (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonExitPointer,  HInstance, NULL)
+  -- Apply initial layout (measures text, positions buttons)
+  local InitDc = GetDC(Window)
+  ApplyLayout(Window, InitDc)
+  ReleaseDC(Window, InitDc)
+  -- Update window state (counter=0 for initial display without dots)
+  APP_StateCounter = 0
   WriteUTF16String()
   win32.ShowWindow(Window, win32.SW_SHOWDEFAULT)
   win32.UpdateWindow(Window)
-  -- Create the global timer (0 means that kernel will give a timer ID)
   GlobalTimerId = win32.SetTimer(Window, 0, 750, NULL)
   assert((GlobalTimerId ~= 0), "SetTimer failed")
 end
@@ -373,8 +425,10 @@ end
 
 local function Clean ()
   DeleteObject(GlobalFont)
+  DeleteObject(SystemFont)
   KillTimer(NULL, GlobalTimerId)
   ffi.free(TextBuffer)
+  ffi.free(MeasureBuffer)
 end
 
 --------------------------------------------------------------------------------
