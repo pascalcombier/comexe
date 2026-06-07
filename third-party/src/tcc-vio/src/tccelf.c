@@ -3136,7 +3136,7 @@ ST_FUNC ssize_t full_read(TCCState *s1, int fd, void *buf, size_t count) {
     char *cbuf = buf;
     size_t rnum = 0;
     while (1) {
-        ssize_t num = vio4_read(s1, fd, cbuf, count-rnum);
+        ssize_t num = uio_read(s1, fd, cbuf, count-rnum);
         if (num < 0) return num;
         if (num == 0) return rnum;
         rnum += num;
@@ -3149,7 +3149,7 @@ ST_FUNC void *load_data(TCCState *s1, int fd, unsigned long file_offset, unsigne
     void *data;
 
     data = tcc_malloc(size);
-    vio4_lseek(s1, fd, file_offset, SEEK_SET);
+    uio_lseek(s1, fd, file_offset, SEEK_SET);
     full_read(s1, fd, data, size);
     return data;
 }
@@ -3198,7 +3198,7 @@ ST_FUNC int tcc_load_object_file(TCCState *s1,
     ElfW_Rel *rel;
     Section *s;
 
-    vio4_lseek(s1, fd, file_offset, SEEK_SET);
+    uio_lseek(s1, fd, file_offset, SEEK_SET);
     if (tcc_object_type(s1, fd, &ehdr) != AFF_BINTYPE_REL)
         goto invalid;
     /* test CPU specific stuff */
@@ -3334,7 +3334,7 @@ invalid:
         /* concatenate sections */
         if (sh->sh_type != SHT_NOBITS && size) {
             unsigned char *ptr;
-            vio4_lseek(s1, fd, file_offset + sh->sh_offset, SEEK_SET);
+            uio_lseek(s1, fd, file_offset + sh->sh_offset, SEEK_SET);
             ptr = s->data + offset;
             full_read(s1, fd, ptr, size);
         }
@@ -3512,7 +3512,7 @@ static int read_ar_header(TCCState *s1, int fd, int offset, ArchiveHeader *hdr)
 {
     char *p, *e;
     int len;
-    vio4_lseek(s1, fd, offset, SEEK_SET);
+    uio_lseek(s1, fd, offset, SEEK_SET);
     len = full_read(s1, fd, hdr, sizeof(ArchiveHeader));
     if (len != sizeof(ArchiveHeader))
         return len ? -1 : 0;

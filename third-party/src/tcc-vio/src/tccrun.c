@@ -123,7 +123,7 @@ static int rt_mem(TCCState *s1, int size)
     ptr = mmap(NULL, size * 2, PROT_READ|PROT_EXEC, MAP_SHARED, fd, 0);
     /* mmap RW memory at fixed distance */
     prw = mmap((char*)ptr + size, size, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FIXED, fd, 0);
-    vio4_close(s1, fd);
+    uio_close(s1, fd);
     if (ptr == MAP_FAILED || prw == MAP_FAILED)
 	return tcc_error_noabort("tccrun: could not map memory");
     ptr_diff = (char*)prw - (char*)ptr; /* = size; */

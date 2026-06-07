@@ -114,6 +114,17 @@ if (HOST == "windows") and (TARGET == "windows") then
   append(PROJECT_Flags, "-fdiagnostics-color=never")
 end
 
+-- On Linux, this static liblua.a will be used to link against libtcc.so
+-- Those shared libraries need the flag -fPIC
+--
+-- The liblua.a used to link against lua55ce do NOT need -fPIC
+-- But we don't want to make the build even more complex so we have a single
+-- liblua.a built with -fPIC
+if (TARGET == "linux") then
+  append(PROJECT_Flags, "-fPIC")
+  append(PROJECT_Flags, "-DLUA_USE_DLOPEN")
+end
+
 --------------------------------------------------------------------------------
 -- LOCAL DATA                                                                 --
 --------------------------------------------------------------------------------

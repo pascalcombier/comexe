@@ -206,7 +206,7 @@ PUB_FUNC char *tcc_fileextension (const char *name)
 
 ST_FUNC char *tcc_load_text(TCCState *s1, int fd)
 {
-    int len = vio4_lseek(s1, fd, 0, SEEK_END);
+    int len = uio_lseek(s1, fd, 0, SEEK_END);
     char *buf = load_data(s1, fd, 0, len + 1);
     buf[len] = 0;
     return buf;
@@ -757,7 +757,7 @@ ST_FUNC void tcc_close(void)
     TCCState *s1 = tcc_state;
     BufferedFile *bf = file;
     if (bf->fd > 0) {
-        vio4_close(s1, bf->fd);
+        uio_close(s1, bf->fd);
         total_lines += bf->line_num - 1;
     }
     if (bf->true_filename != bf->filename)
@@ -773,7 +773,7 @@ static int _tcc_open(TCCState *s1, const char *filename)
     if (strcmp(filename, "-") == 0)
         fd = 0, filename = "<stdin>";
     else
-        fd = vio4_open(s1, filename, (O_RDONLY | O_BINARY), VIO4_DEFAULT_MODE);
+        fd = uio_open(s1, filename, (O_RDONLY | O_BINARY), UIO_DEFAULT_MODE);
     if ((s1->verbose == 2 && fd >= 0) || s1->verbose == 3)
         printf("%s %*s%s\n", fd < 0 ? "nf":"->",
                (int)(s1->include_stack_ptr - s1->include_stack), "", filename);
@@ -1078,7 +1078,7 @@ static int tcc_add_binary(TCCState *s1, int flags, const char *filename, int fd)
 
     s1->current_filename = filename;
     obj_type = tcc_object_type(s1, fd, &ehdr);
-    vio4_lseek(s1, fd, 0, SEEK_SET);
+    uio_lseek(s1, fd, 0, SEEK_SET);
 
     switch (obj_type) {
 
@@ -1165,7 +1165,7 @@ static int tcc_add_binary(TCCState *s1, int flags, const char *filename, int fd)
 #endif
     }
 
-    vio4_close(s1, fd);
+    uio_close(s1, fd);
     s1->current_filename = saved_filename;
     if (ret == FILE_NOT_RECOGNIZED)
         return tcc_error_noabort("%s: unrecognized file type", filename);
@@ -1892,12 +1892,12 @@ PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv)
         r = argv[optind];
         if (r[0] == '@' && r[1] != '\0') { /* read @listfile */
             int fd; char *p;
-            fd = vio4_open(s, ++r, (O_RDONLY | O_BINARY), VIO4_DEFAULT_MODE);
+            fd = uio_open(s, ++r, (O_RDONLY | O_BINARY), UIO_DEFAULT_MODE);
             if (fd < 0)
                 return tcc_error_noabort("listfile '%s' not found", r);
             p = tcc_load_text(s, fd);
             insert_args(s1, &argv, &argc, optind, p, 0);
-            vio4_close(s, fd), tcc_free(p);
+            uio_close(s, fd), tcc_free(p);
             continue;
         }
         optind++;
@@ -2324,3 +2324,4 @@ ST_FUNC void tcc_preprocessor_state_leave(void)
     pthread_mutex_unlock(&TccPreprocessorMutex);
 #endif
 }
+

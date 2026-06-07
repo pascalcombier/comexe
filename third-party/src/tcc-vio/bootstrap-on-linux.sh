@@ -44,15 +44,16 @@ echo "WIN-RT   $TCC_WIN_RUNTIME_DIR"
 echo "##"
 
 # Temporary copy the config
+# We want to store config outsite the source tree
 verbose_do cp libtcc-config.h src/config.h
 
-# Step 1: Build host compilers from trunk (we need these to compile runtime libraries)
+# Build host compilers from trunk (we need these to compile runtime libraries)
 verbose_do mkdir -p "$TCC_HOST_BIN_DIR"
 verbose_do cd "$TCC_HOST_BIN_DIR"
 verbose_do ../../src-mini-trunk/configure --enable-cross
 verbose_do make TCC_X="x86_64 x86_64-win32" -j16
 
-# Step 3: Generate tccdefs_.h for modified source
+# Generate tccdefs_.h for modified source
 echo "Generating tccdefs_.h for modified source..."
 verbose_do mkdir -p "$TCC_LIBTCC_DIR"
 verbose_do cd "$TCC_LIBTCC_DIR"
@@ -64,19 +65,23 @@ verbose_do "$TCC_HOST_BIN_DIR/c2str.exe" "$TCC_PATCH_DIR/include/tccdefs.h" incl
 # Also copy the original tccdefs.h for reference
 verbose_do cp "$TCC_PATCH_DIR/include/tccdefs.h" include/
 
-# Step 4: Build ONE_SOURCE static libtcc from modified source
+# TCC ONEBUILD FOR LINUX
+# Build ONE_SOURCE static libtcc from modified source
 echo "Building ONE_SOURCE embedded static libtcc from modified source..."
 
+# Linux shared library like libtcc.so will need -fPIC
+#
 # For ONE_SOURCE, we need to compile tcc.c with -DONE_SOURCE=1
 # This will include all other source files through #includes
 echo "Compiling ONE_SOURCE libtcc (tcc.c with -DONE_SOURCE=1)..."
-verbose_do gcc -c "$TCC_PATCH_DIR/tcc.c" -DONE_SOURCE=1 -Iinclude -I"$TCC_PATCH_DIR" -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result -o tcc.o
+verbose_do gcc -c "$TCC_PATCH_DIR/tcc.c" -DONE_SOURCE=1 -Iinclude -I"$TCC_PATCH_DIR" -fPIC -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result -o tcc.o
 
 # Create static library (this is your embedded ONE_SOURCE libtcc.a)
 echo "Creating ONE_SOURCE static libtcc.a for embedding..."
 verbose_do ar rcs libtcc.a tcc.o
 
-# Step 4w: Build ONE_SOURCE static libtcc for Windows using cross compiler
+# TCC ONEBUILD FOR WINDOWS
+# Build ONE_SOURCE static libtcc for Windows using cross compiler
 echo "Building ONE_SOURCE embedded static libtcc for Windows..."
 verbose_do mkdir -p "$TCC_LIBTCC_WIN_DIR"
 verbose_do cd "$TCC_LIBTCC_WIN_DIR"
@@ -96,7 +101,7 @@ verbose_do x86_64-w64-mingw32-gcc -c "$TCC_PATCH_DIR/tcc.c" -DONE_SOURCE=1 -DTCC
 echo "Creating ONE_SOURCE static libtcc.a for Windows..."
 verbose_do x86_64-w64-mingw32-ar rcs libtcc.a tcc.o
 
-# Step 5: Create runtime library for Linux (libtcc1.a)
+# Create runtime library for Linux (libtcc1.a)
 echo "Building runtime library for Linux (libtcc1.a)..."
 verbose_do mkdir -p "$TCC_LINUX_RUNTIME_DIR"
 verbose_do cd "$TCC_LINUX_RUNTIME_DIR"
@@ -189,11 +194,6 @@ if [ -f "tcov.o" ]; then
   verbose_do ar rcs lib/libtcc1.a libtcc1.o stdatomic.o atomic.o builtin.o alloca.o alloca-bt.o tcov.o chkstk.o crt1.o crt1w.o wincrt1.o wincrt1w.o dllcrt1.o dllmain.o
 else
   verbose_do ar rcs lib/libtcc1.a libtcc1.o stdatomic.o atomic.o builtin.o alloca.o alloca-bt.o chkstk.o crt1.o crt1w.o wincrt1.o wincrt1w.o dllcrt1.o dllmain.o
-fi
-
-# Remove the config
-if [ -f "$TCC_PATCH_DIR/config.h" ]; then
-  verbose_do rm "$TCC_PATCH_DIR/config.h"
 fi
 
 echo "============================="

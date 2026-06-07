@@ -60,7 +60,6 @@ SOURCES += $(SRC_DIR)/trivial-array.c
 SOURCES += $(SRC_DIR)/lua-libbuffer.c
 SOURCES += $(SRC_DIR)/lua-libminizip.c
 SOURCES += $(SRC_DIR)/lua-libffi.c
-SOURCES += $(SRC_DIR)/lua-libtcc.c
 SOURCES += $(SRC_DIR)/lua-libwin32.c
 SOURCES += $(SRC_DIR)/lua-libwin32-service.c
 SOURCES += $(SRC_DIR)/lua-libwin32-com.c
@@ -74,7 +73,6 @@ INCLUDE_DIRS += -Ithird-party/src/zlib/src/contrib/minizip
 INCLUDE_DIRS += -Ithird-party/src/libffi/config-windows
 INCLUDE_DIRS += -Ithird-party/src/libffi/include
 INCLUDE_DIRS += -Ithird-party/src/libuv/include
-INCLUDE_DIRS += -Ithird-party/src/tcc-vio/src
 
 # Special: for thread_alt.h of mbedtls/tf-psa-crypto
 INCLUDE_DIRS += -Ithird-party/src/mbedtls/src/tf-psa-crypto/drivers/builtin/include
@@ -89,7 +87,6 @@ STATIC_LIB_DIRS += -Lthird-party/src/luv/bin
 STATIC_LIB_DIRS += -Lthird-party/src/mbedtls/bin
 STATIC_LIB_DIRS += -Lthird-party/src/lua-mbedtls-comexe/bin
 STATIC_LIB_DIRS += -Lthird-party/src/luasocket/bin
-STATIC_LIB_DIRS += -Lthird-party/src/tcc-vio/bin/libtcc-x86_64-windows-static
 
 STATIC_LIBS  =
 STATIC_LIBS += -static-libgcc
@@ -109,9 +106,6 @@ STATIC_LIBS += -lffi
 # minizip
 STATIC_LIBS += -lminizip
 STATIC_LIBS += -lz
-
-# tcc
-STATIC_LIBS += -ltcc
 
 # For ComEXE
 STATIC_LIBS += -loleaut32 # VariantInit

@@ -652,7 +652,7 @@ typedef struct DLLReference {
 #define TYPE_NEST      8 /* nested call to post_type */
 
 /* Previously 2 pages of 4096, 8192 */
-/* This increase is to minimize the numbers of interactions with vio4_ layer */
+/* This increase is to minimize the numbers of interactions with uio layer */
 /* We can essentially read the headers from libc in 1 read call */
 #define IO_BUF_SIZE 16384
 
@@ -1231,7 +1231,7 @@ ST_DATA void** stk_data;
 ST_DATA int nb_stk_data;
 ST_DATA int g_debug;
 
-/* Global preprocessor state for vio4_ function redirection */
+/* Global preprocessor state for uio function redirection */
 ST_DATA struct TCCState *PreprocessState;
 #ifdef _WIN32
 ST_DATA CRITICAL_SECTION TccPreprocessorMutex;
@@ -2033,16 +2033,16 @@ PUB_FUNC void tcc_exit_state(TCCState *s1);
 /* Virtual I/O to avoid open/read/close and allow tcc to read files from Lua */
 /* Here we use a similar method as tcc-nofs */
 
-/* This layer to be implemented in lua-libtcc.c */
+/* This layer is implemented in uio.c */
 
-#define VIO4_DEFAULT_MODE 0
+#define UIO_DEFAULT_MODE 0
 
-int vio4_open (TCCState *s, const char *pathname, int flags, int mode);
-int vio4_write (TCCState *s, int fd, const void* buf, unsigned int count);
-int vio4_read (TCCState *s, int fd, void* buf, unsigned int count);
-int vio4_close (TCCState *s, int fd);
-off_t vio4_lseek (TCCState *s, int fd, off_t offset, int whence);
-int vio4_dup (TCCState *s, int fd);
+int uio_open (TCCState *s, const char *pathname, int flags, int mode);
+int uio_write (TCCState *s, int fd, const void* buf, unsigned int count);
+int uio_read (TCCState *s, int fd, void* buf, unsigned int count);
+int uio_close (TCCState *s, int fd);
+off_t uio_lseek (TCCState *s, int fd, off_t offset, int whence);
+int uio_dup (TCCState *s, int fd);
 
 /* ComEXE Helper */
 #define tcc_get_current_userdata() tcc_get_userdata(tcc_state)

@@ -1570,8 +1570,8 @@ ST_FUNC int pe_putimport(TCCState *s1, int dllindex, const char *name, addr_t va
 
 static int read_mem(TCCState *s1, int fd, unsigned offset, void *buffer, unsigned len)
 {
-    vio4_lseek(s1, fd, offset, SEEK_SET);
-    return len == vio4_read(s1, fd, buffer, len);
+    uio_lseek(s1, fd, offset, SEEK_SET);
+    return len == uio_read(s1, fd, buffer, len);
 }
 
 /* ------------------------------------------------------------- */
@@ -1643,12 +1643,12 @@ found:
         for (i = l = 0; i < k; ++i) {
             p1 = namep[i] - ref;
             if (p1 != p0)
-                vio4_lseek(s1, fd, p0 = p1, SEEK_SET), l = 0;
+                uio_lseek(s1, fd, p0 = p1, SEEK_SET), l = 0;
             do {
                 if (0 == l) {
                     if (n + 1000 >= n0)
                         p = tcc_realloc(p, n0 += 1000);
-                    if ((l = vio4_read(s1, fd, p + n, 1000 - 1)) <= 0)
+                    if ((l = uio_read(s1, fd, p + n, 1000 - 1)) <= 0)
                         goto the_end;
                 }
                 --l, ++p0;
@@ -1824,11 +1824,11 @@ ST_FUNC int pe_load_file(struct TCCState *s1, int fd, const char *filename)
 
 PUB_FUNC int tcc_get_dllexports(TCCState *s1, const char *filename, char **pp)
 {
-    int ret, fd = vio4_open(s1, filename, (O_RDONLY | O_BINARY), VIO4_DEFAULT_MODE);
+    int ret, fd = uio_open(s1, filename, (O_RDONLY | O_BINARY), UIO_DEFAULT_MODE);
     if (fd < 0)
         return -1;
     ret = get_dllexports(s1, fd, pp);
-    vio4_close(s1, fd);
+    uio_close(s1, fd);
     return ret;
 }
 

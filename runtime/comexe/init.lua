@@ -146,7 +146,6 @@ local max                = math.max
 local searchpath         = package.searchpath
 local getloaderconfig    = Runtime.getloaderconfiguration
 local setloaderconfig    = Runtime.setloaderconfiguration
-local seteventhandler    = Runtime.seteventhandler
 local setwarningfunction = Runtime.setwarningfunction
 local UvCurrentDirectory = uv.cwd
 local fs_open            = uv.fs_open
@@ -273,26 +272,6 @@ local function INIT_WriteFile (Filename, Data)
   Success = (ErrorMessage == nil)
   -- Return value
   return Success, ErrorMessage
-end
-
---------------------------------------------------------------------------------
--- PRIVATE FUNCTIONS                                                          --
---------------------------------------------------------------------------------
-
-local function FormatStdioErrorResult (Result)
-  local ErrorMessage
-  if (Result < 0) then
-    local ErrorCode = -Result
-    local ErrorName = STDIO_ERROR_NAMES[ErrorCode]
-    if ErrorName then
-      ErrorMessage = format("%d (-%s)", Result, ErrorName)
-    else
-      ErrorMessage = format("%d (error)", Result)
-    end
-  else
-    ErrorMessage = format("%d (fd)", Result)
-  end
-  return ErrorMessage
 end
 
 --------------------------------------------------------------------------------
@@ -960,11 +939,13 @@ local function ReleaseId (Id)
 end
 
 --------------------------------------------------------------------------------
--- TCC EVENTS                                                                 --
+-- UNIFIED I/O LAYER                                                          --
 --------------------------------------------------------------------------------
 
+-- Unified I/O: handle both ZIP and FileSystem
+
 -- Global table to store file information for TCC virtual I/O
-local TccFiles = {}
+local UioFiles = {}
 
 -- File open flags constants
 local O_RDONLY = 0
@@ -975,34 +956,7 @@ local O_CREAT  = 64
 local O_TRUNC  = 512   -- Needed by tcc_write_elf_file
 local O_BINARY = 32768 -- Needed by tcc_write_elf_file
 
-local function TCC_MakeOpenFlagsString (Flags)
-  -- Accumulate flag strings
-  local FlagStrings = {}
-  -- O_RDONLY is 0 so so classic bit check does not work 
-  if ((Flags & O_WRONLY) == 0) and ((Flags & O_RDWR) == 0) then
-    append(FlagStrings, "O_RDONLY")
-  end
-  -- The bits below are not 0
-  if ((Flags & O_WRONLY) ~= 0) then
-    append(FlagStrings, "O_WRONLY")
-  end
-  if ((Flags & O_RDWR) ~= 0) then
-    append(FlagStrings, "O_RDWR")
-  end
-  if ((Flags & O_APPEND) ~= 0) then
-    append(FlagStrings, "O_APPEND")
-  end
-  if ((Flags & O_CREAT) ~= 0) then
-    append(FlagStrings, "O_CREAT")
-  end
-  if ((Flags & O_TRUNC) ~= 0) then
-    append(FlagStrings, "O_TRUNC")
-  end
-  -- Return value
-  return concat(FlagStrings, "|")
-end
-
-local function HandleTccEventOpen (Filename, Flags, Mode)
+local function UIO_Open (Filename, Flags, Mode)
   -- local variables
   local Result
   local FileContent
@@ -1015,7 +969,7 @@ local function HandleTccEventOpen (Filename, Flags, Mode)
   end
   -- Check if writing
   local CanWrite = (((Flags & O_WRONLY) ~= 0) or ((Flags & O_RDWR) ~= 0))
-  -- Detect if the request is for TCC files (VIO4_ virtual IO layer)
+  -- Detect if the request is for TCC files (UIO virtual IO layer)
   local HasRuntimePrefix = STRING_HasPrefix(Filename, COMEXE_RUNTIME_PREFIX)
   -- ZIP: readonly
   if HasRuntimePrefix and (not CanWrite) then
@@ -1030,9 +984,9 @@ local function HandleTccEventOpen (Filename, Flags, Mode)
     if FileContent then
       -- File found in ZIP, create file descriptor
       local NewFd = GetNewId()
-      TccFiles[NewFd] = {
-        FileType = "ZIP",     -- Mark as ZIP file (read-only)
-        Filename = Filename,  -- Keep original filename with prefix
+      UioFiles[NewFd] = {
+        FileType = "ZIP",    -- Mark as ZIP file (read-only)
+        Filename = Filename, -- Keep original filename with prefix
         Contents = FileContent,
         Position = 1,
         Flags    = Flags
@@ -1046,7 +1000,7 @@ local function HandleTccEventOpen (Filename, Flags, Mode)
     if fd then
       -- Native file descriptor
       local NewFd = GetNewId()
-      TccFiles[NewFd] = {
+      UioFiles[NewFd] = {
         FileType  = "FILESYSTEM",
         Filename  = Filename,
         RealFd    = fd,
@@ -1061,8 +1015,8 @@ local function HandleTccEventOpen (Filename, Flags, Mode)
   return Result
 end
 
-local function HandleTccEventRead (fd, SizeInBytes)
-  local File = TccFiles[fd]
+local function UIO_Read (fd, SizeInBytes)
+  local File = UioFiles[fd]
   local Result
   if File then
     -- ZIP
@@ -1106,8 +1060,8 @@ local function HandleTccEventRead (fd, SizeInBytes)
   return Result
 end
 
-local function HandleTccEventWrite (fd, Data)
-  local File = TccFiles[fd]
+local function UIO_Write (fd, Data)
+  local File = UioFiles[fd]
   local Result
   if File then
     -- ZIP
@@ -1133,8 +1087,8 @@ local function HandleTccEventWrite (fd, Data)
   return Result
 end
 
-local function HandleTccEventSeek (fd, offset, whence)
-  local File = TccFiles[fd]
+local function UIO_Lseek (fd, offset, whence)
+  local File = UioFiles[fd]
   local Result
   if File then
     local FileType = File.FileType
@@ -1175,9 +1129,9 @@ local function HandleTccEventSeek (fd, offset, whence)
   return Result
 end
 
-local function HandleTccEventClose (fd)
+local function UIO_Close (fd)
+  local File = UioFiles[fd]
   local Result
-  local File = TccFiles[fd]
   if File then
     -- Filesystem
     if (File.FileType == "FILESYSTEM") then
@@ -1193,7 +1147,7 @@ local function HandleTccEventClose (fd)
       Result = 0
     end
     -- Clean up
-    TccFiles[fd] = nil
+    UioFiles[fd] = nil
     ReleaseId(fd)
   else
     Result = -EBADF -- Bad file descriptor
@@ -1202,8 +1156,8 @@ local function HandleTccEventClose (fd)
   return Result
 end
 
-local function HandleTccEventDup (fd)
-  local File = TccFiles[fd]
+local function UIO_Dup (fd)
+  local File = UioFiles[fd]
   local Result
   if File then
     -- New file
@@ -1229,7 +1183,7 @@ local function HandleTccEventDup (fd)
     if Success then
       -- Duplicate the file entry
       local NewFd = GetNewId()
-      TccFiles[NewFd] = NewFile
+      UioFiles[NewFd] = NewFile
       Result = NewFd
     else
       Result = -EBADF -- Bad file descriptor
@@ -1241,49 +1195,18 @@ local function HandleTccEventDup (fd)
   return Result
 end
 
---------------------------------------------------------------------------------
--- UNIFIED EVENT HANDLER                                                      --
---------------------------------------------------------------------------------
+local UIO_PUBLIC_API = {
+  open  = UIO_Open,
+  write = UIO_Write,
+  read  = UIO_Read,
+  close = UIO_Close,
+  lseek = UIO_Lseek,
+  dup   = UIO_Dup,
+}
 
--- TCC events
-local function INIT_EventHandler (EventName, ...)
-  local Result
-  if (EventName == "Open") then
-    local Filename, Flags, Mode = ...
-    Result = HandleTccEventOpen(Filename, Flags, Mode)
-    print("OPEN", Filename, "FLAGS", TCC_MakeOpenFlagsString(Flags), "MODE", Mode, FormatStdioErrorResult(Result))
-  elseif (EventName == "Read") then
-    local fd, SizeInBytes = ...
-    Result = HandleTccEventRead(fd, SizeInBytes)
-    -- Print debug
-    local ReadBytes
-    if (type(Result) == "string") then
-      ReadBytes = #Result
-    else
-      ReadBytes = Result
-    end
-    print("READ", fd, SizeInBytes, ReadBytes)
-  elseif (EventName == "Write") then
-    local fd, Data = ...
-    Result = HandleTccEventWrite(fd, Data)
-    print("WRITE", fd, #Data, Result)
-  elseif (EventName == "Seek") then
-    local fd, Offset, Whence = ...
-    Result = HandleTccEventSeek(fd, Offset, Whence)
-    print("SEEK", fd, Offset, Whence, Result)
-  elseif (EventName == "Close") then
-    local fd = ...
-    Result = HandleTccEventClose(fd)
-    print("CLOSE", fd, Result)
-  elseif (EventName == "Dup") then
-    local fd = ...
-    Result = HandleTccEventDup(fd)
-    print("DUP", fd, Result)
-  else
-    Result = -EIO -- I/O error for unknown event
-  end
-  return Result
-end
+-- UIO functions available from require("com.uio")
+-- Mainly for TCC
+package.preload["com.uio"] = function () return UIO_PUBLIC_API end
 
 --------------------------------------------------------------------------------
 -- LUA-STANDALONE COMPATIBLE ARGUMENT PARSING                                 --
@@ -1805,11 +1728,7 @@ Runtime.parseoptions    = INIT_ParseOptions
 Runtime.getparam        = INIT_GetParameter
 
 -- Register the functions
-seteventhandler(INIT_EventHandler)
 setwarningfunction(INIT_DoNothing)
-
--- Hide seteventhandler: will not be part of PUBLIC API
-Runtime.seteventhandler = nil
 
 -- Default: take the default configuration from lua-application.c
 local LoaderConfiguration = getloaderconfig()

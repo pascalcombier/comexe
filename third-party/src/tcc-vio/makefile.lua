@@ -203,9 +203,24 @@ append(Rules, format("%s: %s %s", TccExeTarget, TccExeSource, LibTccTarget))
 append(Rules, format("\t$(CC) %s %s %s -o %s", TccFlagsString, TccExeSource, LibTccTarget, TccExeTarget))
 append(Rules, "")
 
---------------------------------------------------------------------------------
--- RUNTIME                                                                    --
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- SHARED LIBRARY                                                            --
+-------------------------------------------------------------------------------
+
+-- tcc.dll (Windows) or libtcc.so (Linux): shared library
+local DllExtension
+if (TARGET == "windows") then
+  DllExtension = "dll"
+elseif (TARGET == "linux") then
+  DllExtension = "so"
+end
+
+local TccDllFilename = format("%s/tcc.%s", BIN_DIR, DllExtension)
+local TccDllTarget   = nativepath(TccDllFilename)
+
+-------------------------------------------------------------------------------
+-- RUNTIME                                                                   --
+-------------------------------------------------------------------------------
 
 -- libtcc1 (tcc runttime built by tcc.exe)
 
@@ -325,13 +340,14 @@ local Environment = {
   RUNTIME_OBJECTS  = concat(AllRuntimeObjects, " "),
   TCCMAIN_OBJECT   = concat(TccMainObject, " "),
   RM               = RM,
-  RUNTIME_DEF_FILES = concat(DefTargets, " ")
+  RUNTIME_DEF_FILES = concat(DefTargets, " "),
+  TCC_DLL           = TccDllTarget
 }
 
 local MakefileTemplate = [[
 .PHONY: all clean
 
-all: $CONFIG_HEADER $LIBTCC_LIB $LIBTCCMAIN_LIB $TCC_EXE $LIBTCC1_LIB $RUNTIME_OBJECTS $RUNTIME_DEF_FILES
+all: $CONFIG_HEADER $LIBTCC_LIB $LIBTCCMAIN_LIB $TCC_EXE $LIBTCC1_LIB $RUNTIME_OBJECTS $RUNTIME_DEF_FILES $TCC_DLL
 
 $RULES
 
@@ -341,11 +357,14 @@ $LIBTCC_LIB: $LIBTCC_OBJECTS
 $LIBTCCMAIN_LIB: $TCCMAIN_OBJECT
 	ar rcs $@ $^
 
+$TCC_DLL: $LIBTCC_OBJECTS $TCCMAIN_OBJECT
+	$(CC) -shared $^ -o $@
+
 $LIBTCC1_LIB: $LIBTCC1_OBJECTS
 	$TCC_EXE -m64 -ar $@ $^
 
 clean:
-	$RM $CONFIG_HEADER $LIBTCC_OBJECTS $LIBTCC_LIB $LIBTCCMAIN_LIB $TCC_EXE $LIBTCC1_OBJECTS $LIBTCC1_LIB $TCCMAIN_OBJECT $RUNTIME_OBJECTS $RUNTIME_DEF_FILES
+	$RM $CONFIG_HEADER $LIBTCC_OBJECTS $LIBTCC_LIB $LIBTCCMAIN_LIB $TCC_EXE $LIBTCC1_OBJECTS $LIBTCC1_LIB $TCCMAIN_OBJECT $RUNTIME_OBJECTS $RUNTIME_DEF_FILES $TCC_DLL
 ]]
 
 generate(Environment, MakefileTemplate)

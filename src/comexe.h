@@ -13,8 +13,6 @@ int luaopen_luv(lua_State *LuaState);
 int luaopen_socket_core(lua_State *LuaState);
 int luaopen_mime_core(lua_State *LuaState);
 int luaopen_mbedtls(lua_State *LuaState);
-int luaopen_libtcc(lua_State *LuaState);
-bool LUA_PushEventHandler(lua_State *LuaState);
 struct LUA_Application *LUA_CreateApplication(size_t Argc,const char **Argv);
 void LUA_RunApplication(struct LUA_Application *Application);
 void SERVICE_NotifyInstance(struct LUA_Application *Application,const char *EventName,unsigned int ControlCode);

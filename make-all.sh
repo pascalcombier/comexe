@@ -135,6 +135,16 @@ make --no-builtin-rules -C tools -f makefile-l-linux CC="gcc" $MULTI
 
 echo "=== STEP 3 BUILD DEPS AND APP LINUX X86-64 ==="
 
+# libtcc.so (linked against libmath for math.log)
+gcc -shared -s \
+  src/lua-libtcc-module.c \
+  -Isrc \
+  -Ithird-party/src/lua/src \
+  -Ithird-party/src/tcc-vio/src \
+  -Lthird-party/src/lua/bin \
+  -Lthird-party/src/tcc-vio/bin/libtcc-x86_64-linux-static \
+  -llua -ltcc -lm -o libtcc.so
+
 # Linux dependencies
 BuildDeps makefile-l-linux clean
 CC="gcc" BuildDeps makefile-l-linux $MULTI
@@ -167,6 +177,16 @@ CC="x86_64-w64-mingw32-gcc" AR="x86_64-w64-mingw32-ar" BuildDeps makefile-l-ming
 make -f makefile-l-mingw clean
 make -f makefile-l-mingw all $MULTI CC="x86_64-w64-mingw32-gcc" AR="x86_64-w64-mingw32-ar" WINDRES="x86_64-w64-mingw32-windres" STRIP="x86_64-w64-mingw32-strip"
 
+# libtcc.dll
+x86_64-w64-mingw32-gcc -shared -s -Wl,--export-all-symbols -static \
+  src/lua-libtcc-module.c \
+  -Isrc \
+  -Ithird-party/src/lua/src \
+  -Ithird-party/src/tcc-vio/src \
+  -Lthird-party/src/lua/bin \
+  -Lthird-party/src/tcc-vio/bin/libtcc-x86_64-windows-static \
+  -llua -ltcc -o libtcc.dll
+
 # Save targets
 cp bin/comexe-con.exe "$TARGETS_DIR/x86_64-windows-con.exe"
 cp bin/comexe-dbg.exe "$TARGETS_DIR/x86_64-windows-dbg.exe"
@@ -197,6 +217,9 @@ cat "$TARGETS_DIR/x86_64-windows-dbg.exe" $ZIP_RUNTIME > dist/lua55ced-x86_64-wi
 chmod +x dist/lua55ce-x86_64-linux
 chmod +x dist/lua55ced-x86_64-linux
 
+# Copy TCC share libraries
+cp libtcc.dll libtcc.so dist/
+
 # Create distribution package
 mkdir -p dist/tmp
 cp dist/lua55ce-x86_64-linux       dist/tmp/
@@ -214,6 +237,11 @@ rm -f bin/lua55ce
 rm -f bin/lua55ced
 rm -f bin/lua55ce.exe
 rm -f bin/lua55ced.exe
+
+# Remove the generated config file
+if [ -f "third-party/src/tcc-vio/src/config.h" ]; then
+  rm "third-party/src/tcc-vio/src/config.h"
+fi
 
 echo "=== TARGETS"
 ls "$TARGETS_DIR" -lha

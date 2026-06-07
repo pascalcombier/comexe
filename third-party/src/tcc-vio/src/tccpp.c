@@ -648,7 +648,7 @@ static int handle_eob(void)
 #else
             len = IO_BUF_SIZE;
 #endif
-            len = vio4_read(PreprocessState, bf->fd, bf->buffer, len);
+            len = uio_read(PreprocessState, bf->fd, bf->buffer, len);
             if (len < 0)
                 len = 0;
         } else {

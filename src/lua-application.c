@@ -183,7 +183,6 @@ struct LUA_Instance
   struct BA_Allocator    *EventBufferReceive;
   struct BA_Allocator    *EventBufferTemp;
   uv_mutex_t              EventMutex;
-  int                     EventHandlerRef;
   int                     WarningFunctionRef;
 };
 
@@ -972,54 +971,6 @@ static int LUA_SetWarningFunction (lua_State *LuaState)
   return 0; /* Number of values returned on the stack */
 }
 
-static int LUA_SetEventHandler (lua_State *LuaState)
-{
-  struct LUA_Instance *Instance = LUA_GetInstance(LuaState);
-
-  if (Instance->EventHandlerRef != LUA_REFNIL)
-  {
-    luaL_error(LuaState, "EventHandler already set");
-  }
-
-  if (!lua_isfunction(LuaState, 1))
-  {
-    luaL_error(LuaState, "seteventhandler expects a function");
-  }
-
-  lua_pushvalue(LuaState, 1); /* copy of the function for luaL_ref */
-  Instance->EventHandlerRef = luaL_ref(LuaState, LUA_REGISTRYINDEX);
-
-  return 0; /* Number of values returned on the stack */
-}
-
-/* For lua-libtcc.c */
-bool LUA_PushEventHandler (lua_State *LuaState)
-{
-  struct LUA_Instance *Instance = LUA_GetInstance(LuaState);
-  int                  LuaType;
-  bool                 Success;
-
-  if (Instance->EventHandlerRef != LUA_REFNIL)
-  {
-    LuaType = lua_rawgeti(LuaState, LUA_REGISTRYINDEX, Instance->EventHandlerRef);
-    if (LuaType == LUA_TFUNCTION)
-    {
-      Success = true;
-    }
-    else
-    {
-      lua_pop(LuaState, 1);
-      Success = false;
-    }
-  }
-  else
-  {
-    Success = false;
-  }
-
-  return Success;
-}
-
 static int LUA_IsAtty (lua_State *LuaState)
 {
   int32_t File = luaL_checkinteger(LuaState, 1);
@@ -1055,7 +1006,6 @@ static const struct luaL_Reg COMRUNTIME_FUNCTIONS[] =
   { "getloaderconfiguration", LUA_GetLoaderConfiguration },
   { "setloaderconfiguration", LUA_SetLoaderConfiguration },
   { "setwarningfunction",     LUA_SetWarningFunction     },
-  { "seteventhandler",        LUA_SetEventHandler        },
   { "isatty",                 LUA_IsAtty                 },
   { "ref",                    LUA_Ref                    },
   { "unref",                  LUA_Unref                  },
@@ -1105,7 +1055,6 @@ static void APP_PreloadLibraries (lua_State *LuaState)
   APP_RegisterPreload(LuaState, "com.raw.buffer",        luaopen_buffer);
   APP_RegisterPreload(LuaState, "com.raw.minizip",       luaopen_libminizip);
   APP_RegisterPreload(LuaState, "com.raw.libffi",        luaopen_libffiraw);
-  APP_RegisterPreload(LuaState, "com.raw.libtcc",        luaopen_libtcc);
   APP_RegisterPreload(LuaState, "luv",                   luaopen_luv);
   APP_RegisterPreload(LuaState, "socket.core",           luaopen_socket_core);
   APP_RegisterPreload(LuaState, "mime.core",             luaopen_mime_core);
@@ -1353,7 +1302,6 @@ static struct LUA_Instance *APP_CreateInstance (struct LUA_Application *Applicat
 
   NewInstance->LuaState           = lua_newstate(APP_LuaAllocator, NULL, Seed);
   NewInstance->Parent             = ParentInstance;
-  NewInstance->EventHandlerRef    = LUA_REFNIL;
   NewInstance->WarningFunctionRef = LUA_REFNIL;
 
   /* Stop GC while building state, like lua.c, will be restarted in init.lua */
