@@ -24,7 +24,7 @@ if [ ! -d "$MUSL_INCLUDE_DIR" ]; then
 fi
 
 MULTI=-j16
-DEPS="zlib mimalloc lua libffi libuv luv luasocket mbedtls lua-mbedtls-comexe"
+DEPS="zlib mimalloc lua libffi libuv luv luasocket mbedtls lua-mbedtls-comexe lpeg"
 
 BuildDeps()
 {
@@ -120,6 +120,7 @@ tools/bin/lua55 tools/lua/generate-makefile.lua third-party/src/luv/makefile.lua
 tools/bin/lua55 tools/lua/generate-makefile.lua third-party/src/luasocket/makefile.lua
 tools/bin/lua55 tools/lua/generate-makefile.lua third-party/src/mbedtls/makefile.lua
 tools/bin/lua55 tools/lua/generate-makefile.lua third-party/src/lua-mbedtls-comexe/makefile.lua
+tools/bin/lua55 tools/lua/generate-makefile.lua third-party/src/lpeg/makefile.lua
 
 # 3) Build zlib for trivial-minizip
 make --no-builtin-rules -C third-party/src/zlib -f makefile-l-linux clean
@@ -224,9 +225,10 @@ cp libtcc.dll libtcc.so dist/
 mkdir -p dist/tmp
 cp dist/lua55ce-x86_64-linux       dist/tmp/
 cp dist/lua55ce-x86_64-windows.exe dist/tmp/
+cp dist/libtcc.dll dist/libtcc.so  dist/tmp/
 cp LICENSE dist/tmp/LICENSE
 chmod +x dist/tmp/lua55ce-x86_64-linux
-(cd dist/tmp && zip -9 ../lua55ce.zip lua55ce-x86_64-linux lua55ce-x86_64-windows.exe LICENSE)
+(cd dist/tmp && zip -9 ../lua55ce.zip lua55ce-x86_64-linux lua55ce-x86_64-windows.exe libtcc.so libtcc.dll LICENSE)
 rm -rf dist/tmp
 
 # Clean bin folder from packaged files

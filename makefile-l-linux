@@ -73,6 +73,9 @@ INCLUDE_DIRS += -Ithird-party/src/libffi/config-linux
 INCLUDE_DIRS += -Ithird-party/src/libffi/include
 INCLUDE_DIRS += -Ithird-party/src/libuv/include
 
+# lpeg
+INCLUDE_DIRS += -Ithird-party/src/lpeg/src
+
 # Special: for thread_alt.h of mbedtls/tf-psa-crypto
 INCLUDE_DIRS += -Ithird-party/src/mbedtls/src/tf-psa-crypto/drivers/builtin/include
 INCLUDE_DIRS += -Ithird-party/src/mbedtls/src/tf-psa-crypto/include
@@ -87,11 +90,17 @@ STATIC_LIB_DIRS += -Lthird-party/src/mbedtls/bin
 STATIC_LIB_DIRS += -Lthird-party/src/lua-mbedtls-comexe/bin
 STATIC_LIB_DIRS += -Lthird-party/src/luasocket/bin
 
+# lpeg
+STATIC_LIB_DIRS += -Lthird-party/src/lpeg/bin
+
 STATIC_LIBS  =
 STATIC_LIBS += -static-libgcc
 STATIC_LIBS += -lluv
 STATIC_LIBS += -luv
 STATIC_LIBS += -lluasocket
+
+# lpeg
+STATIC_LIBS += -llpeg
 
 # mbedtls
 STATIC_LIBS += -lluambedtls

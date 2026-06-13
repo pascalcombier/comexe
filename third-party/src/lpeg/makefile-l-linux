@@ -1,0 +1,27 @@
+.PHONY: all clean
+
+all: bin/liblpeg.a
+
+bin/lpcap.o: src/lpcap.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Isrc -I../lua/src -c src/lpcap.c -o bin/lpcap.o
+
+bin/lpcode.o: src/lpcode.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Isrc -I../lua/src -c src/lpcode.c -o bin/lpcode.o
+
+bin/lpcset.o: src/lpcset.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Isrc -I../lua/src -c src/lpcset.c -o bin/lpcset.o
+
+bin/lpprint.o: src/lpprint.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Isrc -I../lua/src -c src/lpprint.c -o bin/lpprint.o
+
+bin/lptree.o: src/lptree.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Isrc -I../lua/src -c src/lptree.c -o bin/lptree.o
+
+bin/lpvm.o: src/lpvm.c
+	$(CC) -ggdb -fvisibility=hidden --std=c99 -Wall -Wextra -Os -Isrc -I../lua/src -c src/lpvm.c -o bin/lpvm.o
+
+bin/liblpeg.a: bin/lpcap.o bin/lpcode.o bin/lpcset.o bin/lpprint.o bin/lptree.o bin/lpvm.o
+	ar rcs $@ $^
+
+clean:
+	rm -f bin/lpcap.o bin/lpcode.o bin/lpcset.o bin/lpprint.o bin/lptree.o bin/lpvm.o bin/liblpeg.a

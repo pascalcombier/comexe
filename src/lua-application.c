@@ -268,6 +268,7 @@ extern int luaopen_socket_core (lua_State *LuaState);
 extern int luaopen_mime_core   (lua_State *LuaState);
 extern int luaopen_mbedtls     (lua_State *LuaState);
 extern int luaopen_libtcc      (lua_State *LuaState);
+extern int luaopen_lpeg        (lua_State *LuaState);
 
 /*============================================================================*/
 /* PRE-DECLARATIONS                                                           */
@@ -1037,10 +1038,8 @@ static int luaopen_runtime (lua_State *LuaState)
 
   lua_pushstring(LuaState, COMEXE_COMMIT);
   lua_setfield(LuaState, -2, "COMEXE_COMMIT");
-
   lua_pushstring(LuaState, COMEXE_BUILD_DATE);
   lua_setfield(LuaState, -2, "COMEXE_BUILD_DATE");
-
   lua_pushstring(LuaState, COMEXE_VERSION);
   lua_setfield(LuaState, -2, "COMEXE_VERSION");
 
@@ -1059,6 +1058,7 @@ static void APP_PreloadLibraries (lua_State *LuaState)
   APP_RegisterPreload(LuaState, "socket.core",           luaopen_socket_core);
   APP_RegisterPreload(LuaState, "mime.core",             luaopen_mime_core);
   APP_RegisterPreload(LuaState, "mbedtls",               luaopen_mbedtls);
+  APP_RegisterPreload(LuaState, "lpeg",                  luaopen_lpeg);
 
 #ifdef _WIN32
   APP_RegisterPreload(LuaState, "com.raw.win32",         luaopen_win32);
