@@ -15,7 +15,7 @@
 --------------------------------------------------------------------------------
 
 local LibFfi  = require("com.raw.libffi")
-local LibTcc  = require("com.raw.libtcc")
+local LibTcc  = require("libtcc")
 local Thread  = require("com.thread")
 local Event   = require("com.event")
 local Runtime = require("com.runtime")

@@ -3,7 +3,7 @@
 --------------------------------------------------------------------------------
 
 local libffi = require("com.raw.libffi")
-local libtcc = require("com.raw.libtcc")
+local libtcc = require("libtcc")
 local ffi    = require("com.ffi")
 
 assert(libffi)

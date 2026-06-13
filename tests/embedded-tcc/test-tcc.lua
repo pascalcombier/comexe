@@ -1,4 +1,4 @@
-local LibTcc  = require("com.raw.libtcc")
+local LibTcc  = require("libtcc")
 local Runtime = require("com.runtime")
 
 local InputFile  = Runtime.getrelativepath("hello.c")

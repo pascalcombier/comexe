@@ -2,7 +2,7 @@
 -- IMPORTS                                                                    --
 --------------------------------------------------------------------------------
 
-local LibTcc  = require("com.raw.libtcc")
+local LibTcc  = require("libtcc")
 local LibFfi  = require("com.raw.libffi")
 local Runtime = require("com.runtime")
 

@@ -11,7 +11,7 @@
 -- IMPORTS                                                                    --
 --------------------------------------------------------------------------------
 
-local LibTcc = require("com.raw.libtcc")
+local LibTcc = require("libtcc")
 local LibFfi = require("com.raw.libffi")
 
 local tcc_new             = LibTcc.tcc_new
