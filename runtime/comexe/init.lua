@@ -328,6 +328,10 @@ local function PATH_IsSpecial (Element)
   return Result
 end
 
+-- Note: cross-platform UNC support (e.g. //server/share)
+-- This might be an issue on Linux, "//home/user/file" will not reolve to
+-- "/home/user/file" but to "//home/user/file"
+--
 -- Based on pathnames created by internalpathname
 -- Split path into parts and detect root/drive
 local function PATH_SplitPathString (Pathname)
@@ -345,8 +349,7 @@ local function PATH_SplitPathString (Pathname)
     -- Save the drive
     append(Elements, PATH_MakeDrive(DriveLetter))
     IsAbsolute = true
-  elseif (INIT_OS == "windows") and STRING_HasPrefix(InternalPath, "//") then
-    -- Windows UNC
+  elseif STRING_HasPrefix(InternalPath, "//") then
     local Server, Share, Remaining = InternalPath:match("^//+([^/]+)/+([^/]+)(.*)")
     if (Server and Share) then
       append(Elements, PATH_MakeUNC(Server, Share))
@@ -699,6 +702,8 @@ local PATH_MetatableImpl = {
 }
 PATH_Metatable = PATH_MetatableImpl
 
+-- Simple constructor: create pathname from string
+-- Don't support multiple strings/pathnames
 local function PATH_NewPathnameObject (Pathname)
   -- Normalize path: use Linux forward slashes not Windows backslashes
   local NormalizedPath = PATH_InternalPathname(Pathname)
@@ -1664,6 +1669,25 @@ local function INIT_SetSearcher (ConfigurationString)
   setloaderconfig(ConfigurationString)
   package.searchers = NewSearcher
 end
+
+--------------------------------------------------------------------------------
+-- COMEXE SEARCHER DLL                                                        --
+--------------------------------------------------------------------------------
+
+-- Priority: find the DLL nearby the executable
+local ExePathname  = PATH_NewPathnameObject(ExeFilename)
+local ExeDirectory = ExePathname:getdirectory("native")
+local DllExtension
+
+if (INIT_OS == "windows") then
+  DllExtension = "dll"
+else
+  DllExtension = "so"
+end
+
+-- Prepend the EXE directory for DLL search
+-- Allow to provide libtcc.so/libtcc.dll in the same directory
+package.cpath = format("%s%s?.%s;%s", ExeDirectory, PATH_NativeSeparator, DllExtension, package.cpath)
 
 --------------------------------------------------------------------------------
 -- ENVIRONMENT                                                                --
