@@ -19,6 +19,7 @@ ComEXE is a statically linked, drop-in replacement for the [Lua standalone progr
 
 # 📘 Guides & Notes
 
+- [Fetching JSON data over HTTP](./doc/page-github-http-client.md)
 - [Using the FFI to wrap a C library](./doc/page-ffi-sqlite.md)
 - [Using the FFI to build a Win32 GUI](./doc/page-ffi-win32-gui.md)
 - [Differences with Lua PUC](./doc/differences-lua-puc.md)
