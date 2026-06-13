@@ -14,7 +14,7 @@ local uint64  = libffi.uint64
 local pointer = libffi.pointer
 local NULL    = libffi.NULL
 
-local Libc = libffi.loadlib("msvcrt.dll")
+local Libc = libffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so", "linux", "libc.so.6")
 assert(Libc)
 
 --------------------------------------------------------------------------------
@@ -27,9 +27,6 @@ assert(Buffer ~= NULL)
 
 local Sprintf = Libc:variadicbind(sint32, "sprintf", pointer)
 assert(Sprintf)
-
-local SprintfS = Libc:variadicbind(sint32, "sprintf_s", pointer, uint64, pointer)
-assert(SprintfS)
 
 local function CheckSprintf (Expected, FormatString, ...)
   local Length = Sprintf(Buffer, FormatString, ...)
@@ -47,7 +44,7 @@ CheckSprintf(string.format("%s %s %.2f", "left", "right", 1.5), "%s %s %.2f", "l
 -- SECOND FUNCTION NAME                                                       --
 --------------------------------------------------------------------------------
 
-local Length = SprintfS(Buffer, BufferSize, "%s %d", "flag", true)
+local Length = Sprintf(Buffer, "%s %d", "flag", true)
 assert((Length > 0))
 local Result = libffi.readmemory(Buffer, 0, Length)
 assert((Result == string.format("%s %d", "flag", 1)))

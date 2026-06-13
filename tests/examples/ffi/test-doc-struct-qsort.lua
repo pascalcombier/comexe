@@ -6,7 +6,7 @@ local ffi = require("com.ffi")
 
 local format = string.format
 
-local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so")
+local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so", "linux", "libc.so.6")
 libc:load("tiny-libc-ffi")
 
 local UserStruct = ffi.newstructure("User",

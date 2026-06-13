@@ -2,7 +2,8 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local libffi = require("com.raw.libffi")
+local libffi  = require("com.raw.libffi")
+local Runtime = require("com.runtime")
 assert(libffi)
 
 assert(libffi.pointer)
@@ -20,7 +21,13 @@ local PutsCifConstant = libffi.newcif({ sint32, cstring })
 assert(PutsCifConstant)
 libffi.freecif(PutsCifConstant)
 
-local Libc = libffi.loadlib("msvcrt.dll")
+local LibcName
+if (Runtime.getparam("OS") == "windows") then
+  LibcName = "msvcrt.dll"
+else
+  LibcName = "libc.so.6"
+end
+local Libc = libffi.loadlib(LibcName)
 assert(Libc)
 
 local NULL = libffi.NULL
@@ -269,6 +276,9 @@ libffi.freecif(MemcpyCif)
 -- STDCALL                                                                    --
 --------------------------------------------------------------------------------
 
+-- This test is windows only: mix stdcall and cdecl
+-- TLDR: should crash on X86 and work on X86-64
+--
 -- Most of C functions from mscvrt.dll should use "cdecl"
 -- Functions from winapi should be "stdcall".
 --
@@ -280,41 +290,39 @@ libffi.freecif(MemcpyCif)
 -- On Windows x64 the convention seems to be fastcall-like, so it works well.
 -- To test conventions on Windows we need 32 bits version of Windows. On Linux
 -- it's the same as Windows, fastcall-like call convention on 64-bits.
---
--- TLDR: should crash on X86 and work on X86-64
 
 local Kernel32 = libffi.loadlib("kernel32.dll")
-assert(Kernel32)
+if (Kernel32) then
+  local GetModuleHandleAddress = libffi.getproc(Kernel32, "GetModuleHandleA")
+  assert(GetModuleHandleAddress ~= NULL)
 
-local GetModuleHandleAddress = libffi.getproc(Kernel32, "GetModuleHandleA")
-assert(GetModuleHandleAddress ~= NULL)
+  local GetModuleHandleACif, ErrorMessage = libffi.newcif({ pointer, pointer })
+  assert(GetModuleHandleACif, ErrorMessage)
+  local GetModuleHandleCallContext = libffi.newcallcontext(GetModuleHandleACif)
+  assert(GetModuleHandleCallContext)
 
-local GetModuleHandleACif, ErrorMessage = libffi.newcif({ pointer, pointer })
-assert(GetModuleHandleACif, ErrorMessage)
-local GetModuleHandleCallContext = libffi.newcallcontext(GetModuleHandleACif)
-assert(GetModuleHandleCallContext)
+  local SprintfAddress = libffi.getproc(Libc, "sprintf")
+  assert(SprintfAddress ~= NULL)
 
-local SprintfAddress = libffi.getproc(Libc, "sprintf")
-assert(SprintfAddress ~= NULL)
+  local SprintfCif = libffi.newcif({ sint32, pointer, cstring, pointer, sint32 })
+  assert(SprintfCif)
+  local SprintfCallContext = libffi.newcallcontext(SprintfCif)
+  assert(SprintfCallContext)
 
-local SprintfCif = libffi.newcif({ sint32, pointer, cstring, pointer, sint32 })
-assert(SprintfCif)
-local SprintfCallContext = libffi.newcallcontext(SprintfCif)
-assert(SprintfCallContext)
+  local Buffer = libffi.malloc(1024)
+  assert(Buffer ~= NULL)
 
-local Buffer = libffi.malloc(1024)
-assert(Buffer ~= NULL)
+  for Index = 1, 10000 do
+    local Handle = libffi.call(GetModuleHandleCallContext, GetModuleHandleAddress, { NULL })
+    assert(Handle ~= NULL)
+    local SprintfFormat = "Module Handle: %p %d\n"
+    local SprintfReturn = libffi.call(SprintfCallContext, SprintfAddress, { Buffer, SprintfFormat, Handle, Index })
+    assert(SprintfReturn > 0)
+  end
 
-for Index = 1, 10000 do
-  local Handle = libffi.call(GetModuleHandleCallContext, GetModuleHandleAddress, { NULL })
-  assert(Handle ~= NULL)
-  local SprintfFormat = "Module Handle: %p %d\n"
-  local SprintfReturn = libffi.call(SprintfCallContext, SprintfAddress, { Buffer, SprintfFormat, Handle, Index })
-  assert(SprintfReturn > 0)
+  libffi.free(Buffer)
+  libffi.freecallcontext(GetModuleHandleCallContext)
+  libffi.freecif(GetModuleHandleACif)
+  libffi.freecallcontext(SprintfCallContext)
+  libffi.freecif(SprintfCif)
 end
-
-libffi.free(Buffer)
-libffi.freecallcontext(GetModuleHandleCallContext)
-libffi.freecif(GetModuleHandleACif)
-libffi.freecallcontext(SprintfCallContext)
-libffi.freecif(SprintfCif)

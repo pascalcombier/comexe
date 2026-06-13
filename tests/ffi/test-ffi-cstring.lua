@@ -12,7 +12,7 @@ local pointer = ffi.pointer
 local cstring = ffi.cstring
 local NULL    = ffi.NULL
 
-local Libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so")
+local Libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so", "linux", "libc.so.6")
 assert(Libc)
 
 --------------------------------------------------------------------------------

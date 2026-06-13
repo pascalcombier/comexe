@@ -1,6 +1,6 @@
 local ffi = require("com.ffi")
 
-local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so")
+local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so", "linux", "libc.so.6")
 
 -- Attach the interface (multiple interface can be attached)
 libc:load("tiny-libc-ffi")
