@@ -203,6 +203,7 @@ end
 
 local Results        = FindAndExecuteTestFiles()
 local Success        = 0
+local Skipped        = 0
 local Count          = 0
 local ElapsedTimeSec = 0
 
@@ -211,13 +212,20 @@ for Index, Result in ipairs(Results) do
   ElapsedTimeSec = (ElapsedTimeSec + Result.ElapsedTime)
   if Result.Skipped then
     print(format("SKIPPED %s", Result.Line))
+    Skipped = (Skipped + 1)
   elseif Result.Passed then
-    print(format("PASSED %8.4fs %s", Result.ElapsedTime, Result.Line))
+    print(format("PASSED %8.4fs %s", Result.ElapsedTime, Result.Command))
     Success = (Success + 1)
   else
-    print(format("FAILED %8.4fs %s", Result.ElapsedTime, Result.Command))
+    print(format("FAILED %8.4fs %s", Result.ElapsedTime, Result.Line))
   end
   Count = (Count + 1)
 end
 
 print(format("%d/%d PASS (%8.4f seconds)", Success, Count, ElapsedTimeSec))
+
+if ((Success + Skipped) < Count) then
+  os.exit(1)
+else
+  os.exit(0)
+end
