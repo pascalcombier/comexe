@@ -2,7 +2,7 @@
 
 * [Overview](#overview)
   * [Generating a binding file](#generating-a-binding-file)
-  * [Opening a dynamic library](#opening-a-dynamic-library)
+  * [Loading a shared library](#loading-a-shared-library)
   * [Loading a binding](#loading-a-binding)
   * [Calling foreign functions](#calling-foreign-functions)
   * [Sorting arrays of structures](#sorting-arrays-of-structures)
@@ -93,7 +93,7 @@ local PUBLIC_API = {
 return PUBLIC_API
 ```
 
-## Opening a dynamic library
+## Loading a shared library
 
 ```lua
 local ffi  = require("com.ffi")
