@@ -21,7 +21,6 @@ local function Bind (Library)
   Library.DEFAULT_CHARSET = 1
   Library.DEFAULT_PITCH = 0
   Library.DT_CALCRECT = 1024
-  Library.DT_CENTER = 1
   Library.DT_SINGLELINE = 32
   Library.DT_VCENTER = 4
   Library.FF_SWISS = 32

@@ -71,10 +71,8 @@ local WS_VISIBLE              = win32.WS_VISIBLE
 local WS_CLIPCHILDREN         = win32.WS_CLIPCHILDREN
 local TRANSPARENT             = win32.TRANSPARENT
 local DT_SINGLELINE           = win32.DT_SINGLELINE
-local DT_CENTER               = win32.DT_CENTER
 local DT_VCENTER              = win32.DT_VCENTER
 local DT_CALCRECT             = win32.DT_CALCRECT
-local LOGFONTA                = win32.LOGFONTA
 local NONCLIENTMETRICSA       = win32.NONCLIENTMETRICSA
 local SystemParametersInfoA   = win32.SystemParametersInfoA
 local CreateFontIndirectA     = win32.CreateFontIndirectA
@@ -111,7 +109,7 @@ local HIcon     = win32.LoadIconA(NULL, IconResourceId)
 local HCursor   = win32.LoadCursorA(NULL, CursorResourceId)
 local HInstance = win32.GetModuleHandleA(NULL)
 
-local GlobalFont = win32.CreateFontA(
+local STRINGS_FONT = win32.CreateFontA(
   64,                        -- Height
   0,                         -- Width (auto)
   0,                         -- Escapement
@@ -137,8 +135,7 @@ local RectPointer  = Rect:getpointer()
 
 local TEXT_BUFFER_SIZE_IN_BYTES = 256
 local TEXT_BUFFER_SIZE_IN_WCHAR = (TEXT_BUFFER_SIZE_IN_BYTES / 2)
-local TextBuffer                = ffi.malloc(TEXT_BUFFER_SIZE_IN_BYTES)
-local MeasureBuffer             = ffi.malloc(TEXT_BUFFER_SIZE_IN_BYTES)
+local CurrentTextBuffer         = ffi.malloc(TEXT_BUFFER_SIZE_IN_BYTES)
 
 local CONTROL_RESET_ID = 1 -- Win32 ID for button "Reset"
 local CONTROL_PAUSE_ID = 2 -- Win32 ID for button "Pause"
@@ -148,11 +145,16 @@ local ButtonResetWindow
 local ButtonPauseWindow
 local ButtonExitWindow
 
-local UI_ButtonWidth  = 0
-local UI_ButtonHeight = 0
-local UI_ButtonGap    = 15
-local UI_BlockGap     = 15
-local UI_TextHeight   = 0
+-- Height of the strings STRINGS, calculated once with STRINGS_FONT
+local UI_TextHeight
+
+-- Width of the current STRINGS, calculated based on SM_GetWidestString (max dots)
+local CurrentTextWidth = 0
+
+local UI_ButtonGap = 16
+local UI_BlockGap  = 16
+local UI_ButtonWidth
+local UI_ButtonHeight
 
 --------------------------------------------------------------------------------
 -- STATE MACHINE                                                              --
@@ -172,28 +174,11 @@ local APP_StateTextIndex
 local APP_StateCounter
 local APP_Paused
 
-local function SM_Reset ()
+local function SM_Init ()
   APP_StateTextIndex = 1
   APP_StateCounter   = 0
   APP_Paused         = false
 end
-
-SM_Reset()
-
-local function FindLongestString (Strings)
-  local MaxLen = 0
-  local Result = ""
-  for Index, String in ipairs(Strings) do
-    local Length = #String
-    if (Length > MaxLen) then
-      MaxLen = Length
-      Result = String
-    end
-  end
-  return Result
-end
-
-local MaxString = format("%s...", FindLongestString(STRINGS))
 
 local function SM_Tick ()
   local Result
@@ -223,8 +208,13 @@ end
 local function SM_GetString ()
   local CurrentString   = STRINGS[APP_StateTextIndex]
   local Dots            = string.rep(".", APP_StateCounter)
-  local Spaces          = string.rep(" ", (3 - APP_StateCounter))
-  local FormattedString = format("%s%s%s", CurrentString, Dots, Spaces)
+  local FormattedString = format("%s%s", CurrentString, Dots)
+  return FormattedString
+end
+
+local function SM_GetWidestString ()
+  local CurrentString   = STRINGS[APP_StateTextIndex]
+  local FormattedString = format("%s...", CurrentString)
   return FormattedString
 end
 
@@ -235,62 +225,67 @@ end
 local UI_TempRectangle = newinstance(win32.RECT)
 local UI_TempPointer   = UI_TempRectangle:getpointer()
 
-local function InitButtonSizes (Window)
-  -- Create a pain context
-  local Hdc = GetDC(Window)
-  -- Evaluate "Pause" string size
+local function InitMainTextHeight (Hdc)
+  SelectObject(Hdc, STRINGS_FONT)
+  DrawTextW(Hdc, "Hello World!", -1, UI_TempPointer, (DT_CALCRECT | DT_SINGLELINE))
+  UI_TextHeight = UI_TempRectangle:get("bottom")
+end
+
+local function InitButtonSizes (Hdc)
   SelectObject(Hdc, SystemFont)
   DrawTextW(Hdc, "Pause", -1, UI_TempPointer, (DT_CALCRECT | DT_SINGLELINE))
   UI_ButtonWidth  = (UI_TempRectangle:get("right")  * 2)
   UI_ButtonHeight = (UI_TempRectangle:get("bottom") * 2)
-  -- Text height (measured once with GlobalFont, stable across all strings)
-  SelectObject(Hdc, GlobalFont)
-  DrawTextW(Hdc, "World!", -1, UI_TempPointer, (DT_CALCRECT | DT_SINGLELINE))
-  UI_TextHeight = UI_TempRectangle:get("bottom")
-  -- Release
-  ReleaseDC(Window, Hdc)
 end
 
-local function ApplyLayout (Window, Hdc)
-  -- Measure base text width (without dots) via UTF-16
-  MultiByteToWideChar(win32.CP_UTF8, 0, MaxString, -1, MeasureBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
-  UI_TempRectangle:set("left", 0)
-  DrawTextW(Hdc, MeasureBuffer, -1, UI_TempPointer, (DT_CALCRECT | DT_SINGLELINE))
-  local BaseWidth = UI_TempRectangle:get("right")
-  local TextWidth = BaseWidth
+local function ApplyLayout (Window)
+  local TextWidth = CurrentTextWidth
   -- Button row
-  local TotalButtonWidth  = (3 * UI_ButtonWidth + 2 * UI_ButtonGap)
-  local BlockWidth        = math.max(TextWidth, TotalButtonWidth)
-  local BlockHeight       = (UI_TextHeight + UI_BlockGap + UI_ButtonHeight)
-  -- Center block in client
+  local TotalButtonWidth = (3 * UI_ButtonWidth + 2 * UI_ButtonGap)
+  local BlockWidth       = math.max(TextWidth, TotalButtonWidth)
+  local BlockHeight      = (UI_TextHeight + UI_BlockGap + UI_ButtonHeight)
+  -- Center block in window
   GetClientRect(Window, RectPointer)
   local ClientWidth  = Rect:get("right")
   local ClientHeight = Rect:get("bottom")
   local BlockX = ((ClientWidth - BlockWidth) // 2)
   local BlockY = ((ClientHeight - BlockHeight) // 2)
-  -- Store text rect (full block width, DT_CENTER keeps text visually centered)
-  UI_TempRectangle:set("left",   BlockX)
-  UI_TempRectangle:set("top",    BlockY)
-  UI_TempRectangle:set("right",  (BlockX + BlockWidth))
-  UI_TempRectangle:set("bottom", (BlockY + UI_TextHeight))
-  -- Position buttons centered below text (fixed X based on TotalButtonWidth, not BlockWidth)
+  -- Position toolbar
   local ButtonsX = ((ClientWidth - TotalButtonWidth) // 2)
   local ButtonsY = (BlockY + UI_TextHeight + UI_BlockGap)
-  print(string.format("CNT=%d Base=%d TextW=%d BlkW=%d BlkX=%d BtnX=%d",
-    APP_StateCounter, BaseWidth, TextWidth, BlockWidth, BlockX, ButtonsX))
   -- Move the buttons
-  MoveWindow(ButtonResetWindow, ButtonsX,                                        ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
-  MoveWindow(ButtonPauseWindow, (ButtonsX + UI_ButtonWidth + UI_ButtonGap),      ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
+  MoveWindow(ButtonResetWindow, ButtonsX,                                         ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
+  MoveWindow(ButtonPauseWindow, (ButtonsX + UI_ButtonWidth + UI_ButtonGap),       ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
   MoveWindow(ButtonExitWindow,  (ButtonsX + 2 * (UI_ButtonWidth + UI_ButtonGap)), ButtonsY, UI_ButtonWidth, UI_ButtonHeight, 1)
+  -- Store text rect for WM_PAINT
+  local TextX = (BlockX + ((BlockWidth - CurrentTextWidth) // 2))
+  UI_TempRectangle:set("left",   TextX)
+  UI_TempRectangle:set("top",    BlockY)
+  UI_TempRectangle:set("right",  (TextX + CurrentTextWidth))
+  UI_TempRectangle:set("bottom", (BlockY + UI_TextHeight))
 end
 
 --------------------------------------------------------------------------------
 -- WINDOW PROCEDURE                                                           --
 --------------------------------------------------------------------------------
 
+local function MeasureLargestString (Window)
+  local MaxDotsString = SM_GetWidestString()
+  local Hdc           = GetDC(Window)
+  SelectObject(Hdc, STRINGS_FONT)
+  MultiByteToWideChar(win32.CP_UTF8, 0, MaxDotsString, -1, CurrentTextBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
+  UI_TempRectangle:set("left",   0)
+  UI_TempRectangle:set("top",    0)
+  UI_TempRectangle:set("right",  0)
+  UI_TempRectangle:set("bottom", 0)
+  DrawTextW(Hdc, CurrentTextBuffer, -1, UI_TempPointer, (DT_CALCRECT | DT_SINGLELINE))
+  CurrentTextWidth = UI_TempRectangle:get("right")
+  ReleaseDC(Window, Hdc)
+end
+
 local function WriteUTF16String ()
   local Utf8String = SM_GetString()
-  MultiByteToWideChar(win32.CP_UTF8, 0, Utf8String, -1, TextBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
+  MultiByteToWideChar(win32.CP_UTF8, 0, Utf8String, -1, CurrentTextBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
 end
 
 local function WindowProcedure (Window, Message, WParam, LParam)
@@ -301,7 +296,9 @@ local function WindowProcedure (Window, Message, WParam, LParam)
   elseif (Message == WM_TIMER) then
     local Action = SM_Tick()
     if (Action == "UPDATE") then
+      MeasureLargestString(Window)
       WriteUTF16String()
+      ApplyLayout(Window)
       InvalidateRect(Window, NULL, 1)
     elseif (Action == "QUIT") then
       PostQuitMessage(EXIT_SUCCESS)
@@ -314,8 +311,10 @@ local function WindowProcedure (Window, Message, WParam, LParam)
       if (ControlId == CONTROL_EXIT_ID) then
         PostQuitMessage(EXIT_SUCCESS)
       elseif (ControlId == CONTROL_RESET_ID) then
-        SM_Reset()
+        SM_Init()
+        MeasureLargestString(Window)
         WriteUTF16String()
+        ApplyLayout(Window)
         InvalidateRect(Window, NULL, 1)
       elseif (ControlId == CONTROL_PAUSE_ID) then
         SM_TogglePause()
@@ -323,22 +322,15 @@ local function WindowProcedure (Window, Message, WParam, LParam)
     end
     Result = 0
   elseif (Message == WM_SIZE) then
-    local LayoutDc = GetDC(Window)
-    ApplyLayout(Window, LayoutDc)
-    ReleaseDC(Window, LayoutDc)
+    ApplyLayout(Window)
     InvalidateRect(Window, NULL, 1)
     Result = 0
   elseif (Message == WM_PAINT) then
+    -- Assume UI_TempRectangle contains the right location and CurrentTextBuffer is ready
     local DeviceContext = BeginPaint(Window, PaintPointer)
-    local OldFont       = SelectObject(DeviceContext, GlobalFont)
+    local OldFont       = SelectObject(DeviceContext, STRINGS_FONT)
     SetBkMode(DeviceContext, TRANSPARENT)
-    DrawTextW(
-      DeviceContext,
-      TextBuffer,
-      -1,
-      UI_TempPointer,
-      (DT_SINGLELINE | DT_CENTER | DT_VCENTER)
-    )
+    DrawTextW(DeviceContext, CurrentTextBuffer, -1, UI_TempPointer, (DT_SINGLELINE | DT_VCENTER))
     SelectObject(DeviceContext, OldFont)
     EndPaint(Window, PaintPointer)
     Result = 0
@@ -382,8 +374,11 @@ local function Init ()
     NULL, NULL, HInstance, NULL
   )
   assert((Window ~= NULL), "CreateWindowExA failed")
-  -- Compute button sizes from font metrics
-  InitButtonSizes(Window)
+  -- Compute button sizes and text height from font metrics
+  local InitHdc = GetDC(Window)
+  InitMainTextHeight(InitHdc)
+  InitButtonSizes(InitHdc)
+  ReleaseDC(Window, InitHdc)
   -- Create control buttons (positioned later by ApplyLayout)
   local ButtonResetPointer = newpointer(0, CONTROL_RESET_ID)
   local ButtonPausePointer = newpointer(0, CONTROL_PAUSE_ID)
@@ -391,16 +386,14 @@ local function Init ()
   ButtonResetWindow = win32.CreateWindowExA(0, "BUTTON", "Reset", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonResetPointer, HInstance, NULL)
   ButtonPauseWindow = win32.CreateWindowExA(0, "BUTTON", "Pause", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonPausePointer, HInstance, NULL)
   ButtonExitWindow  = win32.CreateWindowExA(0, "BUTTON", "Exit",  (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonExitPointer,  HInstance, NULL)
-  -- Apply initial layout (measures text, positions buttons)
-  local InitDc = GetDC(Window)
-  ApplyLayout(Window, InitDc)
-  ReleaseDC(Window, InitDc)
-  -- Update window state (counter=0 for initial display without dots)
-  APP_StateCounter = 0
+  -- Initial state
+  SM_Init()
+  MeasureLargestString(Window)
   WriteUTF16String()
+  ApplyLayout(Window)
   win32.ShowWindow(Window, win32.SW_SHOWDEFAULT)
   win32.UpdateWindow(Window)
-  GlobalTimerId = win32.SetTimer(Window, 0, 750, NULL)
+  GlobalTimerId = win32.SetTimer(Window, 0, 500, NULL)
   assert((GlobalTimerId ~= 0), "SetTimer failed")
 end
 
@@ -424,11 +417,10 @@ local function Loop ()
 end
 
 local function Clean ()
-  DeleteObject(GlobalFont)
+  DeleteObject(STRINGS_FONT)
   DeleteObject(SystemFont)
   KillTimer(NULL, GlobalTimerId)
-  ffi.free(TextBuffer)
-  ffi.free(MeasureBuffer)
+  ffi.free(CurrentTextBuffer)
 end
 
 --------------------------------------------------------------------------------

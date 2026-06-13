@@ -36,7 +36,6 @@
 
 /* DrawText format */
 #define DT_SINGLELINE 0x00000020
-#define DT_CENTER     0x00000001
 #define DT_VCENTER    0x00000004
 #define DT_CALCRECT   0x00000400
 
