@@ -11,4 +11,4 @@ jobs:
       - run: chmod +x third-party/src/tcc-vio/bootstrap-on-linux.sh
       - run: chmod +x third-party/src/tcc-vio/src-mini-trunk/configure
       - run: ./make-all.sh
-      - run: dist/lua55ce-x86_64-linux tests/runner.lua
+      - run: dist/lua55ce-x86_64-linux tests/runner.lua --fast

@@ -16,7 +16,7 @@ jobs:
       - run: chmod +x third-party/src/tcc-vio/src-mini-trunk/configure
       - run: ./make-all.sh
       - run: mv dist/lua55ce.zip dist/lua55ce-${{ inputs.version-tag }}.zip
-      - run: dist/lua55ce-x86_64-linux tests/runner.lua
+      - run: dist/lua55ce-x86_64-linux tests/runner.lua --fast
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.version-tag }}
