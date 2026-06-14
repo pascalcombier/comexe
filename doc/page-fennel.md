@@ -12,7 +12,7 @@
 
 ComEXE embeds the [Fennel](https://fennel-lang.org/) compiler. Fennel is a Lisp dialect that compiles to Lua. The compile command translates `.fnl` files to `.lua`.
 
-**[test-fennel.fnl](../tests/examples/fennel/test-fennel.fnl)** → `lua55ce -x --compile` → **[test-fennel.lua](_generated)** (generated)
+**[test-fennel.fnl](../tests/examples/fennel/test-fennel.fnl)** → `lua55ce -x --compile` → **[test-fennel.lua](../tests/examples/fennel/test-fennel.md)** (generated)
 
 # Preparation
 
