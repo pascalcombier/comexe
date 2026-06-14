@@ -24,6 +24,7 @@ local Url         = require("socket.url")
 local Fennel      = require("fennel")
 local ApmClient   = require("apm-client")
 local FfiCompiler = require("ffi-compiler")
+local LuaBundle   = require("lua-bundle")
 
 local format           = string.format
 local open             = io.open
@@ -270,6 +271,7 @@ local function HandleHelp ()
   print("  --zip c or create <file.zip> ...  Create/overwrite a zip file")
   print("  --find <directory>                Find files in a directory")
   print("  --compile, -c <file.lua|file.fnl> Compile Lua or Fennel source")
+  print("  --bundle <file.lua>               Bundle Lua dependencies into a single file")
   print("  --wget <url>                      Download file via HTTP")
   print("  --apm update                      Update available packages index")
   print("  --apm list                        List available packages")
@@ -557,6 +559,12 @@ local function HandleCompile (Filename)
   end
 end
 
+local function HandleBundle (InputFilename)
+  assert(InputFilename, "usage: bundle file.lua")
+  local BundledCode = LuaBundle.bundle(InputFilename)
+  print(BundledCode)
+end
+
 local function GetFilenameFromUri (Uri)
   -- Use luasocket.url to parse the URI
   local ParsedUri = parseurl(Uri)
@@ -667,6 +675,8 @@ local function EXT_Command (RawArguments)
   elseif (Command == "compile") then
     local InputLua = Arguments[1]
     HandleCompile(InputLua)
+  elseif (Command == "bundle") then
+    HandleBundle(Arguments[1])
   elseif (Command == "wget") then
     local Uri = Arguments[1]
     HandleWget(Uri)
