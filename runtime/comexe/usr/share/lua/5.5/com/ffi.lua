@@ -483,7 +483,7 @@ local function MakeCacheKey (Signature)
   return NewCacheKey
 end
 
-local function MakeCallableFunction (CallContext, FunctionPointer, Signature, DoReturnString)
+local function MakeCallableFunction (Library, CallContext, FunctionPointer, Signature, DoReturnString)
   -- For CallStructureByValue we have a nice API allowing user to pass Lua
   -- high-level struct objects. To implement that, we need to check and replace
   -- every LuaObject by its underlying ffi_type. For that reason, we better use
@@ -510,6 +510,16 @@ local function MakeCallableFunction (CallContext, FunctionPointer, Signature, Do
   end
   -- Setup the function
   local Arguments = {}
+  -- Prevent the garbage collection of a library if a function is still
+  -- existing. To do that, we hijack Arguments to store an additional library
+  -- reference (Arguments will not be released until the function is collected)
+  --
+  -- (Notes: Lua functions cannot have a metatable, so the alternative would be
+  -- to return a table with metatable and __call methods, but that make things
+  -- too complicated)
+  if Library then
+    Arguments.LibraryReference = Library
+  end
   local Function
   if ((not HasStructArgument) and (not HasStructReturn) and (not DoReturnString)) then
     -- Simple calls with primitive types
@@ -602,7 +612,7 @@ local function LIBRARY_MethodBind (Library, ReturnType, FunctionName, ...)
     CallContext = NewCallContext
   end
   local DoReturnString = (ReturnType == CSTRING)
-  local Function       = MakeCallableFunction(CallContext, FunctionPointer, Signature, DoReturnString)
+  local Function       = MakeCallableFunction(Library, CallContext, FunctionPointer, Signature, DoReturnString)
   -- Return value
   return Function
 end
@@ -829,7 +839,7 @@ local function WrapFunction (RawSymbol, ReturnType, ...)
   assert(Cif, ErrorString)
   local CallContext    = newcallcontext(Cif)
   local DoStringReturn = (ReturnType == CSTRING)
-  local CallFunction   = MakeCallableFunction(CallContext, RawSymbol, Signature, DoStringReturn)
+  local CallFunction   = MakeCallableFunction(nil, CallContext, RawSymbol, Signature, DoStringReturn)
   local NewPrivateContext = { Cif, CallContext }
   -- Return values
   return CallFunction, NewPrivateContext
@@ -959,9 +969,7 @@ end
 
 local PUBLIC_API = {
   -- High level functions
-  loadlib            = LoadLibrary,
-  loadlibsimple      = LoadLibrarySimple,
-  loadlibcandidates  = LoadLibraryCandidates,
+  loadlib        = LoadLibrary,
   -- Those functions are intended to work with libtcc
   importfunction = WrapFunction,  -- C function pointer -> Lua function
   newcallback    = CreateClosure, -- Lua function       -> C function pointer
