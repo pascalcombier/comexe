@@ -528,23 +528,21 @@ static int VARIANT_Get (lua_State *LuaState)
 /* COM OBJECTS                                                                */
 /*============================================================================*/
 
-/* From the CLSID got from COM_NewClsid (as Lua string), return IDispatch* as
- * lightuserdata
- */
-static int DISPATCH_Create (lua_State *LuaState)
+static int COM_CoCreateInstance (lua_State *LuaState)
 {
-  CLSID     *ClassId  = lua_touserdata(LuaState, 1);
-  IDispatch *Dispatch = NULL;
+  CLSID    *ClassId = lua_touserdata(LuaState, 1);
+  IID      *Iid     = lua_touserdata(LuaState, 2);
+  IUnknown *Unknown = NULL;
 
   HRESULT Result = CoCreateInstance(
     ClassId,
     NULL,
     (CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER),
-    &IID_IDispatch,
-    (void **)&Dispatch);
+    Iid,
+    (void **)&Unknown);
 
   lua_pushinteger(LuaState, Result);
-  lua_pushlightuserdata(LuaState, Dispatch);
+  lua_pushlightuserdata(LuaState, Unknown);
 
   return 2; /* Number of values returned on the stack */
 }
@@ -1422,8 +1420,9 @@ static const struct luaL_Reg LWC_FUNCTIONS[] =
   { "safearray_unaccessdata",  SAFEARRAY_UnaccessData   },
   { "safearray_readdata",      SAFEARRAY_ReadData       },
   { "safearray_writedata",     SAFEARRAY_WriteData      },
+  /* Generic COM */
+  { "cocreateinstance",        COM_CoCreateInstance },
   /* IDispatch interface */
-  { "idispatch_create",        DISPATCH_Create          },
   { "idispatch_getidofname",   DISPATCH_GetIdOfName     },
   { "idispatch_invoke",        DISPATCH_Invoke          },
   { "idispatch_members",       DISPATCH_ListMembers     },

@@ -51,8 +51,11 @@ local iunknown_addref         = RawCom.iunknown_addref
 local iunknown_release        = RawCom.iunknown_release
 local iunknown_queryinterface = RawCom.iunknown_queryinterface
 
+local IID_IDispatch_U16 = utf8to16("{00020400-0000-0000-C000-000000000046}")
+local IID_IDispatch     = newiid(IID_IDispatch_U16)
+
 -- DISPATCH
-local create        = RawCom.idispatch_create
+local create        = RawCom.cocreateinstance
 local getidofname   = RawCom.idispatch_getidofname
 local invoke        = RawCom.idispatch_invoke
 local members       = RawCom.idispatch_members
@@ -1153,7 +1156,7 @@ local function COM_NewDispatch (ClsidUtf8)
     local Clsid      = newclsid(ClsidUtf16)
     -- New dispatch
     if Clsid then
-      local Result, Pointer = create(Clsid)
+      local Result, Pointer = create(Clsid, IID_IDispatch)
       if HRESULT_SUCCEEDED(Result) then
         NewDispatchPointer = Pointer
       else
