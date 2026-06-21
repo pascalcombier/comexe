@@ -222,8 +222,6 @@ static int IUNKNOWN_Release (lua_State *LuaState)
 {
   IUnknown *Unknown  = lua_touserdata(LuaState, 1);
   ULONG     RefCount = Unknown->lpVtbl->Release(Unknown);
-
-  printf("[DEBUG] IUNKNOWN_Release %p\n", Unknown);
   
   lua_pushinteger(LuaState, RefCount);
   
