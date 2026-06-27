@@ -35,7 +35,8 @@
 -- local Sqlite3 = ffi.loadlib("windows", "sqlite3.dll", "linux", "libsqlite3.so")
 -- 
 -- if Sqlite3 then
---   Sqlite3:load("sqlite3-ffi")
+--   local Sqlite3Ffi = require("sqlite3-ffi")
+--   Sqlite3:attach(Sqlite3Ffi)
 --   print("SQlite", Sqlite3.sqlite3_libversion())
 -- else
 --   print("DLL NOT FOUND")
@@ -80,6 +81,17 @@ local CParserOptions = {
   "-D__STDC__=1",
   "-D__STDC_VERSION__=201112L",
 }
+
+-- CParserOptions does not support -D values with __attribute__(()). Because of
+-- this limitation, we implement this straight-forward workaround: we inject
+-- the define as a constant prefix.
+--
+-- This COMEXE_WIN32COM_INTERFACE allow us to generate a Win32 Com interface
+-- suitable for easycom (static vtable COM interace).
+--
+local C_HEADER_PREFIX = [[
+  #define COMEXE_WIN32COM_INTERFACE __attribute__((comexe_win32com_interface))
+]]
 
 --------------------------------------------------------------------------------
 -- STRING STREAM                                                              --
@@ -249,6 +261,8 @@ local function ResolveType (AstType, IsReturnType)
     local FfiTypeString = PrimitiveFfiToken[Current.n]
     if FfiTypeString then
       Result = FfiTypeString
+    elseif KnownStructTypes[Current.n] then
+      Result = format("Library.%s", Current.n) -- StructByValue
     else
       Result = "libffi.pointer"
     end
@@ -317,7 +331,9 @@ end
 -- CPARSER INTEGRATION                                                        --
 --------------------------------------------------------------------------------
 
-local function ParseHeader (Content, InputFilename)
+local function ParseHeader (HeaderString, InputFilename)
+  -- Prepend built-in defines
+  local PatchedHeaderString = format("%s%s", C_HEADER_PREFIX, HeaderString)
   -- Init structures order
   KnownStructTypes       = {}
   StructDeclarationOrder = {}
@@ -325,7 +341,7 @@ local function ParseHeader (Content, InputFilename)
   local Functions    = {}
   local Constants    = {}
   local Structures   = {}
-  local LineIterator = NewLineIterator(Content)
+  local LineIterator = NewLineIterator(PatchedHeaderString)
   local Iterator     = CParser.declarationIterator(CParserOptions, LineIterator, InputFilename)
   local Action       = Iterator()
   while Action do
@@ -410,17 +426,86 @@ end
 -- STRUCT TYPE                                                                --
 --------------------------------------------------------------------------------
 
-local function EmitStructType (Stream, StructName, StructAction)
-  -- StructNode: {tag="Struct", n="Point", ...}
+-- Detect COM interface by reading attribute
+local function HasWin32ComInterfaceAttribute (StructNode)
+  local Attributes = StructNode.attr
+  local Index      = 1
+  local Count
+  if Attributes then
+    Count = #Attributes
+  else
+    Count = 0
+  end
+  local Found = false
+  while (not Found) and (Index <= Count) do
+    if (Attributes[Index] == "comexe_win32com_interface") then
+      Found = true
+    else
+      Index = (Index + 1)
+    end
+  end
+  return Found
+end
+
+-- Extract method signature from a function-pointer field
+-- Returns: ReturnTypeToken, { ParamTypeToken, ... }
+local function ExtractMethodSignature (FieldType)
+  local CurrentType = UnwrapBaseType(FieldType)
+  local InnerType   = UnwrapBaseType(CurrentType.t)
+  local ReturnToken = ResolveType(InnerType.t, true)
+  local ParamTokens = {}
+  for ParamIndex = 1, #InnerType do
+    local Param = InnerType[ParamIndex]
+    if (not Param.ellipsis) then
+      local ParamToken = ResolveType(Param[1], false)
+      append(ParamTokens, ParamToken)
+    end
+  end
+  return ReturnToken, ParamTokens
+end
+
+local function EmitStructType (Stream, TagName, FieldLines)
+  -- Collect data
+  local Lines = {}
+  for FieldIndex = 1, #FieldLines do
+    local Field = FieldLines[FieldIndex]
+    append(Lines, format("    %s, %q", Field.Token, Field.Name))
+  end
+  local FieldBlock = concat(Lines, ",\n")
+  -- Output structure
+  Stream:write(format("  Library.%s = libffi.newstructure(%q,", TagName, TagName))
+  Stream:write(FieldBlock)
+  Stream:write("  )")
+end
+
+local function EmitComInterface (Stream, TagName, FieldLines)
+  -- Collect data
+  local Lines = {}
+  for FieldIndex = 1, #FieldLines do
+    local Field = FieldLines[FieldIndex]
+    local ReturnToken, ParamTokens = ExtractMethodSignature(Field.FieldType)
+    local Parts = { ReturnToken, format("%q", Field.Name) }
+    for TokenIndex = 1, #ParamTokens do
+      append(Parts, ParamTokens[TokenIndex])
+    end
+    local PartsString = concat(Parts, ", ")
+    append(Lines, format("    { %s }", PartsString))
+  end
+  local FieldBlock = concat(Lines, ",\n")
+  -- Output structure
+  Stream:write(format("  Library.%s = {", TagName))
+  Stream:write(FieldBlock)
+  Stream:write("  }")
+end
+
+local function EmitStructTypeOrComInterface (Stream, StructName, StructAction)
   local StructNode = UnwrapBaseType(StructAction.type)
   local TagName    = StructNode.n
   if (TagName == nil) then
     TagName = StructName
   end
-  -- Write structure
-  Stream:write(format("  Library.%s = libffi.newstructure(%q,", TagName, TagName))
+  -- Collect fields
   local FieldLines = {}
-  -- Collect struct fields ("libffi.sint32, "fieldname")
   for FieldIndex = 1, #StructNode do
     local Pair = StructNode[FieldIndex]
     if Pair.bitfield then
@@ -430,15 +515,17 @@ local function EmitStructType (Stream, StructName, StructAction)
       local FieldName = Pair[2]
       if FieldName then
         local FfiToken = ResolveFieldType(FieldType)
-        local NewLine  = format("    %s, %q", FfiToken, FieldName)
+        local NewLine  = { Token = FfiToken, Name = FieldName, FieldType = FieldType }
         append(FieldLines, NewLine)
       end
     end
   end
-  -- Emit field lines joined with commas
-  local FieldBlock = concat(FieldLines, ",\n")
-  Stream:write(FieldBlock)
-  Stream:write("  )")
+  -- Emit structure or Win32 COM interface
+  if HasWin32ComInterfaceAttribute(StructNode) then
+    EmitComInterface(Stream, TagName, FieldLines)
+  else
+    EmitStructType(Stream, TagName, FieldLines)
+  end
 end
 
 -- cparser function type looks like:
@@ -528,7 +615,7 @@ local function GenerateOutput (Constants, Structures, Functions, InputPath)
     for StructureIndex = 1, #StructureNames do
       local StructName   = StructureNames[StructureIndex]
       local StructAction = Structures[StructName]
-      EmitStructType(Stream, StructName, StructAction)
+      EmitStructTypeOrComInterface(Stream, StructName, StructAction)
     end
   end
   -- FUNCTIONS
