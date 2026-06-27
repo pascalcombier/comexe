@@ -24,7 +24,8 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local ffi = require("com.ffi")
+local ffi       = require("com.ffi")
+local SqliteFfi = require("tiny-sqlite3-ffi")
 
 local format  = string.format
 local NULL    = ffi.NULL
@@ -293,8 +294,8 @@ local function InitializeDll ()
   -- Error handling
   local ErrorString
   if NewSqlite then
-    -- Load bindings generated from tiny-sqlite.h
-    NewSqlite:load("tiny-sqlite3-ffi")
+    -- Load bindings generated from tiny-sqlite3.h
+    NewSqlite:attach(SqliteFfi)
     -- Build the type name map
     COLUMN_TYPE_NAME = {
       [NewSqlite.SQLITE_INTEGER] = "integer",

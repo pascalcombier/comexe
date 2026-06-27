@@ -2,12 +2,14 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local ffi = require("com.ffi")
+local ffi     = require("com.ffi")
+local LibcFfi = require("tiny-libc-ffi")
 
 local format = string.format
 
+-- Load DLL and attach FFI interface
 local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so", "linux", "libc.so.6")
-libc:load("tiny-libc-ffi")
+libc:attach(LibcFfi)
 
 local UserStruct = ffi.newstructure("User",
   ffi.int32_t, "Id",

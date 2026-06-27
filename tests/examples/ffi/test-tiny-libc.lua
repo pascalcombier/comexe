@@ -1,9 +1,9 @@
-local ffi = require("com.ffi")
+local ffi     = require("com.ffi")
+local LibcFfi = require("tiny-libc-ffi")
 
+-- Load DLL and attach FFI interface (multiple interface can be attached)
 local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so", "linux", "libc.so.6")
-
--- Attach the interface (multiple interface can be attached)
-libc:load("tiny-libc-ffi")
+libc:attach(LibcFfi)
 
 local Buffer = libc.malloc(1024)
 

@@ -3,7 +3,7 @@
 * [Overview](#overview)
   * [Generating a binding file](#generating-a-binding-file)
   * [Loading a shared library](#loading-a-shared-library)
-  * [Loading a binding](#loading-a-binding)
+  * [Attaching a binding](#attaching-a-binding)
   * [Calling foreign functions](#calling-foreign-functions)
   * [Sorting arrays of structures](#sorting-arrays-of-structures)
 * [FFI Module API](#ffi-module-api)
@@ -109,30 +109,30 @@ local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so", "linux", "
 
 Returns the first matching pair. On Windows it tries `"msvcrt.dll"`, on Linux `"libc.so"` then `"libc.so.1"`. String case matters: use `"linux"`, not `"Linux"`.
 
-## Loading a binding
+## Attaching a binding
 
 ```lua
-local ffi = require("com.ffi")
+local ffi     = require("com.ffi")
+local LibcFfi = require("tiny-libc-ffi")
 
 local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so")
 
--- Load and bind the interface to the libc
-libc:load("tiny-libc-ffi")
+libc:attach(LibcFfi)
 ```
 
-`libc:load("tiny-libc-ffi")` calls `require("tiny-libc-ffi")` like a normal Lua module and binds the functions to the library.
+`require("tiny-libc-ffi")` loads the FFI binding module. `libc:attach(LibcFfi)` registers its functions, constants, and structures on the library object.
 
 ## Calling foreign functions
 
 **[test-tiny-libc.lua](../tests/examples/ffi/test-tiny-libc.lua)**
 
 ```lua
-local ffi = require("com.ffi")
+local ffi     = require("com.ffi")
+local LibcFfi = require("tiny-libc-ffi")
 
-local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so")
-
--- Load and bind the interface to the libc
-libc:load("tiny-libc-ffi")
+-- Load DLL and attach FFI interface (multiple interface can be attached)
+local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so", "linux", "libc.so.6")
+libc:attach(LibcFfi)
 
 local Buffer = libc.malloc(1024)
 
@@ -163,12 +163,14 @@ This example sorts an **array of structures** by calling `qsort` with a **Lua ca
 **[test-doc-struct-qsort.lua](../tests/examples/ffi/test-doc-struct-qsort.lua)**
 
 ```lua
-local ffi = require("com.ffi")
+local ffi     = require("com.ffi")
+local LibcFfi = require("tiny-libc-ffi")
 
 local format = string.format
 
-local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so")
-libc:load("tiny-libc-ffi")
+-- Load DLL and attach FFI interface
+local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so", "linux", "libc.so.6")
+libc:attach(LibcFfi)
 
 local UserStruct = ffi.newstructure("User",
   ffi.int32_t, "Id",
@@ -240,13 +242,13 @@ After
 ## Basic workflow
 
 ```lua
-local ffi = require("com.ffi")
+local ffi          = require("com.ffi")
+local InterfaceFfi = require("interface-ffi")
 
 -- Load the DLL
 local dll = ffi.loadlib("library.dll")
 
--- Load and bind the interface to the library
-dll:load("interface-ffi")
+dll:attach(InterfaceFfi)
 
 -- Call the functions
 dll.myfunction()
@@ -296,7 +298,7 @@ Library objects are returned by `ffi.loadlib`.
 |--------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
 | `lib:bind(ReturnType, "Name", ParamType1, ...)`              | Return a Lua function that calls the named symbol with the given signature.                                                          |
 | `lib:variadicbind(ReturnType, "Name", FixedParamType1, ...)` | Return a Lua variadic wrapper. Types of variadic arguments are inferred on each call and wrappers are cached per inferred signature. |
-| `lib:load("ModuleName")`                                     | Load a binding module that registers functions on this library.                                                                      |
+| `lib:attach(ModuleTable)`                                    | Attach a module table (from `require`) that registers functions, constants, and structures on this library.                          |
 | `lib:addlibrary(...)`                                        | Load an additional shared library. Symbols resolve across all loaded libraries. Accepts same args as `ffi.loadlib`.                  |
 
 Example:
@@ -329,11 +331,13 @@ For `variadicbind`, C types are inferred:
 `lib:addlibrary` loads additional shared libraries. This allows a single binding file to link multiple DLLs. Symbols are looked up across all loaded libraries:
 
 ```lua
+local Win32Ffi = require("win32-ffi")
+
 local win32 = ffi.loadlib("kernel32.dll")
 win32:addlibrary("user32.dll")
 win32:addlibrary("advapi32.dll")
 win32:addlibrary("shell32.dll")
-win32:load("win32-ffi")
+win32:attach(Win32Ffi)
 ```
 
 ## Array objects
@@ -409,8 +413,10 @@ ffi.free(Buffer)
 `malloc` can also be called directly from the standard C library, bypassing `mimalloc`. Unlike `ffi.malloc`, the returned pointer may be `NULL`.
 
 ```lua
+local LibcFfi = require("tiny-libc-ffi")
+
 local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so")
-libc:load("tiny-libc-ffi")
+libc:attach(LibcFfi)
 
 local Buffer = libc.malloc(1024)
 if (Buffer ~= ffi.NULL) then
@@ -448,8 +454,10 @@ end
 The `NULL` pointer in FFI is a **light userdata**, not Lua's `nil`. Always use `ffi.NULL` for comparison, never `nil`:
 
 ```lua
+local LibcFfi = require("tiny-libc-ffi")
+
 local libc = ffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so")
-libc:load("tiny-libc-ffi")
+libc:attach(LibcFfi)
 
 local Buffer = libc.malloc(1024)
 if (Buffer == ffi.NULL) then

@@ -750,9 +750,7 @@ local function LIBRARY_MethodAddLibrary (Library, ...)
   return Result, ErrorMessage
 end
 
-local function LIBRARY_MethodLoad (Library, ModuleName)
-  -- "require" without pcall will emit an error
-  local Module = require(ModuleName)
+local function LIBRARY_MethodAttach (Library, Module)
   assert(Module.bind, "FFI binding module does not export bind function")
   Module.bind(Library)
 end
@@ -769,7 +767,7 @@ local LIBRARY_Metatable = {
     addlibrary   = LIBRARY_MethodAddLibrary,
     bind         = LIBRARY_MethodBind,
     variadicbind = LIBRARY_MethodVariadicBind,
-    load         = LIBRARY_MethodLoad,
+    attach       = LIBRARY_MethodAttach,
   }
 }
 

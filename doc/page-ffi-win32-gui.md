@@ -4,7 +4,7 @@
 * [References](#references)
 * [Implementing the application](#implementing-the-application)
   * [Win32 binding](#win32-binding)
-  * [Loading Win32 DLLs and the generated binding](#loading-win32-dlls-and-the-generated-binding)
+  * [Loading Win32 DLLs and attaching the generated Win32 binding](#loading-win32-dlls-and-attaching-the-generated-win32-binding)
   * [Unicode conversion](#unicode-conversion)
   * [Example Structure](#example-structure)
   * [State Machine](#state-machine)
@@ -46,16 +46,19 @@ Compile the Win32 declarations into a Lua binding:
 
 **[tiny-win32.h](../tests/examples/ffi/tiny-win32.h)** → `lua55ce -x --compile` → **[tiny-win32-ffi.lua](../tests/examples/ffi/tiny-win32-ffi.lua)**
 
-## Loading Win32 DLLs and the generated binding
+## Attaching the generated Win32 binding
 
-The Win32 API is split across several DLLs. All declarations go in one header, so we maintain only one binding. Load the DLLs and bind the interface together:
+The Win32 API is split across several DLLs. All declarations go in one header, so we maintain only one binding. Load the DLLs and attach the interface together:
 
 ```lua
-local ffi   = require("com.ffi")
+local ffi      = require("com.ffi")
+local Win32Ffi = require("tiny-win32-ffi")
+
 local win32 = ffi.loadlib("kernel32.dll")
 win32:addlibrary("user32.dll")
 win32:addlibrary("gdi32.dll")
-win32:load("tiny-win32-ffi")
+
+win32:attach(Win32Ffi)
 ```
 
 After loading, `win32` exposes the Win32 constants and functions used below.

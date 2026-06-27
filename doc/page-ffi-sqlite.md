@@ -9,7 +9,7 @@
   * [Compiling the C header](#compiling-the-c-header)
 * [Implementing the high-level interface](#implementing-the-high-level-interface)
   * [Module architecture](#module-architecture)
-  * [Loading the DLL and the generated binding](#loading-the-dll-and-the-generated-binding)
+  * [Attaching the generated SQLite binding](#attaching-the-generated-sqlite-binding)
   * [Opening the database](#opening-the-database)
   * [Executing SQL statements](#executing-sql-statements)
   * [Creating statements](#creating-statements)
@@ -189,19 +189,22 @@ local STATEMENT_METATABLE = {
 
 Resources are cleaned up automatically by the garbage collector.
 
-## Loading the DLL and the generated binding
+## Attaching the generated SQLite binding
 
-Load the shared library and bind the functions:
+Load the shared library and attach the bindings:
 
 ```lua
+local ffi       = require("com.ffi")
+local SqliteFfi = require("tiny-sqlite3-ffi")
+
 local function InitializeDll ()
   -- Load shared library
   local NewSqlite = ffi.loadlib("windows", "sqlite3.dll", "linux", "libsqlite3.so.0")
   -- Error handling
   local ErrorString
   if NewSqlite then
-    -- Load bindings generated from tiny-sqlite.h
-    NewSqlite:load("tiny-sqlite3-ffi")
+    -- Attach bindings generated from tiny-sqlite3.h
+    NewSqlite:attach(SqliteFfi)
     -- Build the type name map
     COLUMN_TYPE_NAME = {
       [NewSqlite.SQLITE_INTEGER] = "integer",

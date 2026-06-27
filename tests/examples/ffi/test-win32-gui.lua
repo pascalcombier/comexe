@@ -20,7 +20,8 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local ffi = require("com.ffi")
+local ffi      = require("com.ffi")
+local Win32Ffi = require("tiny-win32-ffi")
 
 local format = string.format
 
@@ -41,7 +42,7 @@ local win32 = ffi.loadlib("kernel32.dll")
 win32:addlibrary("user32.dll")
 win32:addlibrary("gdi32.dll")
 
-win32:load("tiny-win32-ffi")
+win32:attach(Win32Ffi)
 
 local GetMessageA             = win32.GetMessageA
 local TranslateMessage        = win32.TranslateMessage
