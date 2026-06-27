@@ -46,7 +46,7 @@ Compile the Win32 declarations into a Lua binding:
 
 **[tiny-win32.h](../tests/examples/ffi/tiny-win32.h)** → `lua55ce -x --compile` → **[tiny-win32-ffi.lua](../tests/examples/ffi/tiny-win32-ffi.lua)**
 
-## Attaching the generated Win32 binding
+## Loading Win32 DLLs and attaching the generated Win32 binding
 
 The Win32 API is split across several DLLs. All declarations go in one header, so we maintain only one binding. Load the DLLs and attach the interface together:
 
