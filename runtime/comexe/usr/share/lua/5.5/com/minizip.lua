@@ -1,6 +1,6 @@
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- DOCUMENTATION                                                              --
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 -- We only support new ZIP creation, and not ZIP edition. Minizip does not
 -- support ZIP edition, it just support APPEND_STATUS_ADDINZIP which essentially
@@ -10,9 +10,9 @@
 -- We remove the need for APPEND_STATUS_ADDINZIP by providing ZIP_NewMerger: one
 -- can create a new ZIP by merging multiple directories/ZIP together.
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- MODULE                                                                     --
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 local MiniZip = require("com.raw.minizip")
 local Runtime = require("com.runtime")
@@ -55,9 +55,9 @@ local Z_NO_COMPRESSION          = MiniZip.Z_NO_COMPRESSION
 local Z_BEST_SPEED              = MiniZip.Z_BEST_SPEED
 local Z_BEST_COMPRESSION        = MiniZip.Z_BEST_COMPRESSION
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- LOCAL FUNCTIONS                                                            --
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 local function ZIP_HandleFile (UnzFile, FileInfo, EntryCallback)
   -- Local variables
@@ -133,9 +133,9 @@ local function ZIP_IterateRead (ZipFilename, EntryFunc)
   return Success, ErrorMessage
 end
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- TYPE ARCHIVE READER                                                        --
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 local function ZIPR_MethodClose (ReaderObject)
   -- Retrieve handle
@@ -223,9 +223,9 @@ local function ZIP_NewReader (ZipFilename)
   return NewReaderObject, ErrorMessage
 end
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- TYPE ARCHIVE WRITER                                                        --
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 local function ZIPW_MethodClose (WriterObject)
   -- Retrieve the zip handle
@@ -304,9 +304,9 @@ local function ZIP_NewWriter (ZipFilename, OptionalMode, OptionalCompressionLeve
   return NewWriterObject, ErrorMessage
 end
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- ZIP MERGER                                                                 --
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 -- Add an explicit entry to the ZIP
 local function ZIPM_MergerAddEntry (Merger, ZipEntryName, FileContents)
@@ -562,16 +562,16 @@ local function ZIP_NewMerger (ZipFilename, CompressionLevel, Options)
   return NewZipMerger
 end
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- MODULE                                                                     --
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 local PUBLIC_API = {
   -- Functions
-  NewReader   = ZIP_NewReader,
-  IterateRead = ZIP_IterateRead,
-  NewWriter   = ZIP_NewWriter, --  Low-level writer
-  NewMerger   = ZIP_NewMerger, -- High-level writer
+  newreader   = ZIP_NewReader,
+  iterateread = ZIP_IterateRead,
+  newwriter   = ZIP_NewWriter, --  Low-level writer
+  newmerger   = ZIP_NewMerger, -- High-level writer
   -- Constants
   APPEND_STATUS_CREATE      = APPEND_STATUS_CREATE,
   APPEND_STATUS_CREATEAFTER = APPEND_STATUS_CREATEAFTER,

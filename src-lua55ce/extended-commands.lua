@@ -17,7 +17,7 @@
 --------------------------------------------------------------------------------
 
 local Runtime     = require("com.runtime")
-local Minizip     = require("lib-minizip")
+local Minizip     = require("com.minizip")
 local Http        = require("socket.http")
 local MiniHttpLib = require("com.mini-httpd-lib")
 local Url         = require("socket.url")
@@ -49,8 +49,8 @@ local request          = Http.request
 local parseheadervalue = MiniHttpLib.parseheadervalue
 local parseurl         = Url.parse
 
-local IterateRead        = Minizip.IterateRead
-local NewMerger          = Minizip.NewMerger
+local IterateRead        = Minizip.iterateread
+local NewMerger          = Minizip.newmerger
 local Z_BEST_COMPRESSION = Minizip.Z_BEST_COMPRESSION
 
 local COMEXE_EXE            = getparam("LUA-EXE")

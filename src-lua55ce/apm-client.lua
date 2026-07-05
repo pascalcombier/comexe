@@ -44,7 +44,7 @@
 --------------------------------------------------------------------------------
 
 local Runtime    = require("com.runtime")
-local Minizip    = require("lib-minizip")
+local Minizip    = require("com.minizip")
 local Http       = require("socket.http")
 local Url        = require("socket.url")
 local serializer = require("trivial-serializer")
@@ -63,8 +63,8 @@ local directoryexists = Runtime.directoryexists
 local newpathname     = Runtime.newpathname
 local makedirectory   = Runtime.makedirectory
 local request         = Http.request
-local IterateRead     = Minizip.IterateRead
-local NewReader       = Minizip.NewReader
+local IterateRead     = Minizip.iterateread
+local NewReader       = Minizip.newreader
 
 local APM_LOCAL_PACKAGES    = apmcommon.localpackages
 local splitnameversion      = apmcommon.splitnameversion
