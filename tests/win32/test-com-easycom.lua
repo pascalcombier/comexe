@@ -129,7 +129,7 @@ function TestCom_002_ExcelApi (Filename)
   Reporter:expect("EXCEL-API-022", (ErrorMessage == nil))
   
   if NewActiveSheet then
-  local Value, Type, ErrorMessage = NewActiveSheet:set("Name", "TestNewSheet1")
+    local Value, Type, ErrorMessage = NewActiveSheet:set("Name", "TestNewSheet1")
     Reporter:expect("EXCEL-API-023", (Value == nil))
     Reporter:expect("EXCEL-API-024", (ErrorMessage == nil))
     Reporter:expect("EXCEL-API-025", (Type == "VT_EMPTY"))
@@ -142,7 +142,7 @@ function TestCom_002_ExcelApi (Filename)
   Reporter:expect("EXCEL-API-028", (ErrorMessage == nil))
   
   if NewActiveSheet then
-  local Value, Type, ErrorMessage = NewActiveSheet:set("Name", "TestNewSheet2")
+    local Value, Type, ErrorMessage = NewActiveSheet:set("Name", "TestNewSheet2")
     Reporter:expect("EXCEL-API-029", (Value == nil))
     Reporter:expect("EXCEL-API-030", (ErrorMessage == nil))
     Reporter:expect("EXCEL-API-031", (Type == "VT_EMPTY"))
@@ -155,14 +155,14 @@ function TestCom_002_ExcelApi (Filename)
   Reporter:expect("EXCEL-API-034", (ErrorMessage == nil))
 
   if NewActiveSheet then
-  local Value, Type, ErrorMessage = NewActiveSheet:set("Name", "TestNewSheet3")
+    local Value, Type, ErrorMessage = NewActiveSheet:set("Name", "TestNewSheet3")
     Reporter:expect("EXCEL-API-035", (Value == nil))
     Reporter:expect("EXCEL-API-036", (ErrorMessage == nil))
     Reporter:expect("EXCEL-API-037", (Type == "VT_EMPTY"))
   end
 
   local function SetCellValue (Sheet, Address, Value)
-  local Range, Type, ErrorMessage = Sheet:get("Range", Address)
+    local Range, Type, ErrorMessage = Sheet:get("Range", Address)
     -- simplified prefix (uses Address which is stable and readable)
     local Prefix = format("EXCEL_API_038_%s", Address)
     Reporter:expect(format("%s_01", Prefix), (Range ~= nil))
@@ -172,7 +172,7 @@ function TestCom_002_ExcelApi (Filename)
       Reporter:expect(format("%s_04_EXIT", Prefix), false)
       return false
     end
-  local Value2, Type, ErrorMessage = Range:set("Value", Value)
+    local Value2, Type, ErrorMessage = Range:set("Value", Value)
     Reporter:expect(format("%s_04", Prefix), (Value2 == nil))
     Reporter:expect(format("%s_05", Prefix), (Type == "VT_EMPTY"))
     Reporter:expect(format("%s_06", Prefix), (ErrorMessage == nil))
@@ -410,7 +410,7 @@ function TestCom_002_ExcelApi (Filename)
   Reporter:expect("EXCEL-API-111", (ErrorMessage == nil))
   
   if ChartTitle then
-  local Value, Type, ErrorMessage = ChartTitle:set("Text", "Com API")
+    local Value, Type, ErrorMessage = ChartTitle:set("Text", "Com API")
     Reporter:expect("EXCEL-API-112", (Value == nil))
     Reporter:expect("EXCEL-API-113", (Type == "VT_EMPTY"))
     Reporter:expect("EXCEL-API-114", (ErrorMessage == nil))
@@ -695,7 +695,7 @@ function TestCom_003_DispHelpExcel1 (Filename)
   -- headings
   local Headings = {"Mammals", "Birds", "Reptiles", "Fishes", "Plants"} -- szHeadings
   for Index = 1, #Headings do
-  local Range, Type, ErrorMessage = ActiveSheet:get("Cells", 1, Index)
+    local Range, Type, ErrorMessage = ActiveSheet:get("Cells", 1, Index)
     local Prefix = format("DISP_EXCEL_1_022_%3.3d", Index)
     Reporter:expect(format("%s_001", Prefix), (Range ~= nil))
     Reporter:expect(format("%s_002", Prefix), (Type == "VT_DISPATCH"))
@@ -704,7 +704,7 @@ function TestCom_003_DispHelpExcel1 (Filename)
       Reporter:expect("DISP_EXCEL_1_EARLY-RETURN-005", false)
       return nil, nil
     end
-  local Value2, Type, ErrorMessage = Range:set("Value", Headings[Index])
+    local Value2, Type, ErrorMessage = Range:set("Value", Headings[Index])
     Reporter:expect(format("%s_004", Prefix), (Value2 == nil))
     Reporter:expect(format("%s_005", Prefix), (Type == "VT_EMPTY"))
     Reporter:expect(format("%s_006", Prefix), (ErrorMessage == nil))
@@ -786,7 +786,7 @@ function TestCom_003_DispHelpExcel1 (Filename)
   local Values = {184, 182, 57, 162, 1276}
   local Columns = {"A", "B", "C", "D", "E"}
   for Index = 1, #Values do
-  local Range, Type, ErrorMessage = ActiveSheet:get("Range", format("%s2", Columns[Index]))
+    local Range, Type, ErrorMessage = ActiveSheet:get("Range", format("%s2", Columns[Index]))
     local Prefix = format("DISP_EXCEL_1_083_%3.3d", Index)
     Reporter:expect(format("%s_001", Prefix), (Range ~= nil))
     Reporter:expect(format("%s_002", Prefix), (Type == "VT_DISPATCH"))
@@ -795,7 +795,7 @@ function TestCom_003_DispHelpExcel1 (Filename)
       Reporter:expect(format("%s_004_EXIT", Prefix), false)
       return nil, nil
     end
-  local Value2, Type, ErrorMessage = Range:set("Value", Values[Index])
+    local Value2, Type, ErrorMessage = Range:set("Value", Values[Index])
     Reporter:expect(format("%s_004", Prefix), (Value2 == nil))
     Reporter:expect(format("%s_005", Prefix), (Type == "VT_EMPTY"))
     Reporter:expect(format("%s_006", Prefix), (ErrorMessage == nil))
@@ -951,7 +951,7 @@ function TestCom_003_DispHelpExcel1 (Filename)
   Reporter:expect("DISP_EXCEL_1_163", (ErrorMessage == nil))
 
   if (ChartTitle) then
-  local Value, Type, ErrorMessage = ChartTitle:set("Text", "Critically Endangered Plants and Animals")
+    local Value, Type, ErrorMessage = ChartTitle:set("Text", "Critically Endangered Plants and Animals")
     Reporter:expect("DISP_EXCEL_1_164", (Value == nil))
     Reporter:expect("DISP_EXCEL_1_165", (Type == "VT_EMPTY"))
     Reporter:expect("DISP_EXCEL_1_166", (ErrorMessage == nil))
@@ -968,14 +968,14 @@ function TestCom_003_DispHelpExcel1 (Filename)
   Reporter:expect("DISP_EXCEL_1_170", (ErrorMessage == nil))
 
   if (ActiveWorkbook) then
-  local Value, Type, ErrorMessage = ActiveWorkbook:set("Saved", true)
+    local Value, Type, ErrorMessage = ActiveWorkbook:set("Saved", true)
     Reporter:expect("DISP_EXCEL_1_171", (Value == nil))
     Reporter:expect("DISP_EXCEL_1_172", (Type == "VT_EMPTY"))
     Reporter:expect("DISP_EXCEL_1_173", (ErrorMessage == nil))
   end
 
   if Filename and Workbook then
-  local Value, Type, ErrorMessage = Workbook:call("SaveAs", Filename)
+    local Value, Type, ErrorMessage = Workbook:call("SaveAs", Filename)
     Reporter:expect("DISP_EXCEL_1_174", (ErrorMessage == nil))
   end
 
@@ -1039,7 +1039,7 @@ function TestCom_004_DispHelpExcel2 (Filename)
   for RowIndex = 1, 15 do
     for ColIndex = 1, 15 do
       CellCounter = CellCounter + 1
-  local Range, Type, ErrorMessage = ActiveSheet:get("Cells", RowIndex, ColIndex)
+      local Range, Type, ErrorMessage = ActiveSheet:get("Cells", RowIndex, ColIndex)
       Reporter:expect(format("%s_%03d_01", CellPrefix, CellCounter), (Range ~= nil))
       Reporter:expect(format("%s_%03d_02", CellPrefix, CellCounter), (Type == "VT_DISPATCH"))
       Reporter:expect(format("%s_%03d_03", CellPrefix, CellCounter), (ErrorMessage == nil))
@@ -1047,7 +1047,7 @@ function TestCom_004_DispHelpExcel2 (Filename)
         Reporter:expect(format("%s_%03d_04_EXIT", CellPrefix, CellCounter), false)
         return nil, nil
       end
-  local Value2, Type, ErrorMessage = Range:set("Value", RowIndex * ColIndex)
+      local Value2, Type, ErrorMessage = Range:set("Value", RowIndex * ColIndex)
       Reporter:expect(format("%s_%03d_04", CellPrefix, CellCounter), (Value2 == nil))
       Reporter:expect(format("%s_%03d_05", CellPrefix, CellCounter), (Type == "VT_EMPTY"))
       Reporter:expect(format("%s_%03d_06", CellPrefix, CellCounter), (ErrorMessage == nil))
@@ -1099,7 +1099,7 @@ function TestCom_004_DispHelpExcel2 (Filename)
 
   -- Save and quit
   if Filename then
-  local Value, Type, ErrorMessage = Workbook:call("SaveAs", Filename)
+    local Value, Type, ErrorMessage = Workbook:call("SaveAs", Filename)
     Reporter:expect("DISP_EXCEL_2_021", (ErrorMessage == nil))
   end
 
@@ -1121,7 +1121,7 @@ function TestCom_005_PropApi (Filename)
   local Members = Fso:members()
   for Key, Value in pairs(Members) do
     -- minimal output to avoid changing test behavior
-     print(format("LOG MEMBER %8.8X %s", Key, Value))
+    print(format("LOG MEMBER %8.8X %s", Key, Value))
   end
 
   local Value, Type, ErrorMessage = Fso:call("GetTempName")
@@ -1155,14 +1155,14 @@ function TestCom_005_PropApi (Filename)
     local NewEnum = com.castunknown(EnumObject, "IEnumVARIANT")
     Reporter:expect("DISP_PROP_1_010", (NewEnum ~= nil))
     if NewEnum then
-  local FirstObject, Type, ErrorMessage = NewEnum:next()
+      local FirstObject, Type, ErrorMessage = NewEnum:next()
       Reporter:expect("DISP_PROP_1_011", (ErrorMessage == nil))
       Reporter:expect("DISP_PROP_1_012", (FirstObject ~= nil))
       if FirstObject then
         local TypeName = FirstObject:gettype()
         local Members = FirstObject:members()
         for Key, Value in pairs(Members) do
-           print(format("LOG MEMBER %8.8X %s", Key, Value))
+          print(format("LOG MEMBER %8.8X %s", Key, Value))
         end
       end
       NewEnum:reset()
@@ -1178,7 +1178,7 @@ function TestCom_005_PropApi (Filename)
             local FileSystem  = Value:get("FileSystem")
             local VolumeName  = Value:get("VolumeName")
             local ShareName   = Value:get("ShareName")
-             print("LOG ", DriveExists, Type, DriveLetter, FileSystem, VolumeName, ShareName)
+            print("LOG ", DriveExists, Type, DriveLetter, FileSystem, VolumeName, ShareName)
           else
             ShouldContinue = false
           end
@@ -1210,6 +1210,85 @@ function TestCom_006_GarbageCollector ()
   end
   -- No file created
   return nil, nil
+end
+
+-- We add an issue with array of strings
+function TestCom_007_SafeArrayStrings (Filename)
+  local Excel = newobject("Excel.Application")
+  Reporter:expect("SAFEARRAY-STRINGS-001", Excel)
+
+  if (not Excel) then
+    Reporter:expect("SAFEARRAY-STRINGS-001_EXIT", false)
+    return nil, nil
+  end
+
+  Excel:set("DisplayAlerts", false)
+  Excel:set("Visible", true)
+
+  local Workbooks = Excel:get("Workbooks")
+  Reporter:expect("SAFEARRAY-STRINGS-002", Workbooks)
+
+  if (not Workbooks) then
+    Reporter:expect("SAFEARRAY-STRINGS-002_EXIT", false)
+    return nil, nil
+  end
+
+  local Workbook = Workbooks:call("Add")
+  Reporter:expect("SAFEARRAY-STRINGS-003", Workbook)
+
+  if (not Workbook) then
+    Reporter:expect("SAFEARRAY-STRINGS-003_EXIT", false)
+    return nil, nil
+  end
+
+  local ActiveSheet = Excel:get("ActiveSheet")
+  Reporter:expect("SAFEARRAY-STRINGS-004", ActiveSheet)
+
+  if (not ActiveSheet) then
+    Reporter:expect("SAFEARRAY-STRINGS-004_EXIT", false)
+    return nil, nil
+  end
+
+  -- Create 3x2 SafeArray with mixed string+number data
+  local SafeArray = newsafearray("VT_VARIANT", 1, 3, 1, 2)
+  Reporter:expect("SAFEARRAY-STRINGS-005", SafeArray)
+
+  local TestData = {"Name", "Value", "Alpha", 100, "Beta", 200}
+  local Count = SafeArray:write(TestData)
+  Reporter:expect("SAFEARRAY-STRINGS-006", Count == 6)
+
+  -- Write to range A1:B3
+  local Range = ActiveSheet:get("Range", "A1:B3")
+  Reporter:expect("SAFEARRAY-STRINGS-007", Range)
+
+  local Value = Range:set("Value", SafeArray)
+  Reporter:expect("SAFEARRAY-STRINGS-008", Value == nil)
+
+  -- Read back and verify individual cells
+  local Expected = {
+    { "Name", "Value", "Alpha" },
+    { 100,    "Beta",  200     }
+  }
+  for Col = 1, 2 do
+    for Row = 1, 3 do
+      local Cell                = ActiveSheet:get("Cells", Row, Col)
+      local CellValue, CellType = Cell:get("Value")
+      local ExpectedValue       = Expected[Col][Row]
+      local CheckId             = format("%c%d", (64 + Col), Row)
+      if (type(ExpectedValue) == "string") then
+        Reporter:expect(format("SAFEARRAY-STRINGS-%s-TYPE", CheckId), CellType == "VT_BSTR")
+        Reporter:expect(format("SAFEARRAY-STRINGS-%s-LEN", CheckId), #CellValue == (#ExpectedValue * 2))
+      else
+        Reporter:expect(format("SAFEARRAY-STRINGS-%s-VAL", CheckId), CellValue == ExpectedValue)
+        Reporter:expect(format("SAFEARRAY-STRINGS-%s-TYPE", CheckId), CellType == "VT_R8")
+      end
+    end
+  end
+
+  -- Cleanup
+  Workbook:call("SaveAs", Filename)
+  Excel:call("Quit")
+  return nil, Filename
 end
 
 --------------------------------------------------------------------------------
@@ -1247,6 +1326,7 @@ RunTest("TestCom_003_DispHelpExcel1")
 RunTest("TestCom_004_DispHelpExcel2")
 RunTest("TestCom_005_PropApi")
 RunTest("TestCom_006_GarbageCollector")
+RunTest("TestCom_007_SafeArrayStrings")
 
 Reporter:printf("== SUMMARY ==")
 Reporter:summary("os.exit")
