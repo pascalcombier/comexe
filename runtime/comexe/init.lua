@@ -681,10 +681,10 @@ local function PATH_MethodConcat (LeftPath, RightPath)
 end
 
 local PATH_MetatableImpl = {
-  -- Generic methods
+  -- METATABLE_LuaDefinedMethods
   __tostring = PATH_MethodToNative,
   __concat   = PATH_MethodConcat,
-  -- Specific methods
+  -- METATABLE_UserDefinedMethods
   __index = {
     parent       = PATH_MethodParent,
     child        = PATH_MethodChild,
@@ -822,9 +822,9 @@ local function BUFFER_MethodWrite (BufferObject, Data, Index)
 end
 
 local BUFFER_Metatable = {
-  -- Generic methods
+  -- METATABLE_LuaDefinedMethods
   __gc = BUFFER_MethodGarbage,
-  -- Custom methods
+  -- METATABLE_UserDefinedMethods
   __index = {
     getcapacity    = BUFFER_GetCapacity,
     ensurecapacity = BUFFER_MethodEnsureCapacity,
