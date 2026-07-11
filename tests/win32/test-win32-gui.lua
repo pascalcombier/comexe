@@ -667,12 +667,7 @@ local MAX_TIMER_COUNT = 6
 
 -- Class name allocation
 local ClassName    = "MAIN_WindowClass\0"
-local ClassNamePtr = malloc(#ClassName)
-assert((ClassNamePtr ~= NULL), "malloc failed for class name")
-memset(ClassNamePtr, 0, #ClassName)
-
--- TODO: find a better way to write the string
-LibFFI.writememory(ClassNamePtr, 0, ClassName)
+local ClassNamePtr = LibFFI.stringpointer(ClassName)
 
 local IconResourceId     = LibFFI.newpointer(0, IDI_APPLICATION)
 local CursorResourceId   = LibFFI.newpointer(0, IDC_ARROW)

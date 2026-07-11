@@ -993,9 +993,11 @@ local PUBLIC_API = {
   memset       = libffi.memset,
   NULL         = libffi.NULL,
   -- C-string helpers
-  allocstring = libffi.allocstring,
-  readstring  = libffi.readstring,
-  newcstring  = fficstring.newcstring,
+  allocstring   = libffi.allocstring,
+  readstring    = libffi.readstring,
+  readstringw   = libffi.readstringw,
+  stringpointer = libffi.stringpointer,
+  newcstring    = fficstring.newcstring,
   -- ffi types
   void    = void,
   uint8   = uint8,

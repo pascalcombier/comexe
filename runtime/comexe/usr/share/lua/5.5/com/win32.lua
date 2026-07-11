@@ -59,7 +59,9 @@ local regdeletekey    = win32.regdeletekey
 local regdeletevalue  = win32.regdeletevalue
 local regflushkey     = win32.regflushkey
 
-local NULL = ffi.NULL
+local NULL        = ffi.NULL
+local readstring  = ffi.readstring
+local readstringw = ffi.readstringw
 
 --------------------------------------------------------------------------------
 -- GLOBAL VARIABLES                                                           --
@@ -273,7 +275,34 @@ local function WIN32_utf16to8 (StringUtf16)
       end
     end
   end
-  -- Single return at end of function
+  -- Return value
+  return Result, ErrorString
+end
+
+-- This function is in Win32 and not in ffi.lua common to both Linux/Windows.
+-- Because we use the conversion functions from the Win32
+-- Can return nil
+local function WIN32_PointerToString (Address, SourceEncoding, TargetEncoding)
+  local Result
+  local ErrorString
+  if (Address ~= NULL) then
+    local RawBytes
+    if (SourceEncoding == "utf8") then
+      RawBytes = readstring(Address)
+    elseif (SourceEncoding == "utf16") then
+      RawBytes = readstringw(Address)
+    end
+    if (RawBytes and (#RawBytes > 0)) then
+      if (SourceEncoding == TargetEncoding) then
+        Result = RawBytes
+      elseif (SourceEncoding == "utf16") then
+        Result, ErrorString = WIN32_utf16to8(RawBytes)
+      else
+        Result, ErrorString = WIN32_utf8toutf16(RawBytes)
+      end
+    end
+  end
+  -- Return value
   return Result, ErrorString
 end
 
@@ -588,7 +617,7 @@ local function KEY_MethodIterateKeys (KeyObject)
       end
     end
   end
-  -- Single return at end of function (return the prepared iterator)
+  -- Return value
   return NextFunction
 end
 
@@ -1002,8 +1031,9 @@ end
 
 local PUBLIC_API = {
   -- UTF conversions
-  utf8to16 = WIN32_utf8toutf16,
-  utf16to8 = WIN32_utf16to8,
+  utf8to16        = WIN32_utf8toutf16,
+  utf16to8        = WIN32_utf16to8,
+  pointertostring = WIN32_PointerToString,
   -- Registry
   newsam       = REG_NewSam,
   newoptions   = REG_NewOptions,

@@ -1434,7 +1434,7 @@ static int32_t FFI_AllocString (lua_State *LuaState)
 static int FFI_ReadString (lua_State *LuaState)
 {
   char   *Address = lua_touserdata(LuaState, 1);
-  size_t  Offset  = luaL_optinteger(LuaState, 2, 0);
+  size_t  Offset;
   size_t  Length;
 
   /* Avoid crashes for NULL pointers */
@@ -1449,6 +1449,46 @@ static int FFI_ReadString (lua_State *LuaState)
 
     lua_pushlstring(LuaState, &Address[Offset], Length);
   }
+
+  return 1; /* Number of values returned on the stack */
+}
+
+static int FFI_ReadStringW (lua_State *LuaState)
+{
+  char   *Address = lua_touserdata(LuaState, 1);
+  size_t  Offset;
+  size_t  Length;
+  char   *Iter;
+
+  /* Avoid crashes for NULL pointers */
+  if (Address == NULL)
+  {
+    lua_pushnil(LuaState);
+  }
+  else
+  {
+    Offset = luaL_optinteger(LuaState, 2, 0);
+    Iter   = &Address[Offset];
+
+    while ((Iter[0] != '\0') || (Iter[1] != '\0'))
+    {
+      Iter += 2;
+    }
+
+    Length = (size_t)(Iter - &Address[Offset]);
+
+    lua_pushlstring(LuaState, &Address[Offset], Length);
+  }
+
+  return 1; /* Number of values returned on the stack */
+}
+
+static int FFI_StringPointer (lua_State *LuaState)
+{
+  size_t      Length;
+  const char *Data = luaL_checklstring(LuaState, 1, &Length);
+
+  lua_pushlightuserdata(LuaState, (void *)Data);
 
   return 1; /* Number of values returned on the stack */
 }
@@ -1506,6 +1546,8 @@ static const struct luaL_Reg FFI_FUNCTIONS[] =
   /* string helpers */
   { "allocstring",          FFI_AllocString           },
   { "readstring",           FFI_ReadString            },
+  { "readstringw",          FFI_ReadStringW           },
+  { "stringpointer",        FFI_StringPointer         },
   /* over-engineered shit */
   { "freeresources",        FFI_FreeOffsetsBuffer     },
   /* End of list */
