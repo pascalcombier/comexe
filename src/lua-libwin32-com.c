@@ -534,8 +534,8 @@ static int COM_CoCreateInstance (lua_State *LuaState)
 
   HRESULT Result = CoCreateInstance(
     ClassId,
-    NULL,
-    (CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER),
+    NULL,                                         /* Custom limitation */
+    (CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER), /* Custom limitation */
     Iid,
     (void **)&Unknown);
 
@@ -1418,8 +1418,8 @@ static const struct luaL_Reg LWC_FUNCTIONS[] =
   { "safearray_unaccessdata",  SAFEARRAY_UnaccessData   },
   { "safearray_readdata",      SAFEARRAY_ReadData       },
   { "safearray_writedata",     SAFEARRAY_WriteData      },
-  /* Generic COM */
-  { "cocreateinstance",        COM_CoCreateInstance },
+  /* Generic COM (limited version of cocreateinstance) */
+  { "cocreateinstance",        COM_CoCreateInstance     },
   /* IDispatch interface */
   { "idispatch_getidofname",   DISPATCH_GetIdOfName     },
   { "idispatch_invoke",        DISPATCH_Invoke          },
