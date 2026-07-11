@@ -993,6 +993,19 @@ static int LUA_Ref (lua_State *LuaState)
   return 1; /* Number of values returned on the stack */
 }
 
+/* Together LUA_Ref, LUA_GetRef and LUA_Unref are useful when one want to save
+ * an object reference "somewhere" (here in the REGISTRY), an integer Lua
+ * reference will be given, that integer can be sent over threads with
+ * thread. */
+static int LUA_GetRef (lua_State *LuaState)
+{
+  int Reference = luaL_checkinteger(LuaState, 1);
+
+  lua_rawgeti(LuaState, LUA_REGISTRYINDEX, Reference);
+
+  return 1; /* Number of values returned on the stack */
+}
+
 static int LUA_Unref (lua_State *LuaState)
 {
   int Reference = luaL_checkinteger(LuaState, 1);
@@ -1009,6 +1022,7 @@ static const struct luaL_Reg COMRUNTIME_FUNCTIONS[] =
   { "setwarningfunction",     LUA_SetWarningFunction     },
   { "isatty",                 LUA_IsAtty                 },
   { "ref",                    LUA_Ref                    },
+  { "getref",                 LUA_GetRef                 },
   { "unref",                  LUA_Unref                  },
   { NULL, NULL }
 };
