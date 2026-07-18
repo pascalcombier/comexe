@@ -1417,20 +1417,6 @@ static int32_t FFI_Memset (lua_State *LuaState)
 /* C-STRING HELPERS: NULL-TERMINATED STRINGS                                  */
 /*============================================================================*/
 
-static int32_t FFI_AllocString (lua_State *LuaState)
-{
-  size_t      Length;
-  const char *Source  = luaL_checklstring(LuaState, 1, &Length);
-  char       *Pointer = PLAT_SafeAlloc0(1, (Length + 1));
-
-  memcpy(Pointer, Source, Length);
-  Pointer[Length] = '\0';
-
-  lua_pushlightuserdata(LuaState, Pointer);
-
-  return 1; /* Number of values returned on the stack */
-}
-
 static int FFI_ReadString (lua_State *LuaState)
 {
   char   *Address = lua_touserdata(LuaState, 1);
@@ -1544,7 +1530,6 @@ static const struct luaL_Reg FFI_FUNCTIONS[] =
   { "free",                 FFI_Free                  },
   { "memset",               FFI_Memset                },
   /* string helpers */
-  { "allocstring",          FFI_AllocString           },
   { "readstring",           FFI_ReadString            },
   { "readstringw",          FFI_ReadStringW           },
   { "stringpointer",        FFI_StringPointer         },

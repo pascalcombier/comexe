@@ -1472,7 +1472,7 @@ local INIT_RootDir = INIT_DetermineRootDirectory(INIT_RunMode, NewScript)
 -- ZIP   only search in ZIP archive
 local function INIT_LoadResource (Filename, Method)
   -- Default: AUTO
-  Method = Method or "AUTO"
+  Method = (Method or "AUTO")
   -- Variables
   local Content
   local SearchOrder

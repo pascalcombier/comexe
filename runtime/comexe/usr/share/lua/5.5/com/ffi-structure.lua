@@ -28,8 +28,7 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local libffi     = require("com.raw.libffi")
-local fficstring = require("com.ffi-cstring")
+local libffi = require("com.raw.libffi")
 
 local format = string.format
 local append = table.insert
@@ -58,11 +57,10 @@ local float            = libffi.float
 local double           = libffi.double
 local pointer          = libffi.pointer
 local readstring       = libffi.readstring
-local allocstring      = libffi.allocstring
-local free             = libffi.free
+local stringpointer    = libffi.stringpointer
 
--- The CString type constant (shared from ffi-cstring)
-local cstring = fficstring.cstring
+-- The shared cstring type constant
+local cstring = {}
 
 local POINTER_SIZE = gettypesize(pointer)
 
@@ -423,17 +421,15 @@ local function STRUCTURE_INSTANCE_Set (Instance, Name, Value)
   elseif (Field.Type == cstring) then
     local TrackedStrings = Instance.TrackedStrings
     local FieldIndex     = Field.Index
-    local OldPointer     = TrackedStrings[FieldIndex]
-    if OldPointer then
-      free(OldPointer)
-      TrackedStrings[FieldIndex] = nil
-    end
+    -- Release previous reference
+    TrackedStrings[FieldIndex] = nil
+    -- Set new reference
     if (Value == nil) then
       writevalue(BufferPointer, FieldOffset, pointer, nil)
     elseif (type(Value) == "string") then
-      local NewPointer = allocstring(Value)
-      writevalue(BufferPointer, FieldOffset, pointer, NewPointer)
-      TrackedStrings[FieldIndex] = NewPointer
+      local StringPointer = stringpointer(Value)
+      writevalue(BufferPointer, FieldOffset, pointer, StringPointer)
+      TrackedStrings[FieldIndex] = Value
     else
       error(format("cstring field expects nil or string, got %s", type(Value)))
     end
@@ -454,16 +450,7 @@ local function STRUCTURE_INSTANCE_Set (Instance, Name, Value)
   end
 end
 
-local function STRUCTURE_INSTANCE_FreeTrackedStrings (Instance)
-  local TrackedStrings = Instance.TrackedStrings
-  for FieldIndex, PointerValue in pairs(TrackedStrings) do
-    free(PointerValue)
-  end
-end
-
 STRUCTURE_INSTANCE_METATABLE = {
-  -- METATABLE_LuaDefinedMethods
-  __gc = STRUCTURE_INSTANCE_FreeTrackedStrings,
   -- METATABLE_UserDefinedMethods
   __index = {
     getpointer = STRUCTURE_INSTANCE_GetPointer,
@@ -509,6 +496,7 @@ end
 
 local PUBLIC_API = {
   newstruct = NewStructure,
+  cstring   = cstring,
 }
 
 return PUBLIC_API

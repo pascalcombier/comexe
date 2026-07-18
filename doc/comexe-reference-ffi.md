@@ -427,15 +427,14 @@ end
 
 ## Functions
 
-| Function                          | Returns       | Description                                                                                                                 |
-|-----------------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `ffi.getpagesize()`               | integer       | Return the OS page size in bytes.                                                                                           |
-| `ffi.malloc(Size)`                | lightuserdata | Allocate `Size` bytes (zero-initialized). Always returns a valid pointer.                                                   |
-| `ffi.realloc(Pointer, Size)`      | lightuserdata | Resize an existing allocation. Always returns a valid pointer.                                                              |
-| `ffi.free(Pointer)`               |               | Release memory allocated by `ffi.malloc`, `ffi.realloc`, or `ffi.allocstring`.                                              |
-| `ffi.memset(Pointer, Byte, Size)` |               | Fill `Size` bytes at `Pointer` with `Byte` value.                                                                           |
-| `ffi.allocstring(String)`         | lightuserdata | Allocate a null-terminated C-string copy of `String`. Memory is managed manually. Always returns a valid pointer.                                       |
-| `ffi.newcstring(String)`          | table         | Create a GC-managed C-string wrapper. Memory is automatically freed by the garbage collector: no manual `ffi.free` needed. |
+| Function                          | Returns       | Description                                                                                                                        |
+|-----------------------------------|---------------|------------------------------------------------------------------------------------------------------------------------------------|
+| `ffi.getpagesize()`               | integer       | Return the OS page size in bytes.                                                                                                  |
+| `ffi.malloc(Size)`                | lightuserdata | Allocate `Size` bytes (zero-initialized). Always returns a valid pointer.                                                          |
+| `ffi.realloc(Pointer, Size)`      | lightuserdata | Resize an existing allocation. Always returns a valid pointer.                                                                     |
+| `ffi.free(Pointer)`               |               | Release memory allocated by `ffi.malloc` or `ffi.realloc`.                                                                         |
+| `ffi.memset(Pointer, Byte, Size)` |               | Fill `Size` bytes at `Pointer` with `Byte` value.                                                                                  |
+| `ffi.stringpointer(String)`       | lightuserdata | Return a pointer to the internal buffer of a Lua string. The pointer is valid as long as the string is referenced on the Lua side. |
 
 ## Memory ownership
 
@@ -443,8 +442,6 @@ end
 |------------------------------|-------------------|---------------------------|
 | `ffi.malloc(Size)`           | Manual            | `ffi.free`                |
 | `ffi.realloc(Pointer, Size)` | Manual            | `ffi.free`                |
-| `ffi.allocstring(String)`    | Manual            | `ffi.free`                |
-| `ffi.newcstring(String)`     | Automatic         | Garbage collector         |
 | `ffi.newarray(Type, Count)`  | Automatic         | Garbage collector         |
 | `ffi.newinstance(Type)`      | Automatic         | Garbage collector         |
 | `Struct:cast(Pointer)`       | None              | View over existing memory |
@@ -471,5 +468,3 @@ libc.free(Buffer)
 - Currently only 64-bit
 - 32-bit calling convention split (cdecl vs stdcall) is not supported.
 - Nested or recursive callbacks are not supported.
-
-    

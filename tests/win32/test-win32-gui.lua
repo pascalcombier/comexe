@@ -137,7 +137,7 @@ local sint32  = LibFFI.sint32
 local uint64  = LibFFI.uint64
 local sint64  = LibFFI.sint64
 local pointer = LibFFI.pointer
-local cstring = LibFFI.pointer
+local cstring = LibFFI.cstring
 
 local newinstance = LibFFI.newinstance
 
@@ -587,8 +587,8 @@ local WndClassExType, WndClassExError = LibFFI.newstructure(
   pointer, "hIcon",
   pointer, "hCursor",
   pointer, "hbrBackground",
-  pointer, "lpszMenuName",
-  pointer, "lpszClassName",
+  cstring, "lpszMenuName",
+  cstring, "lpszClassName",
   pointer, "hIconSm"
 )
 assert(WndClassExType, WndClassExError)
@@ -664,10 +664,6 @@ local GlobalTimerId = 0 -- 0 is invalid timer ID
 local GlobalTimerCount = 0
 -- After this many triggers we'll exit the message loop
 local MAX_TIMER_COUNT = 6
-
--- Class name allocation
-local ClassName    = "MAIN_WindowClass\0"
-local ClassNamePtr = LibFFI.stringpointer(ClassName)
 
 local IconResourceId     = LibFFI.newpointer(0, IDI_APPLICATION)
 local CursorResourceId   = LibFFI.newpointer(0, IDC_ARROW)
@@ -878,8 +874,8 @@ local function CreateWindow ()
   WndClassElement:set("hIcon", HIcon)
   WndClassElement:set("hCursor", HCursor)
   WndClassElement:set("hbrBackground", WindowColorBrushId)
-  WndClassElement:set("lpszMenuName", NULL)
-  WndClassElement:set("lpszClassName", ClassNamePtr)
+  WndClassElement:set("lpszMenuName",  nil)
+  WndClassElement:set("lpszClassName", "MAIN_WindowClass")
   WndClassElement:set("hIconSm", HIcon)
 
   -- Register the window class
@@ -935,7 +931,6 @@ local function CleanupGlobalStructures ()
     KillTimer(nil, GlobalTimerId)
     GlobalTimerId = 0
   end
-  free(ClassNamePtr)
 end
 
 -- Added for testing but with debug output

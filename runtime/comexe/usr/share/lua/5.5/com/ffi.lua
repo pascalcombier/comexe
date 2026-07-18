@@ -16,9 +16,6 @@
 -- local memset = libc:GetFunction(pointer, "memset", pointer, sint32, uint64)
 -- local strlen = libc:GetFunction(uint64,  "strlen", pointer)
 
--- Types
---   newcstring return a garbage-collected C-string
-
 -- Supported
 --   ReturnCString
 --   CallStructureByValue
@@ -36,7 +33,6 @@
 
 local runtime      = require("com.runtime")
 local libffi       = require("com.raw.libffi")
-local fficstring   = require("com.ffi-cstring")
 local ffistructure = require("com.ffi-structure")
 
 local append     = table.insert
@@ -59,6 +55,7 @@ local freecif             = libffi.freecif
 local freelib             = libffi.freelib
 local freeclosure         = libffi.freeclosure
 local readstring          = libffi.readstring
+local stringpointer       = libffi.stringpointer
 
 local newarray        = libffi.newarray
 local getarraypointer = libffi.getarraypointer
@@ -95,7 +92,7 @@ local int64_t  = libffi.sint64
 local uint64_t = libffi.uint64
 
 -- Special type for automatic conversion between C strings and Lua strings
-local CSTRING = fficstring.cstring
+local CSTRING = ffistructure.cstring
 
 -- Those types might not be present at runtime
 local complex_float  = libffi.complex_float
@@ -223,7 +220,7 @@ end
 -- C ARRAYS: SUPPORT PRIMITIVE TYPES AND STRUCTURES                           --
 --------------------------------------------------------------------------------
 
-local function ARRAY_ConvertWriteValue (Array, Value)
+local function ARRAY_ConvertWriteValue (Array, Index, Value)
   -- Identify array of structures
   local FfiType    = Array.FfiType
   local StructType = FFI_STRUCT_TYPES[FfiType]
@@ -247,7 +244,8 @@ local function ARRAY_ConvertWriteValue (Array, Value)
       end
       ConvertedValue = Value:getpointer()
     elseif (ValueType == "string") then
-      error("pointer array expects nil, userdata, or object with getpointer() method; use newcstring() for Lua strings")
+      Array.TrackedStrings[Index] = Value
+      ConvertedValue = stringpointer(Value)
     else
       error(format("pointer array expects nil, userdata, or object with getpointer() method, got %s", ValueType))
     end
@@ -296,9 +294,10 @@ local function ARRAY_CopyFrom (Array, LuaTable)
   -- Validate inputs
   assert((type(LuaTable) == "table"), "array copyfrom expects a table")
   -- Retrieve data
-  local ArrayC   = Array.ArrayC
-  local Count    = Array.Count
-  local NewCount = #LuaTable
+  local TrackedStrings = Array.TrackedStrings
+  local ArrayC         = Array.ArrayC
+  local Count          = Array.Count
+  local NewCount       = #LuaTable
   assert((NewCount >= 1), "array copyfrom expects at least 1 element")
   -- Resize C side if needed
   if (NewCount ~= Count) then
@@ -308,11 +307,15 @@ local function ARRAY_CopyFrom (Array, LuaTable)
     Array.Pointer = getarraypointer(ArrayC)
     Array.Count   = arraycount(ArrayC)
   end
+  -- Reset tracked strings
+  for Index = 1, #TrackedStrings do
+    TrackedStrings[Index] = nil
+  end
   -- Create a temporary array with converted values (structures)
   local NewValues = {}
   for Index = 1, NewCount do
     local ComplexValue = LuaTable[Index]
-    local SimpleValue  = ARRAY_ConvertWriteValue(Array, ComplexValue)
+    local SimpleValue  = ARRAY_ConvertWriteValue(Array, Index, ComplexValue)
     NewValues[Index] = SimpleValue
   end
   -- Set the values
@@ -354,8 +357,9 @@ local function ARRAY_SetValue (Array, Index, Value)
   -- Validate inputs
   assert((Index >= 1), format("index must be positive: %d", Index))
   -- Retrieve data
-  local ArrayC = Array.ArrayC
-  local Count  = Array.Count
+  local TrackedStrings = Array.TrackedStrings
+  local ArrayC         = Array.ArrayC
+  local Count          = Array.Count
   -- Resize C side array if needed
   if (Index > Count) then
     -- Resize buffer
@@ -364,8 +368,10 @@ local function ARRAY_SetValue (Array, Index, Value)
     Array.Pointer = getarraypointer(ArrayC)
     Array.Count   = arraycount(ArrayC)
   end
+  -- Remove previous reference
+  TrackedStrings[Index] = nil
   -- Convert high-level structures to pointers if needed
-  local SimpleValue = ARRAY_ConvertWriteValue(Array, Value)
+  local SimpleValue = ARRAY_ConvertWriteValue(Array, Index, Value)
   -- Writes the value on the C side
   arraysetvalue(ArrayC, Index, SimpleValue)
 end
@@ -382,9 +388,10 @@ local function ARRAY_CollectGarbage (Array)
   if (ArrayC) then
     -- Free resources
     freearray(ArrayC)
-    Array.ArrayC  = nil
-    Array.Pointer = nil
-    Array.Count   = nil
+    Array.ArrayC         = nil
+    Array.Pointer        = nil
+    Array.Count          = nil
+    Array.TrackedStrings = nil
   end
 end
 
@@ -412,10 +419,11 @@ local function ARRAY_NewArray (ArrayType, ElementCount)
   local NewArrayC = newarray(FfiType, ElementCount)
   -- Create a new array
   local NewArrayObject = {
-    FfiType = FfiType,
-    ArrayC  = NewArrayC,
-    Pointer = getarraypointer(NewArrayC),
-    Count   = arraycount(NewArrayC),
+    FfiType        = FfiType,
+    ArrayC         = NewArrayC,
+    Pointer        = getarraypointer(NewArrayC),
+    Count          = arraycount(NewArrayC),
+    TrackedStrings = {},
   }
   -- Attach metatable
   setmetatable(NewArrayObject, ARRAY_METATABLE)
@@ -993,11 +1001,9 @@ local PUBLIC_API = {
   memset       = libffi.memset,
   NULL         = libffi.NULL,
   -- C-string helpers
-  allocstring   = libffi.allocstring,
   readstring    = libffi.readstring,
   readstringw   = libffi.readstringw,
   stringpointer = libffi.stringpointer,
-  newcstring    = fficstring.newcstring,
   -- ffi types
   void    = void,
   uint8   = uint8,
