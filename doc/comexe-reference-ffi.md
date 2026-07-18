@@ -36,10 +36,7 @@ This module uses [libffi](https://github.com/libffi/libffi) to call **foreign fu
 
 ComEXE includes a tool to generate bindings from `C` headers. It is based on [Facebook CParser](https://github.com/facebookresearch/CParser).
 
-```mermaid
-flowchart LR
-    tiny-libc.h -->|"lua55ce -x --compile"| tiny-libc-ffi.lua
-```
+**[tiny-libc.h](../tests/examples/ffi/tiny-libc.h)** → `lua55ce -x --compile` → **[tiny-libc-ffi.lua](../tests/examples/ffi/tiny-libc-ffi.lua)**
 
 **[tiny-libc.h](../tests/examples/ffi/tiny-libc.h)**
 
@@ -57,7 +54,7 @@ void  qsort   (void *base, size_t num, size_t size, void *compar);
 lua55ce.exe -x --compile tiny-libc.h
 ```
 
-The generated **tiny-libc-ffi.lua** is a Lua module intended to be loaded by `ffi.loadlib`.
+The generated **tiny-libc-ffi.lua** is a Lua module intended to be loaded by `require` and attached via `lib:attach()`.
 
 **[tiny-libc-ffi.lua](../tests/examples/ffi/tiny-libc-ffi.lua)**
 
