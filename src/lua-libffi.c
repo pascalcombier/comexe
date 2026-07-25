@@ -124,6 +124,7 @@ struct FFI_Cif
 struct FFI_CallContext
 {
   struct FFI_Cif  *Cif;
+  void            *ArgBuffer;   /* single buffer for all arg values     */
   void           **ArgValues;   /* array of pointers to argument values */
   void            *ReturnValue; /* buffer for return value              */
 };
@@ -843,6 +844,8 @@ static int FFI_NewCallContext (lua_State *LuaState)
   struct FFI_CallContext  *NewContext;
   size_t                   Offset;
   size_t                   ArgSize;
+  size_t                   TotalSize;
+  size_t                   BufferOffset;
 
   NewContext = PLAT_SafeAlloc0(1, sizeof(struct FFI_CallContext));
 
@@ -852,17 +855,30 @@ static int FFI_NewCallContext (lua_State *LuaState)
 
   if (ArgCount > 0)
   {
-    NewContext->ArgValues = PLAT_SafeAlloc0(ArgCount, sizeof(void *));
+    /* Calculate needed buffer size */
+    TotalSize = 0;
     for (Offset = 0; (Offset < ArgCount); Offset++)
     {
-      /* At least 8 bytes to ensure pointer alignment */
-      ArgSize                       = FFI_AT_LEAST(ArgTypes[Offset]->size, 8);
-      NewContext->ArgValues[Offset] = PLAT_SafeAlloc0(1, ArgSize);
+      ArgSize = FFI_AT_LEAST(ArgTypes[Offset]->size, 8);
+      TotalSize += ArgSize;
+    }
+    
+    /* Allocate buffers */
+    NewContext->ArgBuffer = PLAT_SafeAlloc0(1, TotalSize);
+    NewContext->ArgValues = PLAT_SafeAlloc0(ArgCount, sizeof(void *));
+    
+    /* Set pointers into the buffer */
+    BufferOffset = 0;
+    for (Offset = 0; (Offset < ArgCount); Offset++)
+    {
+      NewContext->ArgValues[Offset] = ((uint8_t *)NewContext->ArgBuffer) + BufferOffset;
+      BufferOffset += FFI_AT_LEAST(ArgTypes[Offset]->size, 8);
     }
   }
   else
   {
     NewContext->ArgValues = NULL;
+    NewContext->ArgBuffer = NULL;
   }
 
   lua_pushlightuserdata(LuaState, NewContext);
@@ -892,7 +908,6 @@ static int FFI_CallFunction (lua_State *LuaState)
   ffi_type               **ArgTypes        = Cif->ArgTypes;
   size_t                   Offset;
   size_t                   LuaIndex;
-  size_t                   ArgSize;
   size_t                   ReturnValueSize;
 
   /* Retrieve table size */
@@ -906,8 +921,6 @@ static int FFI_CallFunction (lua_State *LuaState)
   /* Copy arguments from Lua stack */
   for (Offset = 0; (Offset < Cif->ArgCount); Offset++)
   {
-    ArgSize = FFI_AT_LEAST(ArgTypes[Offset]->size, 8);
-    memset(CallContext->ArgValues[Offset], 0, ArgSize);
     LuaIndex = (Offset + 1);
     lua_rawgeti(LuaState, 3, LuaIndex);
     FFI_CopyLuaValueToCif(LuaState, -1, ArgTypes[Offset], CallContext->ArgValues[Offset]);
@@ -929,26 +942,14 @@ static int FFI_CallFunction (lua_State *LuaState)
 static int FFI_FreeCallContext (lua_State *LuaState)
 {
   struct FFI_CallContext *Context = lua_touserdata(LuaState, 1);
-  struct FFI_Cif         *Cif     = Context->Cif;
-  size_t                  Offset;
 
   /* Return Value */
   PLAT_Free(Context->ReturnValue);
   
-  /* Release ArgValues if existing */
-  if (Context->ArgValues)
-  {
-    for (Offset = 0; (Offset < Cif->ArgCount); Offset++)
-    {
-      if (Context->ArgValues[Offset])
-      {
-        PLAT_Free(Context->ArgValues[Offset]);
-      }
-    }
-    
-    PLAT_Free(Context->ArgValues);
-  }
-
+  /* Release buffers */
+  PLAT_Free(Context->ArgBuffer);
+  PLAT_Free(Context->ArgValues);
+  
   /* Main context */
   PLAT_Free(Context);
   
