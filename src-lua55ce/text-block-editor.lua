@@ -2,13 +2,20 @@
 -- INFORMATION                                                                --
 --------------------------------------------------------------------------------
 
--- This module contains an "Editor" to edit inlined blocks inside text
--- files. The blocks are delimited by @BEGIN/@PARAM/@END. This shall be
--- language-agnostic, so the prefix before @BEGIN can be Lua "-- " as well as
--- "// ", "# " or other prefix.
+-- This module contains an "Editor" to programmatically update inlined text
+-- blocks inside files (a little like BEGIN/END from org-mode). The blocks are
+-- delimited by @BEGIN/@PARAM/@END. This implementation shall be
+-- language-agnostic, so the prefix before @BEGIN can be Lua comments "-- " as
+-- well as "// ", "# " or other prefix.
 --
--- The purpose is to programmatically update those blocks, for our FFI code
--- generation.
+-- C-style delimiters starting with "/*" and finishing by "*/" are not
+-- supported.
+--
+-- The purpose is to programmatically update blocks for our FFI code
+-- generation. Typically, INPUT is user-defined and OUTPUT will be be generated
+-- by external handler.
+--
+-- INPUT is typically optional, needed by some handlers by not all of them.
 --
 -- LINE-1
 -- LINE-2
