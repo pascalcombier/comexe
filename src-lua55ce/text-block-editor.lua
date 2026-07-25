@@ -16,6 +16,9 @@
 -- -- @BEGIN BlockType
 -- -- @PARAM key1 value1
 -- -- @PARAM key2 value2
+-- OPTIONAL INPUT line 1
+-- OPTIONAL INPUT line 2
+-- -- @OUTPUT
 -- content line 1
 -- content line 2
 -- -- @END
@@ -27,8 +30,8 @@
 --   local BlockEditor = require("text-block-editor")
 --   local Editor      = BlockEditor.load("file.lua")
 --   local Block       = Editor:getblock(1)
---   Block[1] = "replacement" -- edit the first line of the block
---   Block[2] = nil           -- remove the second line 
+--   Block.Output[1] = "replacement" -- edit the first line of the block
+--   Block.Output[2] = nil           -- remove the second line 
 --   Editor:save()
 --
 -- Would give save (overwrite) the file:
@@ -38,6 +41,9 @@
 -- -- @BEGIN BlockType
 -- -- @PARAM key1 value1
 -- -- @PARAM key2 value2
+-- OPTIONAL INPUT line 1
+-- OPTIONAL INPUT line 2
+-- -- @OUTPUT
 -- replacement
 -- -- @END
 -- LINE-4
@@ -60,7 +66,8 @@
 --   key1          = "value1"
 --   key2          = "value2"
 --   CommentPrefix = "-- "
---   [1]           = "replacement"
+--   Input         = { "OPTIONAL INPUT line 1", "OPTIONAL INPUT line 2" }
+--   Output        = { "replacement" }
 -- }
 
 --------------------------------------------------------------------------------
@@ -129,6 +136,8 @@ local function TBE_MethodToString (Editor)
       -- Write BEGIN
       local ParameterKeys = Item.ParameterKeys
       local CommentPrefix = Item.CommentPrefix
+      local ItemInput     = Item.Input
+      local ItemOutput    = Item.Output
       local NewLine       = format("%s@BEGIN %s\n", CommentPrefix, Item.Type)
       insert(Parts, NewLine)
       -- Write the PARAM in the same order as read
@@ -138,11 +147,21 @@ local function TBE_MethodToString (Editor)
         local NewLine = format("%s@PARAM %s %s\n", CommentPrefix, Key, Value)
         insert(Parts, NewLine)
       end
-      -- Write the content lines
-      for LineIndex = 1, #Item do
-        local Line    = Item[LineIndex]
+      -- Write the input lines (above @OUTPUT)
+      for LineIndex = 1, #ItemInput do
+        local Line    = ItemInput[LineIndex]
         local NewLine = format("%s\n", Line)
         insert(Parts, NewLine)
+      end
+      -- Write the generated output
+      if (#ItemOutput > 0) then
+        local OutputLine = format("%s@OUTPUT\n", CommentPrefix)
+        insert(Parts, OutputLine)
+        for LineIndex = 1, #ItemOutput do
+          local Line    = ItemOutput[LineIndex]
+          local NewLine = format("%s\n", Line)
+          insert(Parts, NewLine)
+        end
       end
       -- Wrote END
       local EndLine = format("%s@END\n", CommentPrefix)
@@ -224,13 +243,18 @@ end
 
 local function ParseBlock (Block, BlockContent)
   local ParameterKeys = Block.ParameterKeys
+  local BeforeOutput  = true
   for BlockLine in gmatch(BlockContent, "([^\n]*)\n?") do
     local Key, Value = BlockLine:match("@PARAM%s+(%w+)%s+(.+)")
     if Key then
       Block[Key] = Value
       insert(ParameterKeys, Key) -- Preserve Key order in ParameterKeys array
+    elseif BeforeOutput and BlockLine:match("@OUTPUT") then
+      BeforeOutput = false
+    elseif BeforeOutput then
+      insert(Block.Input, BlockLine)
     else
-      insert(Block, BlockLine)
+      insert(Block.Output, BlockLine)
     end
   end
 end
@@ -271,7 +295,9 @@ local function ParseContent (Content)
         local NewBlock = {
           Type          = BlockType,
           ParameterKeys = {},
-          CommentPrefix = CommentPrefix
+          CommentPrefix = CommentPrefix,
+          Input         = {},
+          Output        = {},
         }
         ParseBlock(NewBlock, BlockContent)
         insert(Items, NewBlock)
