@@ -226,13 +226,13 @@ local function INIT_ReadFile (Filename, OutputType)
   -- libuv is always binary mode
   local fd = fs_open(Filename, "r", 0)
   if fd then
-    local StatInfo, ErrorMessageStat = fs_fstat(fd)
+    local StatInfo, ErrorStringStat = fs_fstat(fd)
     if StatInfo then
       local SizeInBytes = StatInfo.size
       local Offset      = 0
       FileContents, ErrorString = fs_read(fd, SizeInBytes, Offset)
     else
-      ErrorString = ErrorMessageStat
+      ErrorString = ErrorStringStat
     end
     fs_close(fd)
   else
@@ -257,21 +257,19 @@ end
 local function INIT_WriteFile (Filename, Data)
   -- local data
   local Success
-  local ErrorMessage
-  local fd
+  local ErrorString
   -- libuv is always binary mode. create if not exists, overwrite contents if exists
-  fd = fs_open(Filename, "w", INIT_DEFAULT_MODE)
+  local fd = fs_open(Filename, "w", INIT_DEFAULT_MODE)
   if fd then
     local Offset = 0
-    Success, ErrorMessage = fs_write(fd, Data, Offset)
+    Success, ErrorString = fs_write(fd, Data, Offset)
     fs_close(fd)
   else
-    ErrorMessage = format("Failed to open file for writing: %s", Filename)
+    ErrorString = format("Failed to open file for writing: %s", Filename)
+    Success     = false
   end
-  -- Handle success
-  Success = (ErrorMessage == nil)
   -- Return value
-  return Success, ErrorMessage
+  return Success, ErrorString
 end
 
 --------------------------------------------------------------------------------
@@ -877,7 +875,7 @@ local function ZIP_ExtractFile (FileInfo)
       -- The buffer might have moved in memory
       local BufferData = ZIP_Buffer:getpointer()
       -- Read the entire file in one operation
-      local Data, ErrorMessage = unzip_read_current_file(ZIP_File, SizeInBytes, BufferData, SizeInBytes)
+      local Data, ErrorString = unzip_read_current_file(ZIP_File, SizeInBytes, BufferData, SizeInBytes)
       if Data and (#Data > 0) then
         FileContent = Data
       end
@@ -900,7 +898,7 @@ local function INIT_ZipLoadFile (ZipEntryName)
   -- Process files while we have more files and haven't found our target
   while Continue and (not FileFound) do
     -- Get current file information
-    local FileInfo, ErrorMessage = unzip_get_current_file_info(ZIP_File)
+    local FileInfo, ErrorString = unzip_get_current_file_info(ZIP_File)
     -- Check entry
     if FileInfo and (FileInfo.filename == ZipEntryName) then
       FileContent = ZIP_ExtractFile(FileInfo)
@@ -1048,8 +1046,8 @@ local function UIO_Read (fd, SizeInBytes)
       end
     -- Filesystem
     elseif (FileType == "FILESYSTEM") then
-      local FsFileDescriptor   = File.RealFd
-      local Data, ErrorMessage = fs_read(FsFileDescriptor, SizeInBytes, -1)
+      local FsFileDescriptor  = File.RealFd
+      local Data, ErrorString = fs_read(FsFileDescriptor, SizeInBytes, -1)
       if Data then
         Result = Data
       else
@@ -1075,8 +1073,8 @@ local function UIO_Write (fd, Data)
       Result = -EACCES -- Permission denied: ZIP files are read-only
     elseif (FileType == "FILESYSTEM") then
       -- Filesystem
-      local FsFileDescriptor           = File.RealFd
-      local BytesWritten, ErrorMessage = fs_write(FsFileDescriptor, Data, -1)
+      local FsFileDescriptor          = File.RealFd
+      local BytesWritten, ErrorString = fs_write(FsFileDescriptor, Data, -1)
       if BytesWritten then
         Result = BytesWritten
       else
@@ -1117,8 +1115,8 @@ local function UIO_Lseek (fd, offset, whence)
       end
     -- Filesystem
     elseif (FileType == "FILESYSTEM") then
-      local FsFileDescriptor          = File.RealFd
-      local NewPosition, ErrorMessage = fs_lseek(FsFileDescriptor, offset, whence)
+      local FsFileDescriptor         = File.RealFd
+      local NewPosition, ErrorString = fs_lseek(FsFileDescriptor, offset, whence)
       if NewPosition then
         Result = NewPosition
       else
@@ -1585,13 +1583,13 @@ end
 local function INIT_LoadChunk (FileContent, ChunkName, ErrorContext)
   -- Load the FileContent into a chunk
   local AtChunkName = format("@%s", ChunkName)
-  local Chunk, ErrorMessage = load(FileContent, AtChunkName)
+  local Chunk, ErrorString = load(FileContent, AtChunkName)
   if Chunk then
     return Chunk
   else
     -- Syntax error, stop immediately
     print(format("ComEXE Loader [%s] (%s) from ZIP", AtChunkName, ErrorContext))
-    print(ErrorMessage)
+    print(ErrorString)
     os.exit(1)
   end
 end
