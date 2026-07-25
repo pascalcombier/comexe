@@ -222,7 +222,7 @@ end
 local function INIT_ReadFile (Filename, OutputType)
   -- local data
   local FileContents
-  local ErrorMessage
+  local ErrorString
   -- libuv is always binary mode
   local fd = fs_open(Filename, "r", 0)
   if fd then
@@ -230,13 +230,13 @@ local function INIT_ReadFile (Filename, OutputType)
     if StatInfo then
       local SizeInBytes = StatInfo.size
       local Offset      = 0
-      FileContents, ErrorMessage = fs_read(fd, SizeInBytes, Offset)
+      FileContents, ErrorString = fs_read(fd, SizeInBytes, Offset)
     else
-      ErrorMessage = ErrorMessageStat
+      ErrorString = ErrorMessageStat
     end
     fs_close(fd)
   else
-    ErrorMessage = format("Failed to open file for reading: %s", Filename)
+    ErrorString = format("Failed to open file for reading: %s", Filename)
   end
   -- Convenient but slow post processing
   local Result
@@ -250,7 +250,7 @@ local function INIT_ReadFile (Filename, OutputType)
     Result = Lines
   end
   -- Return value
-  return Result, ErrorMessage
+  return Result, ErrorString
 end
 
 -- Unlike os.open, INIT_WriteFile supports UTF-8 named files on Windows
