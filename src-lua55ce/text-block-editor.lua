@@ -89,8 +89,10 @@ local insert = table.insert
 local concat = table.concat
 local gmatch = string.gmatch
 
-local readfile  = Runtime.readfile
-local writefile = Runtime.writefile
+local readfile     = Runtime.readfile
+local writefile    = Runtime.writefile
+local hasprefix    = Runtime.hasprefix
+local removeprefix = Runtime.removeprefix
 
 --------------------------------------------------------------------------------
 -- DOCUMENT METATABLE                                                         --
@@ -117,19 +119,17 @@ local function TBE_MethodGetBlock (Editor, BlockIndex)
   local Count     = 0
   local Index     = 1
   local ResultBlock
-  local ResultIndex
   while (not ResultBlock) and (Index <= #BlockList) do
     local Item = BlockList[Index]
     if (type(Item) == "table") then
       Count = (Count + 1)
       if (Count == BlockIndex) then
         ResultBlock = Item
-        ResultIndex = Index
       end
     end
     Index = (Index + 1)
   end
-  return ResultBlock, ResultIndex
+  return ResultBlock
 end
 
 local function TBE_MethodToString (Editor)
@@ -157,7 +157,7 @@ local function TBE_MethodToString (Editor)
       -- Write the input lines (above @OUTPUT)
       for LineIndex = 1, #ItemInput do
         local Line    = ItemInput[LineIndex]
-        local NewLine = format("%s\n", Line)
+        local NewLine = format("%s%s\n", CommentPrefix, Line)
         insert(Parts, NewLine)
       end
       -- Write the generated output
@@ -250,6 +250,7 @@ end
 
 local function ParseBlock (Block, BlockContent)
   local ParameterKeys = Block.ParameterKeys
+  local CommentPrefix = Block.CommentPrefix
   local BeforeOutput  = true
   for BlockLine in gmatch(BlockContent, "([^\n]*)\n?") do
     local Key, Value = BlockLine:match("@PARAM%s+(%w+)%s+(.+)")
@@ -259,7 +260,14 @@ local function ParseBlock (Block, BlockContent)
     elseif BeforeOutput and BlockLine:match("@OUTPUT") then
       BeforeOutput = false
     elseif BeforeOutput then
-      insert(Block.Input, BlockLine)
+    -- In the INPUT part we try to remove the comment prefix
+      local Line
+      if hasprefix(BlockLine, CommentPrefix) then
+        Line = removeprefix(BlockLine, CommentPrefix)
+      else
+        Line = BlockLine
+      end
+      insert(Block.Input, Line)
     else
       insert(Block.Output, BlockLine)
     end
