@@ -59,11 +59,7 @@ local sub        = string.sub
 local find       = string.find
 local numbertype = math.type
 
-local contains    = Runtime.contains
-local readfile    = Runtime.readfile
-local writefile   = Runtime.writefile
-local newpathname = Runtime.newpathname
-local getparam    = Runtime.getparam
+local getparam = Runtime.getparam
 
 -- Keep structures, if not known structure, it will fallback to pointer
 local KnownStructTypes
@@ -87,35 +83,11 @@ local CParserOptions = {
 -- the define as a constant prefix.
 --
 -- This COMEXE_WIN32COM_INTERFACE allow us to generate a Win32 Com interface
--- suitable for easycom (static vtable COM interace).
+-- suitable for easycom (static vtable COM interface).
 --
 local C_HEADER_PREFIX = [[
   #define COMEXE_WIN32COM_INTERFACE __attribute__((comexe_win32com_interface))
 ]]
-
---------------------------------------------------------------------------------
--- STRING STREAM                                                              --
---------------------------------------------------------------------------------
-
-local function NewStringStream ()
-  -- Local data
-  local Lines = {}
-  -- Methods
-  local function Write (Stream, Text)
-    append(Lines, Text)
-  end
-  local function GetOutput (Stream)
-    local OutputString = concat(Lines, "\n")
-    return OutputString
-  end
-  -- Create a new object
-  local NewStringStreamObject = {
-    write     = Write,
-    getoutput = GetOutput,
-  }
-  -- Return value
-  return NewStringStreamObject
-end
 
 --------------------------------------------------------------------------------
 -- LINE ITERATOR                                                              --
@@ -132,8 +104,7 @@ local function NewLineIterator (Text)
     if Done then
       Result = nil
     elseif (Position > SizeInBytes) then
-      Done   = true
-      Result = nil
+      Done = true
     else
       local NewLinePosition = find(Text, "\n", Position, true)
       if NewLinePosition then
@@ -177,52 +148,52 @@ end
 --------------------------------------------------------------------------------
 
 local PrimitiveFfiToken = {
-  ["void"]                   = "libffi.void",
-  ["_Bool"]                  = "libffi.sint8",
-  ["char"]                   = "libffi.sint8",
-  ["signed char"]            = "libffi.sint8",
-  ["unsigned char"]          = "libffi.uint8",
-  ["short"]                  = "libffi.sint16",
-  ["short int"]              = "libffi.sint16",
-  ["unsigned short"]         = "libffi.uint16",
-  ["unsigned short int"]     = "libffi.uint16",
-  ["int"]                    = "libffi.sint32",
-  ["signed"]                 = "libffi.sint32",
-  ["signed int"]             = "libffi.sint32",
-  ["unsigned"]               = "libffi.uint32",
-  ["unsigned int"]           = "libffi.uint32",
-  ["long long"]              = "libffi.sint64",
-  ["long long int"]          = "libffi.sint64",
-  ["unsigned long long"]     = "libffi.uint64",
-  ["unsigned long long int"] = "libffi.uint64",
-  ["float"]                  = "libffi.float",
-  ["double"]                 = "libffi.double",
-  ["long double"]            = "libffi.double",
-  ["size_t"]                 = "libffi.uint64",
+  ["void"]                   = "void",
+  ["_Bool"]                  = "sint8",
+  ["char"]                   = "sint8",
+  ["signed char"]            = "sint8",
+  ["unsigned char"]          = "uint8",
+  ["short"]                  = "sint16",
+  ["short int"]              = "sint16",
+  ["unsigned short"]         = "uint16",
+  ["unsigned short int"]     = "uint16",
+  ["int"]                    = "sint32",
+  ["signed"]                 = "sint32",
+  ["signed int"]             = "sint32",
+  ["unsigned"]               = "uint32",
+  ["unsigned int"]           = "uint32",
+  ["long long"]              = "sint64",
+  ["long long int"]          = "sint64",
+  ["unsigned long long"]     = "uint64",
+  ["unsigned long long int"] = "uint64",
+  ["float"]                  = "float",
+  ["double"]                 = "double",
+  ["long double"]            = "double",
+  ["size_t"]                 = "uint64",
   -- standard types from C headers
-  ["intptr_t"]               = "libffi.sint64",
-  ["uintptr_t"]              = "libffi.uint64",
-  ["ptrdiff_t"]              = "libffi.sint64",
-  ["int8_t"]                 = "libffi.sint8",
-  ["uint8_t"]                = "libffi.uint8",
-  ["int16_t"]                = "libffi.sint16",
-  ["uint16_t"]               = "libffi.uint16",
-  ["int32_t"]                = "libffi.sint32",
-  ["uint32_t"]               = "libffi.uint32",
-  ["int64_t"]                = "libffi.sint64",
-  ["uint64_t"]               = "libffi.uint64",
+  ["intptr_t"]               = "sint64",
+  ["uintptr_t"]              = "uint64",
+  ["ptrdiff_t"]              = "sint64",
+  ["int8_t"]                 = "sint8",
+  ["uint8_t"]                = "uint8",
+  ["int16_t"]                = "sint16",
+  ["uint16_t"]               = "uint16",
+  ["int32_t"]                = "sint32",
+  ["uint32_t"]               = "uint32",
+  ["int64_t"]                = "sint64",
+  ["uint64_t"]               = "uint64",
 }
 
 if (getparam("OS") == "windows") then
-  PrimitiveFfiToken["long"]              = "libffi.sint32"
-  PrimitiveFfiToken["long int"]          = "libffi.sint32"
-  PrimitiveFfiToken["unsigned long"]     = "libffi.uint32"
-  PrimitiveFfiToken["unsigned long int"] = "libffi.uint32"
+  PrimitiveFfiToken["long"]              = "sint32"
+  PrimitiveFfiToken["long int"]          = "sint32"
+  PrimitiveFfiToken["unsigned long"]     = "uint32"
+  PrimitiveFfiToken["unsigned long int"] = "uint32"
 else
-  PrimitiveFfiToken["long"]              = "libffi.sint64"
-  PrimitiveFfiToken["long int"]          = "libffi.sint64"
-  PrimitiveFfiToken["unsigned long"]     = "libffi.uint64"
-  PrimitiveFfiToken["unsigned long int"] = "libffi.uint64"
+  PrimitiveFfiToken["long"]              = "sint64"
+  PrimitiveFfiToken["long int"]          = "sint64"
+  PrimitiveFfiToken["unsigned long"]     = "uint64"
+  PrimitiveFfiToken["unsigned long int"] = "uint64"
 end
 
 -- cparser documentation:
@@ -252,40 +223,40 @@ local function TypeIs (TypeNode, TargetTag)
   return Result
 end
 
-local function ResolveType (AstType, IsReturnType)
+local function ResolveType (LibffiVariable, AstType, IsReturnType)
   local Current = UnwrapBaseType(AstType)
   local Result
   if (Current == nil) then
-    Result = "libffi.void"
+    Result = format("%s.void", LibffiVariable)
   elseif (Current.tag == "Type") then
     local FfiTypeString = PrimitiveFfiToken[Current.n]
     if FfiTypeString then
-      Result = FfiTypeString
+      Result = format("%s.%s", LibffiVariable, FfiTypeString)
     elseif KnownStructTypes[Current.n] then
-      Result = format("Library.%s", Current.n) -- StructByValue
+      Result = Current.n -- StructByValue
     else
-      Result = "libffi.pointer"
+      Result = format("%s.pointer", LibffiVariable)
     end
   elseif (Current.tag == "Pointer") then
     -- Only IsReturnType has automatic cstring conversions
     if IsReturnType then
       local BaseType = UnwrapBaseType(Current.t)
       if BaseType and (BaseType.tag == "Type") and (BaseType.n == "char") then
-        Result = "libffi.cstring"
+        Result = format("%s.cstring", LibffiVariable)
       else
-        Result = "libffi.pointer"
+        Result = format("%s.pointer", LibffiVariable)
       end
     else
-      Result = "libffi.pointer"
+      Result = format("%s.pointer", LibffiVariable)
     end
   elseif (Current.tag == "Array") then
-    Result = "libffi.pointer"
+    Result = format("%s.pointer", LibffiVariable)
   elseif (Current.tag == "Function") then
-    Result = "libffi.pointer"
+    Result = format("%s.pointer", LibffiVariable)
   elseif (Current.tag == "Enum") then
-    Result = "libffi.sint32"
+    Result = format("%s.sint32", LibffiVariable)
   else
-    Result = "libffi.pointer"
+    Result = format("%s.pointer", LibffiVariable)
   end
   return Result
 end
@@ -294,35 +265,35 @@ end
 -- STRUCT FIELD TYPE RESOLUTION                                               --
 --------------------------------------------------------------------------------
 
-local function ResolveFieldType (AstType)
+local function ResolveFieldType (LibffiVariable, AstType)
   local Current = UnwrapBaseType(AstType)
   local Result
   if (Current == nil) then
-    Result = "libffi.void"
+    Result = format("%s.void", LibffiVariable)
   elseif (Current.tag == "Type") then
     local FfiTypeString = PrimitiveFfiToken[Current.n]
     if FfiTypeString then
-      Result = FfiTypeString
+      Result = format("%s.%s", LibffiVariable, FfiTypeString)
     elseif KnownStructTypes[Current.n] then
-      Result = format("Library.%s", Current.n)
+      Result = Current.n
     else
-      Result = "libffi.pointer"
+      Result = format("%s.pointer", LibffiVariable)
     end
   elseif (Current.tag == "Pointer") then
     local BaseType = UnwrapBaseType(Current.t)
     if BaseType and (BaseType.tag == "Type") and (BaseType.n == "char") then
-      Result = "libffi.cstring"
+      Result = format("%s.cstring", LibffiVariable)
     else
-      Result = "libffi.pointer"
+      Result = format("%s.pointer", LibffiVariable)
     end
   elseif (Current.tag == "Array") then
-    Result = "libffi.pointer"
+    Result = format("%s.pointer", LibffiVariable)
   elseif (Current.tag == "Function") then
-    Result = "libffi.pointer"
+    Result = format("%s.pointer", LibffiVariable)
   elseif (Current.tag == "Enum") then
-    Result = "libffi.sint32"
+    Result = format("%s.sint32", LibffiVariable)
   else
-    Result = "libffi.pointer"
+    Result = format("%s.pointer", LibffiVariable)
   end
   return Result
 end
@@ -331,7 +302,7 @@ end
 -- CPARSER INTEGRATION                                                        --
 --------------------------------------------------------------------------------
 
-local function ParseHeader (HeaderString, InputFilename)
+local function ParseHeader (HeaderString)
   -- Prepend built-in defines
   local PatchedHeaderString = format("%s%s", C_HEADER_PREFIX, HeaderString)
   -- Init structures order
@@ -342,7 +313,7 @@ local function ParseHeader (HeaderString, InputFilename)
   local Constants    = {}
   local Structures   = {}
   local LineIterator = NewLineIterator(PatchedHeaderString)
-  local Iterator     = CParser.declarationIterator(CParserOptions, LineIterator, InputFilename)
+  local Iterator     = CParser.declarationIterator(CParserOptions, LineIterator, "ffi-compiler")
   local Action       = Iterator()
   while Action do
     local ActionName = Action.name
@@ -399,24 +370,43 @@ end
 -- CODE GENERATION                                                            --
 --------------------------------------------------------------------------------
 
-local function EmitConstant (Stream, Name, Value)
+-- STRUCTURES
+--
+-- Tagged struct: struct MyStruct { ... };
+-- Action.name  = "struct MyStruct" -> StructName = "struct MyStruct"
+-- StructNode.n = "MyStruct"        -> TagName = "MyStruct"
+--
+-- Anonymous struct in typedef: typedef struct { ... } IShellItemVtbl
+-- Action.name  = "IShellItemVtbl"   -> StructName = "IShellItemVtbl"
+-- StructNode.n = nil                -> TagName = nil
+--
+local function GetStructureName (StructAction, StructName)
+  local StructNode = UnwrapBaseType(StructAction.type)
+  local Result     = StructNode.n
+  if (not Result) then
+    Result = StructName
+  end
+  return Result
+end
+
+local function EmitConstant (Lines, Name, Value)
   local ValueType = type(Value)
   local Line
   if (ValueType == "table") then
     if (Value.tag == "string") then
-      Line = format("  Library.%s = %q", Name, Value.value)
+      Line = format("local %s = %q", Name, Value.value)
     else
-      Line = format("  Library.%s = %s", Name, tostring(Value.value))
+      Line = format("local %s = %s", Name, tostring(Value.value))
     end
   elseif (ValueType == "number") then
     if (numbertype(Value) == "integer") then
-      Line = format("  Library.%s = %d", Name, Value)
+      Line = format("local %s = %d", Name, Value)
     else
-      Line = format("  Library.%s = %s", Name, tostring(Value))
+      Line = format("local %s = %s", Name, tostring(Value))
     end
   end
   if Line then
-    Stream:write(Line)
+    append(Lines, Line)
   else
     print(format("Warning: Skipping constant '%s' with unsupported value type '%s'", Name, ValueType))
   end
@@ -449,61 +439,64 @@ end
 
 -- Extract method signature from a function-pointer field
 -- Returns: ReturnTypeToken, { ParamTypeToken, ... }
-local function ExtractMethodSignature (FieldType)
+local function ExtractMethodSignature (FieldType, LibffiVariable)
   local CurrentType = UnwrapBaseType(FieldType)
   local InnerType   = UnwrapBaseType(CurrentType.t)
-  local ReturnToken = ResolveType(InnerType.t, true)
+  local ReturnToken = ResolveType(LibffiVariable, InnerType.t, true)
   local ParamTokens = {}
   for ParamIndex = 1, #InnerType do
     local Param = InnerType[ParamIndex]
     if (not Param.ellipsis) then
-      local ParamToken = ResolveType(Param[1], false)
+      local ParamToken = ResolveType(LibffiVariable, Param[1], false)
       append(ParamTokens, ParamToken)
     end
   end
   return ReturnToken, ParamTokens
 end
 
-local function EmitStructType (Stream, TagName, FieldLines)
-  -- Collect data
-  local Lines = {}
+local function EmitStructType (Lines, TagName, FieldLines, LibffiVariable)
+  -- Header
+  local NewLine = format("  %s = %s.newstructure(%q,", TagName, LibffiVariable, TagName)
+  append(Lines, NewLine)
+  -- Fields
   for FieldIndex = 1, #FieldLines do
     local Field = FieldLines[FieldIndex]
-    append(Lines, format("    %s, %q", Field.Token, Field.Name))
+    local Trailing
+    if (FieldIndex < #FieldLines) then
+      Trailing = ","
+    else
+      Trailing = ""
+    end
+    local NewLine = format("    %s, %q%s", Field.Token, Field.Name, Trailing)
+    append(Lines, NewLine)
   end
-  local FieldBlock = concat(Lines, ",\n")
-  -- Output structure
-  Stream:write(format("  Library.%s = libffi.newstructure(%q,", TagName, TagName))
-  Stream:write(FieldBlock)
-  Stream:write("  )")
+  -- Footer
+  append(Lines, "  )")
 end
 
-local function EmitComInterface (Stream, TagName, FieldLines)
-  -- Collect data
-  local Lines = {}
+local function EmitComInterface (Lines, TagName, FieldLines, LibffiVariable)
+  -- Header
+  local NewLine = format("  %s = {", TagName)
+  append(Lines, NewLine)
+  -- Fields
   for FieldIndex = 1, #FieldLines do
     local Field = FieldLines[FieldIndex]
-    local ReturnToken, ParamTokens = ExtractMethodSignature(Field.FieldType)
+    local ReturnToken, ParamTokens = ExtractMethodSignature(Field.FieldType, LibffiVariable)
     local Parts = { ReturnToken, format("%q", Field.Name) }
     for TokenIndex = 1, #ParamTokens do
       append(Parts, ParamTokens[TokenIndex])
     end
     local PartsString = concat(Parts, ", ")
-    append(Lines, format("    { %s }", PartsString))
+    local NewLine     = format("    { %s },", PartsString)
+    append(Lines, NewLine)
   end
-  local FieldBlock = concat(Lines, ",\n")
-  -- Output structure
-  Stream:write(format("  Library.%s = {", TagName))
-  Stream:write(FieldBlock)
-  Stream:write("  }")
+  -- Footer
+  append(Lines, "  }")
 end
 
-local function EmitStructTypeOrComInterface (Stream, StructName, StructAction)
+local function EmitStructTypeOrComInterface (Lines, StructName, StructAction, LibffiVariable)
   local StructNode = UnwrapBaseType(StructAction.type)
-  local TagName    = StructNode.n
-  if (TagName == nil) then
-    TagName = StructName
-  end
+  local TagName    = GetStructureName(StructAction, StructName)
   -- Collect fields
   local FieldLines = {}
   for FieldIndex = 1, #StructNode do
@@ -514,7 +507,7 @@ local function EmitStructTypeOrComInterface (Stream, StructName, StructAction)
       local FieldType = Pair[1]
       local FieldName = Pair[2]
       if FieldName then
-        local FfiToken = ResolveFieldType(FieldType)
+        local FfiToken = ResolveFieldType(LibffiVariable, FieldType)
         local NewLine  = { Token = FfiToken, Name = FieldName, FieldType = FieldType }
         append(FieldLines, NewLine)
       end
@@ -522,9 +515,9 @@ local function EmitStructTypeOrComInterface (Stream, StructName, StructAction)
   end
   -- Emit structure or Win32 COM interface
   if HasWin32ComInterfaceAttribute(StructNode) then
-    EmitComInterface(Stream, TagName, FieldLines)
+    EmitComInterface(Lines, TagName, FieldLines, LibffiVariable)
   else
-    EmitStructType(Stream, TagName, FieldLines)
+    EmitStructType(Lines, TagName, FieldLines, LibffiVariable)
   end
 end
 
@@ -548,10 +541,10 @@ end
 --   {[1]={tag="Type", n="int"}, name="a"}
 -- ONLY 1 VALUE
 --
-local function EmitFunction (Stream, Function)
+local function EmitFunction (Lines, Function, LibffiVariable)
   local FunctionType = Function.type
   local FunctionName = Function.name
-  local ReturnToken  = ResolveType(FunctionType.t, true)
+  local ReturnToken  = ResolveType(LibffiVariable, FunctionType.t, true)
   local Parameters   = {}
   local IsVariadic   = false
   for Index = 1, #FunctionType do
@@ -559,7 +552,7 @@ local function EmitFunction (Stream, Function)
     if ParameterEntry.ellipsis then
       IsVariadic = true
     else
-      local ParameterType = ResolveType(ParameterEntry[1], false)
+      local ParameterType = ResolveType(LibffiVariable, ParameterEntry[1], false)
       append(Parameters, ParameterType)
     end
   end
@@ -576,51 +569,64 @@ local function EmitFunction (Stream, Function)
   else
     ParameterList = ""
   end
-  local Line = format('  Library.%s = Library:%s(%s, "%s"%s)', FunctionName, Method, ReturnToken, FunctionName, ParameterList)
-  Stream:write(Line)
+  local Line = format('  %s = Library:%s(%s, "%s"%s)', FunctionName, Method, ReturnToken, FunctionName, ParameterList)
+  append(Lines, Line)
 end
 
-local function GenerateOutput (Constants, Structures, Functions, InputPath)
-  local Stream = NewStringStream()
-  local InputPathname = newpathname(InputPath)
-  local InputFilename = InputPathname:getname()
-  local Timestamp = os.date("!%Y-%m-%dT%H:%M:%S")
-  Stream:write("--------------------------------------------------------------------------------")
-  Stream:write(format("-- %-74s --", format("Generated by ComEXE ffi-compiler at %s", Timestamp)))
-  Stream:write(format("-- %-74s --", InputFilename))
-  Stream:write("--------------------------------------------------------------------------------")
-  Stream:write("")
-  Stream:write("local libffi = require(\"com.ffi\")")
-  Stream:write("")
-  -- FUNCTIONS block
-  Stream:write("--------------------------------------------------------------------------------")
-  Stream:write("-- FUNCTIONS                                                                  --")
-  Stream:write("--------------------------------------------------------------------------------")
-  Stream:write("")
-  Stream:write("local function Bind (Library)")
+local function GenerateOutput (Constants, Structures, Functions, LibffiVariable, FunctionName)
+  local Lines = {}
   -- CONSTANTS
   local ConstantNames = GetSortedKeys(Constants)
   if (#ConstantNames > 0) then
-    Stream:write("  -- Constants")
+    append(Lines, "-- Constants")
     for ConstantIndex = 1, #ConstantNames do
       local Name  = ConstantNames[ConstantIndex]
       local Value = Constants[Name]
-      EmitConstant(Stream, Name, Value)
+      EmitConstant(Lines, Name, Value)
     end
   end
   -- STRUCTURES
-  local StructureNames = StructDeclarationOrder
-  if (#StructureNames > 0) then
-    Stream:write("  -- Structures")
-    for StructureIndex = 1, #StructureNames do
-      local StructName   = StructureNames[StructureIndex]
+  if (#StructDeclarationOrder > 0) then
+    append(Lines, "-- Structures")
+    for StructureIndex = 1, #StructDeclarationOrder do
+      -- StructName is actually coming from cparser and is a string like "struct XXX"
+      local StructName   = StructDeclarationOrder[StructureIndex]
       local StructAction = Structures[StructName]
-      EmitStructTypeOrComInterface(Stream, StructName, StructAction)
+      local TagName      = GetStructureName(StructAction, StructName)
+      local NewLine      = format("local %s", TagName)
+      append(Lines, NewLine)
     end
   end
   -- FUNCTIONS
   if (#Functions > 0) then
-    Stream:write("  -- Functions")
+    append(Lines, "-- Functions")
+    local FunctionDict = {}
+    for FunctionIndex = 1, #Functions do
+      local Function     = Functions[FunctionIndex]
+      local FunctionName = Function.name
+      FunctionDict[FunctionName] = Function
+    end
+    local FunctionNames = GetSortedKeys(FunctionDict)
+    for FunctionIndex = 1, #FunctionNames do
+      local FunctionName = FunctionNames[FunctionIndex]
+      local NewLine      = format("local %s", FunctionName)
+      append(Lines, NewLine)
+    end
+  end
+  -- Binding function
+  append(Lines, "-- Binding function")
+  local NewLine = format("local function %s (Library)", FunctionName)
+  append(Lines, NewLine)
+  -- STRUCTURES
+  if (#StructDeclarationOrder > 0) then
+    for StructureIndex = 1, #StructDeclarationOrder do
+      local StructName   = StructDeclarationOrder[StructureIndex]
+      local StructAction = Structures[StructName]
+      EmitStructTypeOrComInterface(Lines, StructName, StructAction, LibffiVariable)
+    end
+  end
+  -- FUNCTIONS
+  if (#Functions > 0) then
     -- Convert list to dict
     local FunctionDict = {}
     for FunctionIndex = 1, #Functions do
@@ -634,63 +640,26 @@ local function GenerateOutput (Constants, Structures, Functions, InputPath)
     for FunctionIndex = 1, #FunctionNames do
       local FunctionName = FunctionNames[FunctionIndex]
       local Function     = FunctionDict[FunctionName]
-      EmitFunction(Stream, Function)
+      EmitFunction(Lines, Function, LibffiVariable)
     end
   end
-  Stream:write("end")
-  Stream:write("")
-  -- PUBLIC API block
-  Stream:write("--------------------------------------------------------------------------------")
-  Stream:write("-- PUBLIC API                                                                 --")
-  Stream:write("--------------------------------------------------------------------------------")
-  Stream:write("")
-  Stream:write("local PUBLIC_API = {")
-  Stream:write("  bind = Bind,")
-  Stream:write("}")
-  Stream:write("")
-  Stream:write("return PUBLIC_API")
-  -- Format the whole thing and return
-  local Result = Stream.getoutput()
-  return Result
-end
-
-local function EvaluateOutputFilename (InputFilename)
-  -- local data
-  local Pathname = newpathname(InputFilename)
-  -- Explode the pathname
-  local FileName, ModuleName, Extension = Pathname:getname()
-  local Separator
-  if contains(ModuleName, "_") then
-    Separator = "_"
-  else
-    Separator = "-"
-  end
-  -- Drop the file name
-  Pathname = Pathname:parent()
-  -- New filename
-  local OutputName  = format("%s%sffi.lua", ModuleName, Separator)
-  local NewPathname = Pathname:child(OutputName)
-  local NewFilename = tostring(NewPathname)
+  append(Lines, "end")
   -- Return value
-  return NewFilename
+  return Lines
 end
 
-local function Compile (InputFilename)
-  -- Read input
-  local FileContent, ReadErrorString = readfile(InputFilename)
-  if ReadErrorString then
-    error(ReadErrorString)
+local function GenerateBindings (InputString, LibffiVariable, FunctionName)
+  -- cparser can emit errors
+  local Success, Functions, Constants, Structures = pcall(ParseHeader, InputString)
+  local Result
+  local ErrorString
+  if Success then
+    Result = GenerateOutput(Constants, Structures, Functions, LibffiVariable, FunctionName)
+  else
+    local CparserError = Functions -- pcall second value
+    ErrorString = format("Syntax error %q in\n%s", CparserError, InputString)
   end
-  -- Parse with cparser and generate output
-  local Functions, Constants, Structures = ParseHeader(FileContent, InputFilename)
-  -- Generate output
-  local OutputString = GenerateOutput(Constants, Structures, Functions, InputFilename)
-  -- Write file
-  local OutputFilename = EvaluateOutputFilename(InputFilename)
-  local Success, WriteErrorString = writefile(OutputFilename, OutputString)
-  if WriteErrorString then
-    error(WriteErrorString)
-  end
+  return Result, ErrorString
 end
 
 --------------------------------------------------------------------------------
@@ -698,7 +667,7 @@ end
 --------------------------------------------------------------------------------
 
 local PUBLIC_API = {
-  Compile = Compile,
+  GenerateBindings = GenerateBindings,
 }
 
 return PUBLIC_API

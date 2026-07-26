@@ -23,8 +23,8 @@ local MiniHttpLib = require("com.mini-httpd-lib")
 local Url         = require("socket.url")
 local Fennel      = require("fennel")
 local ApmClient   = require("apm-client")
-local FfiCompiler = require("ffi-compiler")
 local LuaBundle   = require("lua-bundle")
+local Preprocessor = require("preprocessor")
 
 local format           = string.format
 local open             = io.open
@@ -272,6 +272,7 @@ local function HandleHelp ()
   print("  --find <directory>                Find files in a directory")
   print("  --compile, -c <file.lua|file.fnl> Compile Lua or Fennel source")
   print("  --bundle <file.lua>               Bundle Lua dependencies into a single file")
+  print("  --preprocess <file.lua>           Process special FFI-related code")
   print("  --wget <url>                      Download file via HTTP")
   print("  --apm update                      Update available packages index")
   print("  --apm list                        List available packages")
@@ -547,15 +548,13 @@ local function HandleCompileFennel (FennelFilename)
 end
 
 local function HandleCompile (Filename)
-  assert(Filename, "compile requires an input .lua, .fnl, or .h file")
+  assert(Filename, "compile requires an input .lua or .fnl file")
   if hassuffix(Filename, ".lua") then
     HandleCompileLua(Filename)
   elseif hassuffix(Filename, ".fnl") then
     HandleCompileFennel(Filename)
-  elseif hassuffix(Filename, ".h") then
-    FfiCompiler.Compile(Filename)
   else
-    error(format("Unsupported file extension: %s (expected .lua, .fnl, or .h)", Filename))
+    error(format("Unsupported file extension: %s (expected .lua or .fnl)", Filename))
   end
 end
 
@@ -677,6 +676,19 @@ local function EXT_Command (RawArguments)
     HandleCompile(InputLua)
   elseif (Command == "bundle") then
     HandleBundle(Arguments[1])
+  elseif (Command == "preprocess") then
+    local InputFile = Arguments[1]
+    assert(InputFile, "preprocess requires an input file")
+    local Count, Status = Preprocessor.process(InputFile)
+    if (not Count) then
+      print(format("ERROR: %s", Status))
+    elseif (Status == "no-markers") then
+      print(format("WARNING: No markers found in %s", InputFile))
+    elseif (Status == "unchanged") then
+      print(format("Up to date (%d)", Count))
+    else
+      print(format("Generated %d items", Count))
+    end
   elseif (Command == "wget") then
     local Uri = Arguments[1]
     HandleWget(Uri)

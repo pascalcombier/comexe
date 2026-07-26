@@ -758,11 +758,6 @@ local function LIBRARY_MethodAddLibrary (Library, ...)
   return Result, ErrorMessage
 end
 
-local function LIBRARY_MethodAttach (Library, Module)
-  assert(Module.bind, "FFI binding module does not export bind function")
-  Module.bind(Library)
-end
-
 --------------------------------------------------------------------------------
 -- LIBRARY METATABLE                                                          --
 --------------------------------------------------------------------------------
@@ -775,7 +770,6 @@ local LIBRARY_Metatable = {
     addlibrary   = LIBRARY_MethodAddLibrary,
     bind         = LIBRARY_MethodBind,
     variadicbind = LIBRARY_MethodVariadicBind,
-    attach       = LIBRARY_MethodAttach,
   }
 }
 
