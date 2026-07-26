@@ -3,7 +3,7 @@
 --------------------------------------------------------------------------------
 
 local format  = string.format
-local sqlite3 = require("tiny-sqlite3")
+local sqlite3 = require("com.ffi.sqlite3")
 
 --------------------------------------------------------------------------------
 -- HELPERS                                                                    --

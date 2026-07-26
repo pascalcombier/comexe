@@ -20,8 +20,7 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local ffi      = require("com.ffi")
-local Win32Ffi = require("tiny-win32-ffi")
+local ffi = require("com.ffi")
 
 local format = string.format
 
@@ -35,6 +34,200 @@ local uint32      = ffi.uint32
 local uint64      = ffi.uint64
 
 --------------------------------------------------------------------------------
+-- FFI IMPORTS                                                                --
+--------------------------------------------------------------------------------
+
+-- @BEGIN import-c-header
+-- @PARAM file tiny-win32.h
+-- @PARAM function BindLibrary
+-- @PARAM lib ffi
+-- @OUTPUT
+-- Constants
+local ANTIALIASED_QUALITY = 4
+local COLOR_WINDOW = 5
+local CP_UTF8 = 65001
+local CS_HREDRAW = 2
+local CS_OWNDC = 32
+local CS_VREDRAW = 1
+local CW_USEDEFAULT = 2147483648
+local DEFAULT_CHARSET = 1
+local DEFAULT_PITCH = 0
+local DT_CALCRECT = 1024
+local DT_SINGLELINE = 32
+local DT_VCENTER = 4
+local FF_SWISS = 32
+local FW_NORMAL = 400
+local IDC_ARROW = 32512
+local IDI_APPLICATION = 32512
+local LTGRAY_BRUSH = 1
+local SPI_GETNONCLIENTMETRICS = 41
+local SW_SHOWDEFAULT = 10
+local TRANSPARENT = 1
+local WM_COMMAND = 273
+local WM_DESTROY = 2
+local WM_PAINT = 15
+local WM_QUIT = 18
+local WM_SIZE = 5
+local WM_TIMER = 275
+local WS_CHILD = 1073741824
+local WS_CLIPCHILDREN = 33554432
+local WS_EX_CLIENTEDGE = 512
+local WS_OVERLAPPEDWINDOW = 13565952
+local WS_VISIBLE = 268435456
+-- Structures
+local LOGFONTA
+local NONCLIENTMETRICSA
+local POINT
+local RECT
+local WNDCLASSEX
+local MSG
+local PAINTSTRUCT
+-- Functions
+local BeginPaint
+local CreateFontA
+local CreateFontIndirectA
+local CreateWindowExA
+local DefWindowProcA
+local DeleteObject
+local DispatchMessageA
+local DrawTextW
+local EndPaint
+local FillRect
+local GetClientRect
+local GetDC
+local GetMessageA
+local GetModuleHandleA
+local GetStockObject
+local InvalidateRect
+local KillTimer
+local LoadCursorA
+local LoadIconA
+local MoveWindow
+local MultiByteToWideChar
+local PostQuitMessage
+local RegisterClassExA
+local ReleaseDC
+local SelectObject
+local SetBkMode
+local SetTimer
+local ShowWindow
+local SystemParametersInfoA
+local TranslateMessage
+local UpdateWindow
+-- Binding function
+local function BindLibrary (Library)
+  LOGFONTA = ffi.newstructure("LOGFONTA",
+    ffi.sint32, "lfHeight",
+    ffi.sint32, "lfWidth",
+    ffi.sint32, "lfEscapement",
+    ffi.sint32, "lfOrientation",
+    ffi.sint32, "lfWeight",
+    ffi.uint8, "lfItalic",
+    ffi.uint8, "lfUnderline",
+    ffi.uint8, "lfStrikeOut",
+    ffi.uint8, "lfCharSet",
+    ffi.uint8, "lfOutPrecision",
+    ffi.uint8, "lfClipPrecision",
+    ffi.uint8, "lfQuality",
+    ffi.uint8, "lfPitchAndFamily",
+    ffi.pointer, "lfFaceName"
+  )
+  NONCLIENTMETRICSA = ffi.newstructure("NONCLIENTMETRICSA",
+    ffi.uint32, "cbSize",
+    ffi.sint32, "iBorderWidth",
+    ffi.sint32, "iScrollWidth",
+    ffi.sint32, "iScrollHeight",
+    ffi.sint32, "iCaptionWidth",
+    ffi.sint32, "iCaptionHeight",
+    LOGFONTA, "lfCaptionFont",
+    ffi.sint32, "iSmCaptionWidth",
+    ffi.sint32, "iSmCaptionHeight",
+    LOGFONTA, "lfSmCaptionFont",
+    ffi.sint32, "iMenuWidth",
+    ffi.sint32, "iMenuHeight",
+    LOGFONTA, "lfMenuFont",
+    LOGFONTA, "lfStatusFont",
+    LOGFONTA, "lfMessageFont"
+  )
+  POINT = ffi.newstructure("POINT",
+    ffi.sint32, "x",
+    ffi.sint32, "y"
+  )
+  RECT = ffi.newstructure("RECT",
+    ffi.sint32, "left",
+    ffi.sint32, "top",
+    ffi.sint32, "right",
+    ffi.sint32, "bottom"
+  )
+  WNDCLASSEX = ffi.newstructure("WNDCLASSEX",
+    ffi.uint32, "cbSize",
+    ffi.uint32, "style",
+    ffi.pointer, "lpfnWndProc",
+    ffi.sint32, "cbClsExtra",
+    ffi.sint32, "cbWndExtra",
+    ffi.pointer, "hInstance",
+    ffi.pointer, "hIcon",
+    ffi.pointer, "hCursor",
+    ffi.pointer, "hbrBackground",
+    ffi.cstring, "lpszMenuName",
+    ffi.cstring, "lpszClassName",
+    ffi.pointer, "hIconSm"
+  )
+  MSG = ffi.newstructure("MSG",
+    ffi.pointer, "hwnd",
+    ffi.uint32, "message",
+    ffi.uint64, "wParam",
+    ffi.sint64, "lParam",
+    ffi.uint32, "time",
+    POINT, "pt",
+    ffi.uint32, "lPrivate"
+  )
+  PAINTSTRUCT = ffi.newstructure("PAINTSTRUCT",
+    ffi.pointer, "hdc",
+    ffi.sint32, "fErase",
+    RECT, "rcPaint",
+    ffi.sint32, "fRestore",
+    ffi.sint32, "fIncUpdate",
+    ffi.uint64, "reservedA",
+    ffi.uint64, "reservedB",
+    ffi.uint64, "reservedC",
+    ffi.uint64, "reservedD"
+  )
+  BeginPaint = Library:bind(ffi.pointer, "BeginPaint", ffi.pointer, ffi.pointer)
+  CreateFontA = Library:bind(ffi.pointer, "CreateFontA", ffi.sint32, ffi.sint32, ffi.sint32, ffi.sint32, ffi.sint32, ffi.uint32, ffi.uint32, ffi.uint32, ffi.uint32, ffi.uint32, ffi.uint32, ffi.uint32, ffi.uint32, ffi.pointer)
+  CreateFontIndirectA = Library:bind(ffi.pointer, "CreateFontIndirectA", ffi.pointer)
+  CreateWindowExA = Library:bind(ffi.pointer, "CreateWindowExA", ffi.uint32, ffi.pointer, ffi.pointer, ffi.uint32, ffi.sint32, ffi.sint32, ffi.sint32, ffi.sint32, ffi.pointer, ffi.pointer, ffi.pointer, ffi.pointer)
+  DefWindowProcA = Library:bind(ffi.sint64, "DefWindowProcA", ffi.pointer, ffi.uint32, ffi.uint64, ffi.sint64)
+  DeleteObject = Library:bind(ffi.sint32, "DeleteObject", ffi.pointer)
+  DispatchMessageA = Library:bind(ffi.sint64, "DispatchMessageA", ffi.pointer)
+  DrawTextW = Library:bind(ffi.sint32, "DrawTextW", ffi.pointer, ffi.pointer, ffi.sint32, ffi.pointer, ffi.uint32)
+  EndPaint = Library:bind(ffi.sint32, "EndPaint", ffi.pointer, ffi.pointer)
+  FillRect = Library:bind(ffi.sint32, "FillRect", ffi.pointer, ffi.pointer, ffi.pointer)
+  GetClientRect = Library:bind(ffi.sint32, "GetClientRect", ffi.pointer, ffi.pointer)
+  GetDC = Library:bind(ffi.pointer, "GetDC", ffi.pointer)
+  GetMessageA = Library:bind(ffi.sint32, "GetMessageA", ffi.pointer, ffi.pointer, ffi.uint32, ffi.uint32)
+  GetModuleHandleA = Library:bind(ffi.pointer, "GetModuleHandleA", ffi.pointer)
+  GetStockObject = Library:bind(ffi.pointer, "GetStockObject", ffi.sint32)
+  InvalidateRect = Library:bind(ffi.sint32, "InvalidateRect", ffi.pointer, ffi.pointer, ffi.sint32)
+  KillTimer = Library:bind(ffi.sint32, "KillTimer", ffi.pointer, ffi.uint64)
+  LoadCursorA = Library:bind(ffi.pointer, "LoadCursorA", ffi.pointer, ffi.pointer)
+  LoadIconA = Library:bind(ffi.pointer, "LoadIconA", ffi.pointer, ffi.pointer)
+  MoveWindow = Library:bind(ffi.sint32, "MoveWindow", ffi.pointer, ffi.sint32, ffi.sint32, ffi.sint32, ffi.sint32, ffi.sint32)
+  MultiByteToWideChar = Library:bind(ffi.sint32, "MultiByteToWideChar", ffi.uint32, ffi.uint32, ffi.pointer, ffi.sint32, ffi.pointer, ffi.sint32)
+  PostQuitMessage = Library:bind(ffi.void, "PostQuitMessage", ffi.sint32)
+  RegisterClassExA = Library:bind(ffi.uint16, "RegisterClassExA", ffi.pointer)
+  ReleaseDC = Library:bind(ffi.sint32, "ReleaseDC", ffi.pointer, ffi.pointer)
+  SelectObject = Library:bind(ffi.pointer, "SelectObject", ffi.pointer, ffi.pointer)
+  SetBkMode = Library:bind(ffi.sint32, "SetBkMode", ffi.pointer, ffi.sint32)
+  SetTimer = Library:bind(ffi.uint64, "SetTimer", ffi.pointer, ffi.uint64, ffi.uint32, ffi.pointer)
+  ShowWindow = Library:bind(ffi.sint32, "ShowWindow", ffi.pointer, ffi.sint32)
+  SystemParametersInfoA = Library:bind(ffi.sint32, "SystemParametersInfoA", ffi.uint32, ffi.uint32, ffi.pointer, ffi.uint32)
+  TranslateMessage = Library:bind(ffi.sint32, "TranslateMessage", ffi.pointer)
+  UpdateWindow = Library:bind(ffi.sint32, "UpdateWindow", ffi.pointer)
+end
+-- @END
+
+--------------------------------------------------------------------------------
 -- LOAD WIN32 DLLs AND BINDINGS                                               --
 --------------------------------------------------------------------------------
 
@@ -42,42 +235,7 @@ local win32 = ffi.loadlib("kernel32.dll")
 win32:addlibrary("user32.dll")
 win32:addlibrary("gdi32.dll")
 
-win32:attach(Win32Ffi)
-
-local GetMessageA             = win32.GetMessageA
-local TranslateMessage        = win32.TranslateMessage
-local DispatchMessageA        = win32.DispatchMessageA
-local PostQuitMessage         = win32.PostQuitMessage
-local KillTimer               = win32.KillTimer
-local InvalidateRect          = win32.InvalidateRect
-local MoveWindow              = win32.MoveWindow
-local BeginPaint              = win32.BeginPaint
-local EndPaint                = win32.EndPaint
-local SelectObject            = win32.SelectObject
-local DeleteObject            = win32.DeleteObject
-local SetBkMode               = win32.SetBkMode
-local GetClientRect           = win32.GetClientRect
-local GetDC                   = win32.GetDC
-local ReleaseDC               = win32.ReleaseDC
-local DrawTextW               = win32.DrawTextW
-local DefWindowProcA          = win32.DefWindowProcA
-local MultiByteToWideChar     = win32.MultiByteToWideChar
-local WM_DESTROY              = win32.WM_DESTROY
-local WM_TIMER                = win32.WM_TIMER
-local WM_SIZE                 = win32.WM_SIZE
-local WM_PAINT                = win32.WM_PAINT
-local WM_COMMAND              = win32.WM_COMMAND
-local WS_CHILD                = win32.WS_CHILD
-local WS_VISIBLE              = win32.WS_VISIBLE
-local WS_CLIPCHILDREN         = win32.WS_CLIPCHILDREN
-local TRANSPARENT             = win32.TRANSPARENT
-local DT_SINGLELINE           = win32.DT_SINGLELINE
-local DT_VCENTER              = win32.DT_VCENTER
-local DT_CALCRECT             = win32.DT_CALCRECT
-local NONCLIENTMETRICSA       = win32.NONCLIENTMETRICSA
-local SystemParametersInfoA   = win32.SystemParametersInfoA
-local CreateFontIndirectA     = win32.CreateFontIndirectA
-local SPI_GETNONCLIENTMETRICS = win32.SPI_GETNONCLIENTMETRICS
+BindLibrary(win32)
 
 --------------------------------------------------------------------------------
 -- QUERY WIN32 SYSTEM FONT                                                    --
@@ -102,35 +260,35 @@ local SystemFont  = CreateFontIndirectA(DefaultFont:getpointer())
 
 local EXIT_SUCCESS = 0
 
-local IconResourceId     = newpointer(0, win32.IDI_APPLICATION)
-local CursorResourceId   = newpointer(0, win32.IDC_ARROW)
-local WindowColorBrushId = newpointer(0, (win32.COLOR_WINDOW + 1))
+local IconResourceId     = newpointer(0, IDI_APPLICATION)
+local CursorResourceId   = newpointer(0, IDC_ARROW)
+local WindowColorBrushId = newpointer(0, (COLOR_WINDOW + 1))
 
-local HIcon     = win32.LoadIconA(NULL, IconResourceId)
-local HCursor   = win32.LoadCursorA(NULL, CursorResourceId)
-local HInstance = win32.GetModuleHandleA(NULL)
+local HIcon     = LoadIconA(NULL, IconResourceId)
+local HCursor   = LoadCursorA(NULL, CursorResourceId)
+local HInstance = GetModuleHandleA(NULL)
 
-local STRINGS_FONT = win32.CreateFontA(
-  64,                        -- Height
-  0,                         -- Width (auto)
-  0,                         -- Escapement
-  0,                         -- Orientation
-  win32.FW_NORMAL,           -- Weight
-  0,                         -- Italic
-  0,                         -- Underline
-  0,                         -- StrikeOut
-  win32.DEFAULT_CHARSET,     -- CharSet
-  0,                         -- OutPrecision (OUT_DEFAULT_PRECIS)
-  0,                         -- ClipPrecision (CLIP_DEFAULT_PRECIS)
-  win32.ANTIALIASED_QUALITY, -- Quality
-  (win32.DEFAULT_PITCH | win32.FF_SWISS),
-  "Arial"
+local STRINGS_FONT = CreateFontA(
+  64,                         -- Height
+  0,                          -- Width (auto)
+  0,                          -- Escapement
+  0,                          -- Orientation
+  FW_NORMAL,                  -- Weight
+  0,                          -- Italic
+  0,                          -- Underline
+  0,                          -- StrikeOut
+  DEFAULT_CHARSET,            -- CharSet
+  0,                          -- OutPrecision (OUT_DEFAULT_PRECIS)
+  0,                          -- ClipPrecision (CLIP_DEFAULT_PRECIS)
+  ANTIALIASED_QUALITY,        -- Quality
+  (DEFAULT_PITCH | FF_SWISS), -- PitchAndFamily
+  "Arial"                     -- FaceName
 )
 
-local WndClass     = newinstance(win32.WNDCLASSEX)
-local Rect         = newinstance(win32.RECT)
-local Msg          = newinstance(win32.MSG)
-local Paint        = newinstance(win32.PAINTSTRUCT)
+local WndClass     = newinstance(WNDCLASSEX)
+local Rect         = newinstance(RECT)
+local Msg          = newinstance(MSG)
+local Paint        = newinstance(PAINTSTRUCT)
 local PaintPointer = Paint:getpointer()
 local RectPointer  = Rect:getpointer()
 
@@ -223,7 +381,7 @@ end
 -- UI LAYOUT                                                                  --
 --------------------------------------------------------------------------------
 
-local UI_TempRectangle = newinstance(win32.RECT)
+local UI_TempRectangle = newinstance(RECT)
 local UI_TempPointer   = UI_TempRectangle:getpointer()
 
 local function InitMainTextHeight (Hdc)
@@ -274,7 +432,7 @@ local function MeasureLargestString (Window)
   local MaxDotsString = SM_GetWidestString()
   local Hdc           = GetDC(Window)
   SelectObject(Hdc, STRINGS_FONT)
-  MultiByteToWideChar(win32.CP_UTF8, 0, MaxDotsString, -1, CurrentTextBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
+  MultiByteToWideChar(CP_UTF8, 0, MaxDotsString, -1, CurrentTextBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
   UI_TempRectangle:set("left",   0)
   UI_TempRectangle:set("top",    0)
   UI_TempRectangle:set("right",  0)
@@ -286,7 +444,7 @@ end
 
 local function WriteUTF16String ()
   local Utf8String = SM_GetString()
-  MultiByteToWideChar(win32.CP_UTF8, 0, Utf8String, -1, CurrentTextBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
+  MultiByteToWideChar(CP_UTF8, 0, Utf8String, -1, CurrentTextBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
 end
 
 local function WindowProcedure (Window, Message, WParam, LParam)
@@ -350,8 +508,8 @@ local WindowProcClosure = newcallback(WindowProcedure, sint64, pointer, uint32, 
 
 local function Init ()
   -- Set window class fields
-  WndClass:set("cbSize",        win32.WNDCLASSEX:getsizeinbytes())
-  WndClass:set("style",         (win32.CS_HREDRAW | win32.CS_VREDRAW | win32.CS_OWNDC))
+  WndClass:set("cbSize",        WNDCLASSEX:getsizeinbytes())
+  WndClass:set("style",         (CS_HREDRAW | CS_VREDRAW | CS_OWNDC))
   WndClass:set("lpfnWndProc",   WindowProcClosure:getpointer())
   WndClass:set("cbClsExtra",    0)
   WndClass:set("cbWndExtra",    0)
@@ -363,15 +521,15 @@ local function Init ()
   WndClass:set("lpszClassName", "MAIN_WindowClass")
   WndClass:set("hIconSm",       HIcon)
   -- Register class
-  local ClassAtom = win32.RegisterClassExA(WndClass:getpointer())
+  local ClassAtom = RegisterClassExA(WndClass:getpointer())
   assert((ClassAtom ~= 0), "RegisterClassExA failed")
   -- Create window
-  local Window = win32.CreateWindowExA(
+  local Window = CreateWindowExA(
     0,
     "MAIN_WindowClass",
     "Hello World",
-    (win32.WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN),
-    win32.CW_USEDEFAULT, win32.CW_USEDEFAULT, 800, 320,
+    (WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN),
+    CW_USEDEFAULT, CW_USEDEFAULT, 800, 320,
     NULL, NULL, HInstance, NULL
   )
   assert((Window ~= NULL), "CreateWindowExA failed")
@@ -384,17 +542,17 @@ local function Init ()
   local ButtonResetPointer = newpointer(0, CONTROL_RESET_ID)
   local ButtonPausePointer = newpointer(0, CONTROL_PAUSE_ID)
   local ButtonExitPointer  = newpointer(0, CONTROL_EXIT_ID)
-  ButtonResetWindow = win32.CreateWindowExA(0, "BUTTON", "Reset", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonResetPointer, HInstance, NULL)
-  ButtonPauseWindow = win32.CreateWindowExA(0, "BUTTON", "Pause", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonPausePointer, HInstance, NULL)
-  ButtonExitWindow  = win32.CreateWindowExA(0, "BUTTON", "Exit",  (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonExitPointer,  HInstance, NULL)
+  ButtonResetWindow = CreateWindowExA(0, "BUTTON", "Reset", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonResetPointer, HInstance, NULL)
+  ButtonPauseWindow = CreateWindowExA(0, "BUTTON", "Pause", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonPausePointer, HInstance, NULL)
+  ButtonExitWindow  = CreateWindowExA(0, "BUTTON", "Exit",  (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonExitPointer,  HInstance, NULL)
   -- Initial state
   SM_Init()
   MeasureLargestString(Window)
   WriteUTF16String()
   ApplyLayout(Window)
-  win32.ShowWindow(Window, win32.SW_SHOWDEFAULT)
-  win32.UpdateWindow(Window)
-  GlobalTimerId = win32.SetTimer(Window, 0, 500, NULL)
+  ShowWindow(Window, SW_SHOWDEFAULT)
+  UpdateWindow(Window)
+  GlobalTimerId = SetTimer(Window, 0, 500, NULL)
   assert((GlobalTimerId ~= 0), "SetTimer failed")
 end
 

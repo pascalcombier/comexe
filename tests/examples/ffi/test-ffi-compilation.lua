@@ -6,20 +6,20 @@ local getrelativepath = Runtime.getrelativepath
 
 local LuaExe = getparam("LUA-EXE")
 
-local HEADERS = {
-  "tiny-libc.h",
-  "tiny-sqlite3.h",
-  "tiny-win32.h",
+local FFI_FILES = {
+  "test-tiny-libc.lua",
+  "test-doc-struct-qsort.lua",
+  "test-win32-gui.lua",
 }
 
-for Index, HeaderFilename in ipairs(HEADERS) do
-  local HeaderFile = getrelativepath(HeaderFilename)
-  local Command    = format([[%s -x --compile "%s"]], LuaExe, HeaderFile)
+for Index, Filename in ipairs(FFI_FILES) do
+  local FilePath = getrelativepath(Filename)
+  local Command  = format([[%s -x --preprocess "%s"]], LuaExe, FilePath)
   local Success, Reason, ExitCode = os.execute(Command)
   if (ExitCode == 0) then
-    print(format(" OK %s", HeaderFilename))
+    print(format(" OK %s", Filename))
   else
-    print(format("ERR %s compilation failed with exit code %d", HeaderFilename, ExitCode))
+    print(format("ERR %s preprocessing failed with exit code %d", Filename, ExitCode))
     os.exit(1)
   end
 end
