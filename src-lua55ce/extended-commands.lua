@@ -681,7 +681,7 @@ local function EXT_Command (RawArguments)
     assert(InputFile, "preprocess requires an input file")
     local Count, Status = Preprocessor.process(InputFile)
     if (not Count) then
-      print(format("ERROR: %s", Status))
+      error(Status)
     elseif (Status == "no-markers") then
       print(format("WARNING: No markers found in %s", InputFile))
     elseif (Status == "unchanged") then
