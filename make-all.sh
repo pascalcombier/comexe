@@ -227,8 +227,9 @@ cp dist/lua55ce-x86_64-linux       dist/tmp/
 cp dist/lua55ce-x86_64-windows.exe dist/tmp/
 cp dist/libtcc.dll dist/libtcc.so  dist/tmp/
 cp LICENSE dist/tmp/LICENSE
+cp -R doc dist/tmp/doc
 chmod +x dist/tmp/lua55ce-x86_64-linux
-(cd dist/tmp && zip -9 ../lua55ce.zip lua55ce-x86_64-linux lua55ce-x86_64-windows.exe libtcc.so libtcc.dll LICENSE)
+(cd dist/tmp && zip -9 -r ../lua55ce.zip lua55ce-x86_64-linux lua55ce-x86_64-windows.exe libtcc.so libtcc.dll LICENSE doc)
 rm -rf dist/tmp
 
 # Clean bin folder from packaged files
