@@ -266,11 +266,6 @@ local function STRUCTURE_GetAlignment (Structure)
   return Alignment
 end
 
-local function STRUCTURE_GetSizeInBytes (Structure)
-  local SizeInBytes = Structure.Size
-  return SizeInBytes
-end
-
 -- Rebuild the offset list from the fields
 local function STRUCTURE_TypeGetOffsets (Structure)
   -- local data
@@ -347,13 +342,12 @@ end
 STRUCTURE_TYPE_METATABLE = {
   -- METATABLE_UserDefinedMethods
   __index = {
-    gettypename    = STRUCTURE_GetTypeName,
-    getffitype     = STRUCTURE_GetFfiType,
-    getalignment   = STRUCTURE_GetAlignment,
-    getsizeinbytes = STRUCTURE_GetSizeInBytes,
-    getoffsets     = STRUCTURE_TypeGetOffsets,
-    setoffsets     = STRUCTURE_SetOffsets,
-    cast           = STRUCTURE_NewInstanceFromPointer,
+    gettypename  = STRUCTURE_GetTypeName,
+    getffitype   = STRUCTURE_GetFfiType,
+    getalignment = STRUCTURE_GetAlignment,
+    getoffsets   = STRUCTURE_TypeGetOffsets,
+    setoffsets   = STRUCTURE_SetOffsets,
+    cast         = STRUCTURE_NewInstanceFromPointer,
   }
 }
 

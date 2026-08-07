@@ -81,7 +81,7 @@ ConfigureUser(Users, 2, 1, "Amy",  35)
 ConfigureUser(Users, 3, 4, "Carl", 22)
 ConfigureUser(Users, 4, 2, "Bob",  42)
 
-local UserStructSize = UserStruct:getsizeinbytes()
+local UserStructSize = libffi.sizeof(UserStruct)
 local ArrayPointer   = Users:getpointer()
 local ComparePointer = CompareCallback:getpointer()
 

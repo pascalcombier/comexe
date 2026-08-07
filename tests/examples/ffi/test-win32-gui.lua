@@ -242,12 +242,12 @@ BindLibrary(win32)
 --------------------------------------------------------------------------------
 
 local SystemNcm = newinstance(NONCLIENTMETRICSA)
-SystemNcm:set("cbSize", NONCLIENTMETRICSA:getsizeinbytes())
+SystemNcm:set("cbSize", ffi.sizeof(NONCLIENTMETRICSA))
 
 -- Collect default font
 SystemParametersInfoA(
   SPI_GETNONCLIENTMETRICS,
-  NONCLIENTMETRICSA:getsizeinbytes(),
+  ffi.sizeof(NONCLIENTMETRICSA),
   SystemNcm:getpointer(),
   0)
 
@@ -508,7 +508,7 @@ local WindowProcClosure = newcallback(WindowProcedure, sint64, pointer, uint32, 
 
 local function Init ()
   -- Set window class fields
-  WndClass:set("cbSize",        WNDCLASSEX:getsizeinbytes())
+  WndClass:set("cbSize",        ffi.sizeof(WNDCLASSEX))
   WndClass:set("style",         (CS_HREDRAW | CS_VREDRAW | CS_OWNDC))
   WndClass:set("lpfnWndProc",   WindowProcClosure:getpointer())
   WndClass:set("cbClsExtra",    0)

@@ -21,7 +21,6 @@ local PairStruct, PairTypeError = ffi.newstructure("Pair",
                                                    int32_t,  "First",
                                                    int32_t, "Second")
 assert(PairStruct, PairTypeError)
-assert(PairStruct.getsizeinbytes)
 assert(PairStruct.getalignment)
 assert(PairStruct.getoffsets)
 

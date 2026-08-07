@@ -359,7 +359,6 @@ Structure type objects are returned by `ffi.newstructure`.
 | `StructType:gettypename()`       | Return structure type name.                                                            |
 | `StructType:getffitype()`        | Return underlying ffi_type handle.                                                     |
 | `StructType:getalignment()`      | Return required alignment in bytes.                                                    |
-| `StructType:getsizeinbytes()`    | Return total structure size in bytes.                                                  |
 | `StructType:getoffsets()`        | Return an array of field offsets in bytes.                                             |
 | `StructType:setoffsets(Offsets)` | Override field offsets computed by libffi. Returns nil on success, or an error string. |
 | `StructType:cast(Pointer)`       | Create a structure instance view over existing memory. No allocation is performed.     |
