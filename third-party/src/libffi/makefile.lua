@@ -6,8 +6,9 @@
 -- Compile as a static library
 --
 -- History
--- Original version: libffi-3.4.6
--- Update:           libffi-3.5.2
+-- Original version libffi-3.4.6
+-- Update           libffi-3.5.2
+-- Update           libffi-3.7.1
 --
 
 --------------------------------------------------------------------------------
