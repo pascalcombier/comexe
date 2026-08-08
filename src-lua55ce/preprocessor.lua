@@ -4,32 +4,35 @@
 
 -- ComEXE preprocessor: generate FFI bindings, can be extended later.
 --
--- Limitation: only work with LF-based files (Linux, not CRLF Windows)
+-- Limitation: work with LF-based files (Linux, on Windows CRLF, might work or
+-- not)
 --
 -- GENERAL SYNTAX:
---   -- @BEGIN <OperationName>
---   -- @PARAM <key> <value>
+--   -- @BEGIN FfiHeader("FunctionName", "libffi", "header.h")
 --   -- INPUT-LINE-1
 --   -- INPUT-LINE-2
---   -- INPUT-LINE-3
 --   -- @OUTPUT
---   GENERATE CODE 1
---   GENERATE CODE 2
---   GENERATE CODE 3
+--   GENERATED CODE 1
+--   GENERATED CODE 2
+--   GENERATED CODE 3
 --   -- @END
 --
--- The @PARAM lines are user-defined key-value pairs passed to the handler.
--- Everything between @BEGIN and @END (excluding @PARAM lines) is replaced
--- by the handler's generated output on each run.
+-- By design, the @BEGIN line is a Lua expression, evaluated in an environment
+-- exposing the registered handlers (FfiHeader, FfiDeclarations).
+-- 
+-- Each handler receives the block Context as its first argument, plus the
+-- arguments given in the expression. The handler shall return the generated
+-- output lines.
 --
 -- Usage:
 --   bin/lua55ce -x --preprocess mymodule.lua
 --
 -- Adding a handler:
---   local HANDLERS = {
---     ["import-c-header"] = HandleGenerateFfi,
---     MyNewOp             = HandleMyNewOp,
---   }
+--   local function MyHandler (Context, ...)
+--     -- read Context.Input, Context.Output, Context.Directory
+--     return Lines, ErrorString
+--   end
+--   HANDLERS["MyHandler"] = MyHandler
 
 --------------------------------------------------------------------------------
 -- MODULE                                                                     --
@@ -50,33 +53,19 @@ local GenerateBindings = FfiCompiler.GenerateBindings
 -- PREPROCESSOR HANDLERS                                                      --
 --------------------------------------------------------------------------------
 
--- import-c-header: read a C header file and generate FFI bindings
---
--- Usage:
---   -- @BEGIN import-c-header
---   -- @PARAM file <header.h> -- C header to parse (user-written)
---   -- @PARAM function <Name> -- Name of the function to generate
---   -- @PARAM lib <libffi>    -- Name of the variable containing the libffi
---   -- @OUTPUT
---   GENERATED-CODE HERE
---   -- @END
-local function HandleImportHeader (Block, Directory)
-  -- Retrieve block info
-  local HeaderFile   = Block.file
-  local FunctionName = Block["function"] -- function is reserved keyword
-  local FfiVariable  = Block.lib
+local function HandleFfiHeader (Context, FunctionName, FfiVariable, HeaderFile)
   -- local data
   local Lines
   local ErrorString
   -- Validate inputs
-  if (not HeaderFile) then
-    ErrorString = "Missing @PARAM file"
-  elseif (not FunctionName) then
-    ErrorString = "Missing @PARAM function"
+  if (not FunctionName) then
+    ErrorString = "Missing function argument"
   elseif (not FfiVariable) then
-    ErrorString = "Missing @PARAM lib"
+    ErrorString = "Missing lib argument"
+  elseif (not HeaderFile) then
+    ErrorString = "Missing file argument"
   else
-    local HeaderPathname = newpathname(Directory, HeaderFile)
+    local HeaderPathname = newpathname(Context.Directory, HeaderFile)
     local HeaderFilename = tostring(HeaderPathname)
     local FileContent, ReadErrorString = readfile(HeaderFilename)
     if FileContent then
@@ -88,31 +77,18 @@ local function HandleImportHeader (Block, Directory)
   return Lines, ErrorString
 end
 
--- import-inline-c: parse inline C code and generate FFI bindings
---
--- Usage:
---   -- @BEGIN import-inline-c
---   -- @PARAM function <Name> -- Name of the function to generate
---   -- @PARAM lib <libffi>    -- Name of the variable containing the libffi
---   -- void puts(const char *s);
---   -- void exit(int status);
---   -- @OUTPUT
---   -- GENERATED-CODE HERE
---   -- @END
-local function HandleImportInlineC (Block, Directory)
-  -- Retrieve data
-  local FunctionName = Block["function"] -- function is reserved keyword
-  local FfiVariable  = Block.lib
+-- The C declarations come from the block INPUT lines
+local function HandleFfiDeclarations (Context, FunctionName, FfiVariable)
   -- local data
   local ReturnLines
   local ErrorString
   -- Validate inputs
   if (not FunctionName) then
-    ErrorString = "Missing @PARAM function"
+    ErrorString = "Missing function argument"
   elseif (not FfiVariable) then
-    ErrorString = "Missing @PARAM lib"
+    ErrorString = "Missing lib argument"
   else
-    local SourceC = concat(Block.Input, "\n")
+    local SourceC = concat(Context.Input, "\n")
     ReturnLines, ErrorString = GenerateBindings(SourceC, FfiVariable, FunctionName)
   end
   return ReturnLines, ErrorString
@@ -123,9 +99,24 @@ end
 --------------------------------------------------------------------------------
 
 local HANDLERS = {
-  ["import-c-header"] = HandleImportHeader,
-  ["import-inline-c"] = HandleImportInlineC,
+  FfiHeader       = HandleFfiHeader,
+  FfiDeclarations = HandleFfiDeclarations,
 }
+
+-- Build a new sandbox environment at runtime: redirect the calls to HANDLERS
+-- with the proper context.
+--
+-- The @BEGIN Handler(...) will be simply evaluated in this environment
+local function BuildEnvironment (Context)
+  local NewEnvironment = {}
+  for Name, Handler in pairs(HANDLERS) do
+    local function NewHandler (...)
+      return Handler(Context, ...)
+    end
+    NewEnvironment[Name] = NewHandler
+  end
+  return NewEnvironment
+end
 
 local function ProcessBlocks (Editor, Directory)
   -- local data
@@ -136,18 +127,30 @@ local function ProcessBlocks (Editor, Directory)
   -- Main iteration
   while (BlockIndex <= BlockCount) and (not ErrorString) do
     local Block     = Editor:getblock(BlockIndex)
-    local BlockType = Block.Type
-    local Handler   = HANDLERS[BlockType]
-    if Handler then
-      local NewLines, HandlerErrorString = Handler(Block, Directory)
-      if NewLines then
-        Block.Output = NewLines
-        TotalCount   = (TotalCount + #NewLines)
-      elseif HandlerErrorString then
-        ErrorString = format("Handler '%s' error: %s", BlockType, HandlerErrorString)
+    local BeginLine = Block.BeginLine
+    -- Block context: input lines, current output, directory
+    local NewContext = {
+      Directory     = Directory,
+      CommentPrefix = Block.CommentPrefix,
+      Input         = Block.Input,
+      Output        = Block.Output,
+    }
+    -- Evaluate the @BEGIN line as a Lua expression
+    local NewEnvironment   = BuildEnvironment(NewContext)
+    local LuaCode          = format("return %s", BeginLine)
+    local Chunk, LoadError = load(LuaCode, "@BEGIN", "t", NewEnvironment)
+    if Chunk then
+      local Success, Lines, HandlerErrorString = pcall(Chunk)
+      if (not Success) then
+        ErrorString = format("Block %d: %s", BlockIndex, Lines)
+      elseif (type(Lines) ~= "table") then
+        ErrorString = format("Block %d: %s", BlockIndex, HandlerErrorString)
+      else
+        Block.Output = Lines
+        TotalCount   = (TotalCount + #Lines)
       end
     else
-      ErrorString = format("No handler for block type '%s'", BlockType)
+      ErrorString = format("Block %d: %s", BlockIndex, LoadError)
     end
     BlockIndex = (BlockIndex + 1)
   end

@@ -10,10 +10,7 @@ local format = string.format
 -- FFI IMPORTS                                                                --
 --------------------------------------------------------------------------------
 
--- @BEGIN import-c-header
--- @PARAM file tiny-libc.h
--- @PARAM function BindLibrary
--- @PARAM lib libffi
+-- @BEGIN FfiHeader("BindLibrary", "libffi", "tiny-libc.h")
 -- @OUTPUT
 -- Functions
 local free

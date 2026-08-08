@@ -1,17 +1,6 @@
---------------------------------------------------------------------------------
--- MODULE                                                                     --
---------------------------------------------------------------------------------
-
 local libffi = require("com.ffi")
 
---------------------------------------------------------------------------------
--- FFI IMPORTS                                                                --
---------------------------------------------------------------------------------
-
--- @BEGIN import-c-header
--- @PARAM file tiny-libc.h
--- @PARAM function BindLibrary
--- @PARAM lib libffi
+-- @BEGIN FfiHeader("BindLibrary", "libffi", "tiny-libc.h")
 -- @OUTPUT
 -- Functions
 local free
@@ -29,11 +18,7 @@ local function BindLibrary (Library)
 end
 -- @END
 
---------------------------------------------------------------------------------
--- MAIN                                                                       --
---------------------------------------------------------------------------------
-
--- Load DLL and attach FFI interface
+-- Load DLL and apply the bindings
 local libc = libffi.loadlib("windows", "msvcrt.dll", "linux", "libc.so", "linux", "libc.so.6")
 BindLibrary(libc)
 

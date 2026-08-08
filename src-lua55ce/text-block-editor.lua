@@ -4,7 +4,7 @@
 
 -- This module contains an "Editor" to programmatically update inlined text
 -- blocks inside files (a little like BEGIN/END from org-mode). The blocks are
--- delimited by @BEGIN/@PARAM/@END. This implementation shall be
+-- delimited by @BEGIN/@OUTPUT/@END. This implementation shall be
 -- language-agnostic, so the prefix before @BEGIN can be Lua comments "-- " as
 -- well as "// ", "# " or other prefix.
 --
@@ -20,9 +20,7 @@
 -- LINE-1
 -- LINE-2
 -- LINE-3
--- -- @BEGIN BlockType
--- -- @PARAM key1 value1
--- -- @PARAM key2 value2
+-- -- @BEGIN SomeHandler("arg1", "arg2", ...)
 -- OPTIONAL INPUT line 1
 -- OPTIONAL INPUT line 2
 -- -- @OUTPUT
@@ -45,9 +43,7 @@
 -- LINE-1
 -- LINE-2
 -- LINE-3
--- -- @BEGIN BlockType
--- -- @PARAM key1 value1
--- -- @PARAM key2 value2
+-- -- @BEGIN SomeHandler("arg1", "arg2")
 -- OPTIONAL INPUT line 1
 -- OPTIONAL INPUT line 2
 -- -- @OUTPUT
@@ -68,10 +64,7 @@
 -- Editor[1] = "LINE-1\nLINE-2\nLINE-3"
 --
 -- Editor[2] = {
---   Type          = "BlockType"
---   ParameterKeys = { "key1", "key2" } -- just to preserve read ordering
---   key1          = "value1"
---   key2          = "value2"
+--   BeginLine      = 'SomeHandler("arg1", "arg2")'
 --   CommentPrefix = "-- "
 --   Input         = { "OPTIONAL INPUT line 1", "OPTIONAL INPUT line 2" }
 --   Output        = { "replacement" }
@@ -141,19 +134,11 @@ local function TBE_MethodToString (Editor)
       insert(Parts, Item)
     else
       -- Write BEGIN
-      local ParameterKeys = Item.ParameterKeys
       local CommentPrefix = Item.CommentPrefix
       local ItemInput     = Item.Input
       local ItemOutput    = Item.Output
-      local NewLine       = format("%s@BEGIN %s\n", CommentPrefix, Item.Type)
+      local NewLine       = format("%s@BEGIN %s\n", CommentPrefix, Item.BeginLine)
       insert(Parts, NewLine)
-      -- Write the PARAM in the same order as read
-      for ParamIndex = 1, #ParameterKeys do
-        local Key     = ParameterKeys[ParamIndex]
-        local Value   = Item[Key]
-        local NewLine = format("%s@PARAM %s %s\n", CommentPrefix, Key, Value)
-        insert(Parts, NewLine)
-      end
       -- Write the input lines (above @OUTPUT)
       for LineIndex = 1, #ItemInput do
         local Line    = ItemInput[LineIndex]
@@ -249,15 +234,10 @@ local function FindLineEnd (Content, Position)
 end
 
 local function ParseBlock (Block, BlockContent)
-  local ParameterKeys = Block.ParameterKeys
   local CommentPrefix = Block.CommentPrefix
   local BeforeOutput  = true
   for BlockLine in gmatch(BlockContent, "([^\n]*)\n?") do
-    local Key, Value = BlockLine:match("@PARAM%s+(%w+)%s+(.+)")
-    if Key then
-      Block[Key] = Value
-      insert(ParameterKeys, Key) -- Preserve Key order in ParameterKeys array
-    elseif BeforeOutput and BlockLine:match("@OUTPUT") then
+    if BeforeOutput and BlockLine:match("@OUTPUT") then
       BeforeOutput = false
     elseif BeforeOutput then
     -- In the INPUT part we try to remove the comment prefix
@@ -300,16 +280,15 @@ local function ParseContent (Content)
       local CommentPrefix = Content:sub(LineStartPosition, (BeginPosition - 1))
       local BeginLineEnd  = FindLineEnd(Content, BeginPosition)
       local BeginLine     = Content:sub(BeginPosition, (BeginLineEnd - 1))
-      local BlockType     = BeginLine:match("@BEGIN%s+([%w%-]+)")
+      local Expression    = BeginLine:match("@BEGIN%s*(.*)")
       local EndPosition   = find(Content, "@END", BeginLineEnd, true)
       if (not EndPosition) then
-        ErrorString = format("@BEGIN '%s' without matching @END", BlockType)
+        ErrorString = format("@BEGIN '%s' without matching @END", Expression)
       else
         local EndLineStart = FindLineStart(Content, EndPosition)
         local BlockContent = Content:sub((BeginLineEnd + 1), (EndLineStart - 1))
         local NewBlock = {
-          Type          = BlockType,
-          ParameterKeys = {},
+          BeginLine     = Expression,
           CommentPrefix = CommentPrefix,
           Input         = {},
           Output        = {},

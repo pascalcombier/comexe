@@ -37,10 +37,7 @@ local uint64      = ffi.uint64
 -- FFI IMPORTS                                                                --
 --------------------------------------------------------------------------------
 
--- @BEGIN import-c-header
--- @PARAM file tiny-win32.h
--- @PARAM function BindLibrary
--- @PARAM lib ffi
+-- @BEGIN FfiHeader("BindLibrary", "ffi", "tiny-win32.h")
 -- @OUTPUT
 -- Constants
 local ANTIALIASED_QUALITY = 4
