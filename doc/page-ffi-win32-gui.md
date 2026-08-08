@@ -3,8 +3,8 @@
 * [Introduction](#introduction)
 * [References](#references)
 * [Implementing the application](#implementing-the-application)
-  * [Win32 binding](#win32-binding)
-  * [Loading Win32 DLLs and attaching the generated Win32 binding](#loading-win32-dlls-and-attaching-the-generated-win32-binding)
+  * [Generating the bindings](#generating-the-bindings)
+  * [Using the generated Win32 binding](#using-the-generated-win32-binding)
   * [Unicode conversion](#unicode-conversion)
   * [Example Structure](#example-structure)
   * [State Machine](#state-machine)
@@ -28,7 +28,7 @@ This guide shows how ComEXE's libffi can be used to develop **native Windows GUI
 
 Covered in other documents:
 
-  * [Generating bindings from C headers](./comexe-reference-ffi.md#generating-a-binding-file)
+  * [Generating bindings from C headers](./comexe-reference-ffi.md#generating-bindings)
   * [Loading a DLL](./comexe-reference-ffi.md#loading-a-shared-library)
   * [Calling foreign functions](./comexe-reference-ffi.md#calling-foreign-functions)
   * [Implementing Callbacks](./comexe-reference-ffi.md#callback-objects)
@@ -40,28 +40,67 @@ Further links:
 
 # Implementing the application
 
-## Win32 binding
+## Generating the bindings
 
-Compile the Win32 declarations into a Lua binding:
+The Win32 declarations are collected into the header [tiny-win32.h](../tests/examples/ffi/tiny-win32.h). Then some boilerplate code is required to generate the FFI code.
 
-**[tiny-win32.h](../tests/examples/ffi/tiny-win32.h)** → `lua55ce -x --compile` → **[tiny-win32-ffi.lua](../tests/examples/ffi/tiny-win32-ffi.lua)**
-
-## Loading Win32 DLLs and attaching the generated Win32 binding
-
-The Win32 API is split across several DLLs. All declarations go in one header, so we maintain only one binding. Load the DLLs and attach the interface together:
+**[test-win32-gui.lua](../tests/examples/ffi/test-win32-gui.lua)**
 
 ```lua
-local ffi      = require("com.ffi")
-local Win32Ffi = require("tiny-win32-ffi")
+-- @BEGIN FfiHeader("BindLibrary", "libffi", "tiny-win32.h")
+-- @OUTPUT
+-- @END
+```
 
-local win32 = ffi.loadlib("kernel32.dll")
+The [preprocessor](./comexe-reference-preprocessor.md) generates the code making `C` functions callable from Lua:
+
+```console
+lua55ce.exe -x --preprocess tests/examples/ffi/test-win32-gui.lua
+```
+
+The block now contains the generated bindings:
+
+```lua
+-- @BEGIN FfiHeader("BindLibrary", "libffi", "tiny-win32.h")
+-- @OUTPUT
+-- Constants
+local ANTIALIASED_QUALITY = 4
+local COLOR_WINDOW = 5
+local CP_UTF8 = 65001
+local CS_HREDRAW = 2
+local CS_OWNDC = 32
+local CS_VREDRAW = 1
+...
+-- @END
+```
+
+## Using the generated Win32 binding
+
+The Win32 API is split across several DLLs. All declarations go in one header, so we maintain only one binding. Load the DLLs and use the bindings:
+
+```lua
+local libffi = require("com.ffi")
+
+-- @BEGIN FfiHeader("BindLibrary", "libffi", "tiny-win32.h")
+-- @OUTPUT
+-- Constants
+local ANTIALIASED_QUALITY = 4
+local COLOR_WINDOW = 5
+local CP_UTF8 = 65001
+local CS_HREDRAW = 2
+local CS_OWNDC = 32
+local CS_VREDRAW = 1
+...
+-- @END
+
+local win32 = libffi.loadlib("kernel32.dll")
 win32:addlibrary("user32.dll")
 win32:addlibrary("gdi32.dll")
 
-win32:attach(Win32Ffi)
+BindLibrary(win32)
 ```
 
-After loading, `win32` exposes the Win32 constants and functions used below.
+After binding, the Win32 constants and functions are available as local variables.
 
 ## Unicode conversion
 
@@ -90,24 +129,17 @@ For simplicity, we use global variables:
 ```lua
 local TEXT_BUFFER_SIZE_IN_BYTES = 256
 local TEXT_BUFFER_SIZE_IN_WCHAR = (TEXT_BUFFER_SIZE_IN_BYTES / 2)
-local CurrentTextBuffer         = ffi.malloc(TEXT_BUFFER_SIZE_IN_BYTES)
+local CurrentTextBuffer         = libffi.malloc(TEXT_BUFFER_SIZE_IN_BYTES)
 
 local function WriteUTF16String ()
   local Utf8String = SM_GetString()
-  MultiByteToWideChar(win32.CP_UTF8, 0, Utf8String, -1, CurrentTextBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
+  MultiByteToWideChar(CP_UTF8, 0, Utf8String, -1, CurrentTextBuffer, TEXT_BUFFER_SIZE_IN_WCHAR)
 end
 ```
 
 ## Example Structure
 
-The flow:
-
-```mermaid
-flowchart LR
-    Init --> Loop --> Clean
-```
-
-The code:
+The flow is:
 
 ```
 Init()
@@ -250,8 +282,8 @@ This function:
 ```lua
 local function Init ()
   -- Set window class fields
-  WndClass:set("cbSize",        win32.WNDCLASSEX:getsizeinbytes())
-  WndClass:set("style",         (win32.CS_HREDRAW | win32.CS_VREDRAW | win32.CS_OWNDC))
+  WndClass:set("cbSize",        libffi.sizeof(WNDCLASSEX))
+  WndClass:set("style",         (CS_HREDRAW | CS_VREDRAW | CS_OWNDC))
   WndClass:set("lpfnWndProc",   WindowProcClosure:getpointer())
   WndClass:set("cbClsExtra",    0)
   WndClass:set("cbWndExtra",    0)
@@ -263,15 +295,15 @@ local function Init ()
   WndClass:set("lpszClassName", "MAIN_WindowClass")
   WndClass:set("hIconSm",       HIcon)
   -- Register class
-  local ClassAtom = win32.RegisterClassExA(WndClass:getpointer())
+  local ClassAtom = RegisterClassExA(WndClass:getpointer())
   assert((ClassAtom ~= 0), "RegisterClassExA failed")
   -- Create window
-  local Window = win32.CreateWindowExA(
+  local Window = CreateWindowExA(
     0,
     "MAIN_WindowClass",
     "Hello World",
-    (win32.WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN),
-    win32.CW_USEDEFAULT, win32.CW_USEDEFAULT, 800, 320,
+    (WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN),
+    CW_USEDEFAULT, CW_USEDEFAULT, 800, 320,
     NULL, NULL, HInstance, NULL
   )
   assert((Window ~= NULL), "CreateWindowExA failed")
@@ -284,17 +316,17 @@ local function Init ()
   local ButtonResetPointer = newpointer(0, CONTROL_RESET_ID)
   local ButtonPausePointer = newpointer(0, CONTROL_PAUSE_ID)
   local ButtonExitPointer  = newpointer(0, CONTROL_EXIT_ID)
-  ButtonResetWindow = win32.CreateWindowExA(0, "BUTTON", "Reset", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonResetPointer, HInstance, NULL)
-  ButtonPauseWindow = win32.CreateWindowExA(0, "BUTTON", "Pause", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonPausePointer, HInstance, NULL)
-  ButtonExitWindow  = win32.CreateWindowExA(0, "BUTTON", "Exit",  (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonExitPointer,  HInstance, NULL)
+  ButtonResetWindow = CreateWindowExA(0, "BUTTON", "Reset", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonResetPointer, HInstance, NULL)
+  ButtonPauseWindow = CreateWindowExA(0, "BUTTON", "Pause", (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonPausePointer, HInstance, NULL)
+  ButtonExitWindow  = CreateWindowExA(0, "BUTTON", "Exit",  (WS_CHILD | WS_VISIBLE), 0, 0, UI_ButtonWidth, UI_ButtonHeight, Window, ButtonExitPointer,  HInstance, NULL)
   -- Initial state
   SM_Init()
   MeasureLargestString(Window)
   WriteUTF16String()
   ApplyLayout(Window)
-  win32.ShowWindow(Window, win32.SW_SHOWDEFAULT)
-  win32.UpdateWindow(Window)
-  GlobalTimerId = win32.SetTimer(Window, 0, 500, NULL)
+  ShowWindow(Window, SW_SHOWDEFAULT)
+  UpdateWindow(Window)
+  GlobalTimerId = SetTimer(Window, 0, 500, NULL)
   assert((GlobalTimerId ~= 0), "SetTimer failed")
 end
 ```
@@ -333,7 +365,7 @@ local function Clean ()
   DeleteObject(STRINGS_FONT)
   DeleteObject(SystemFont)
   KillTimer(NULL, GlobalTimerId)
-  ffi.free(CurrentTextBuffer)
+  libffi.free(CurrentTextBuffer)
 end
 ```
 
@@ -341,5 +373,4 @@ end
 
 * **[test-win32-gui.lua](../tests/examples/ffi/test-win32-gui.lua)**
 * **[tiny-win32.h](../tests/examples/ffi/tiny-win32.h)**
-* **[tiny-win32-ffi.lua](../tests/examples/ffi/tiny-win32-ffi.lua)** (generated)
 

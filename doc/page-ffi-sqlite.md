@@ -6,10 +6,10 @@
   * [Executing SQL code](#executing-sql-code)
   * [Compiled statements](#compiled-statements)
   * [Handling errors](#handling-errors)
-  * [Compiling the C header](#compiling-the-c-header)
+  * [Generating the bindings](#generating-the-bindings)
 * [Implementing the high-level interface](#implementing-the-high-level-interface)
   * [Module architecture](#module-architecture)
-  * [Attaching the generated SQLite binding](#attaching-the-generated-sqlite-binding)
+  * [Using the generated SQLite binding](#using-the-generated-sqlite-binding)
   * [Opening the database](#opening-the-database)
   * [Executing SQL statements](#executing-sql-statements)
   * [Creating statements](#creating-statements)
@@ -92,15 +92,92 @@ int     sqlite3_changes           (void *db);
 const char *sqlite3_errmsg (void *db);
 ```
 
-## Compiling the C header
+## Generating the bindings
 
-The declarations are collected into the header [tiny-sqlite3.h](../tests/examples/ffi/tiny-sqlite3.h). The built-in **FFI compiler generates the file** [tiny-sqlite3-ffi.lua](../tests/examples/ffi/tiny-sqlite3-ffi.lua). While the generated Lua module can be used as-is, this is a low-level C interface.
+The declarations are collected into the header [sqlite3.h](../runtime/comexe/usr/share/lua/5.5/com/sqlite3.h). Then some boilerplate code is required to generate the FFI code.
 
-```console
-lua55ce.exe -x --compile tiny-sqlite3.h
+**[sqlite3.lua](../runtime/comexe/usr/share/lua/5.5/com/sqlite3.lua)**
+
+```lua
+-- @BEGIN FfiHeader("BindLibrary", "libffi", "sqlite3.h")
+-- @OUTPUT
+-- @END
 ```
 
-Note that the generated module follows the C API conventions:
+The [preprocessor](./comexe-reference-preprocessor.md) generates the code making `C` functions callable from Lua:
+
+```console
+lua55ce.exe -x --preprocess runtime/comexe/usr/share/lua/5.5/com/sqlite3.lua
+```
+
+The block now contains the generated bindings:
+
+```lua
+-- @BEGIN FfiHeader("BindLibrary", "libffi", "sqlite3.h")
+-- @OUTPUT
+-- Constants
+local SQLITE_BLOB = 4
+local SQLITE_DONE = 101
+local SQLITE_FLOAT = 2
+local SQLITE_INTEGER = 1
+local SQLITE_NULL = 5
+local SQLITE_OK = 0
+local SQLITE_ROW = 100
+local SQLITE_TEXT = 3
+-- Functions
+local sqlite3_bind_blob
+local sqlite3_bind_double
+local sqlite3_bind_int64
+local sqlite3_bind_null
+local sqlite3_bind_text
+local sqlite3_changes
+local sqlite3_close
+local sqlite3_column_blob
+local sqlite3_column_bytes
+local sqlite3_column_count
+local sqlite3_column_double
+local sqlite3_column_int64
+local sqlite3_column_name
+local sqlite3_column_text
+local sqlite3_column_type
+local sqlite3_errmsg
+local sqlite3_exec
+local sqlite3_finalize
+local sqlite3_last_insert_rowid
+local sqlite3_open
+local sqlite3_prepare_v2
+local sqlite3_reset
+local sqlite3_step
+-- Binding function
+local function BindLibrary (Library)
+  sqlite3_bind_blob = Library:bind(libffi.sint32, "sqlite3_bind_blob", libffi.pointer, libffi.sint32, libffi.pointer, libffi.sint32, libffi.pointer)
+  sqlite3_bind_double = Library:bind(libffi.sint32, "sqlite3_bind_double", libffi.pointer, libffi.sint32, libffi.double)
+  sqlite3_bind_int64 = Library:bind(libffi.sint32, "sqlite3_bind_int64", libffi.pointer, libffi.sint32, libffi.sint64)
+  sqlite3_bind_null = Library:bind(libffi.sint32, "sqlite3_bind_null", libffi.pointer, libffi.sint32)
+  sqlite3_bind_text = Library:bind(libffi.sint32, "sqlite3_bind_text", libffi.pointer, libffi.sint32, libffi.pointer, libffi.sint32, libffi.pointer)
+  sqlite3_changes = Library:bind(libffi.sint32, "sqlite3_changes", libffi.pointer)
+  sqlite3_close = Library:bind(libffi.sint32, "sqlite3_close", libffi.pointer)
+  sqlite3_column_blob = Library:bind(libffi.pointer, "sqlite3_column_blob", libffi.pointer, libffi.sint32)
+  sqlite3_column_bytes = Library:bind(libffi.sint32, "sqlite3_column_bytes", libffi.pointer, libffi.sint32)
+  sqlite3_column_count = Library:bind(libffi.sint32, "sqlite3_column_count", libffi.pointer)
+  sqlite3_column_double = Library:bind(libffi.double, "sqlite3_column_double", libffi.pointer, libffi.sint32)
+  sqlite3_column_int64 = Library:bind(libffi.sint64, "sqlite3_column_int64", libffi.pointer, libffi.sint32)
+  sqlite3_column_name = Library:bind(libffi.cstring, "sqlite3_column_name", libffi.pointer, libffi.sint32)
+  sqlite3_column_text = Library:bind(libffi.cstring, "sqlite3_column_text", libffi.pointer, libffi.sint32)
+  sqlite3_column_type = Library:bind(libffi.sint32, "sqlite3_column_type", libffi.pointer, libffi.sint32)
+  sqlite3_errmsg = Library:bind(libffi.cstring, "sqlite3_errmsg", libffi.pointer)
+  sqlite3_exec = Library:bind(libffi.sint32, "sqlite3_exec", libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer)
+  sqlite3_finalize = Library:bind(libffi.sint32, "sqlite3_finalize", libffi.pointer)
+  sqlite3_last_insert_rowid = Library:bind(libffi.sint64, "sqlite3_last_insert_rowid", libffi.pointer)
+  sqlite3_open = Library:bind(libffi.sint32, "sqlite3_open", libffi.pointer, libffi.pointer)
+  sqlite3_prepare_v2 = Library:bind(libffi.sint32, "sqlite3_prepare_v2", libffi.pointer, libffi.pointer, libffi.sint32, libffi.pointer, libffi.pointer)
+  sqlite3_reset = Library:bind(libffi.sint32, "sqlite3_reset", libffi.pointer)
+  sqlite3_step = Library:bind(libffi.sint32, "sqlite3_step", libffi.pointer)
+end
+-- @END
+```
+
+Note that the SQLite API has two indexing methods, which is unusual for Lua users:
 
 - **0-based indexing** for column functions
 - **1-based indexing** for bind parameter functions
@@ -131,12 +208,12 @@ The function **initializes the DLL on the very first call**:
 local function OpenDllAndOpenDatabase (Filename)
   local NewDatabase
   local ErrorString
-  -- Open DLL if necessary and store reference to global Sqlite
-  if (not Sqlite) then
-    Sqlite, ErrorString = InitializeDll()
+  -- Initialize the DLL if necessary
+  if (not SqliteLoaded) then
+    SqliteLoaded, ErrorString = InitializeDll()
   end
   -- Open the database
-  if Sqlite then
+  if SqliteLoaded then
     NewDatabase, ErrorString = OpenDatabase(Filename)
   end
   -- Return values
@@ -145,8 +222,8 @@ end
 ```
 
 The module provides two object types:
-* **Database objects**, created by `sqlite.open`
-* **Statement objects**, created by `database.prepare`
+* **Database objects**, created by `sqlite3.open`
+* **Statement objects**, created by `database:prepare`
 
 Each type's behavior is defined in its metatable:
 
@@ -156,10 +233,10 @@ local DATABASE_METATABLE = {
   __gc = DATABASE_Close,
   -- METATABLE_UserDefinedMethods
   __index = {
-    exec      = DATABASE_Exec,
-    prepare   = DATABASE_Prepare,
-    close     = DATABASE_Close,
-    lastError = DATABASE_GetLastError,
+    exec         = DATABASE_Exec,
+    prepare      = DATABASE_Prepare,
+    close        = DATABASE_Close,
+    getlasterror = DATABASE_GetLastError,
   }
 }
 
@@ -168,60 +245,73 @@ local STATEMENT_METATABLE = {
   __gc = STATEMENT_CollectGarbage,
   -- METATABLE_UserDefinedMethods
   __index = {
-    Step         = STATEMENT_Step,
-    Reset        = STATEMENT_Reset,
-    ColumnCount  = STATEMENT_ColumnCount,
-    ColumnName   = STATEMENT_ColumnName,
-    ColumnText   = STATEMENT_ColumnText,
-    ColumnInt    = STATEMENT_ColumnInt,
-    ColumnDouble = STATEMENT_ColumnDouble,
-    ColumnType   = STATEMENT_ColumnType,
-    BindText     = STATEMENT_BindText,
-    BindBlob     = STATEMENT_BindBlob,
-    BindInt      = STATEMENT_BindInt,
-    BindDouble   = STATEMENT_BindDouble,
-    BindNull     = STATEMENT_BindNull,
-    ColumnBytes  = STATEMENT_ColumnBytes,
-    ColumnBlob   = STATEMENT_ColumnBlob,
+    step      = STATEMENT_Step,
+    reset     = STATEMENT_Reset,
+    getcount  = STATEMENT_ColumnCount,
+    getname   = STATEMENT_ColumnName,
+    gettype   = STATEMENT_ColumnType,
+    getbytes  = STATEMENT_ColumnBytes,
+    gettext   = STATEMENT_ColumnText,
+    getint    = STATEMENT_ColumnInt,
+    getdouble = STATEMENT_ColumnDouble,
+    getblob   = STATEMENT_ColumnBlob,
+    settext   = STATEMENT_BindText,
+    setint    = STATEMENT_BindInt,
+    setdouble = STATEMENT_BindDouble,
+    setblob   = STATEMENT_BindBlob,
+    setnull   = STATEMENT_BindNull,
   }
 }
 ```
 
 Resources are cleaned up automatically by the garbage collector.
 
-## Attaching the generated SQLite binding
+## Using the generated SQLite binding
 
-Load the shared library and attach the bindings:
+Load the shared library and use the bindings:
 
 ```lua
-local ffi       = require("com.ffi")
-local SqliteFfi = require("tiny-sqlite3-ffi")
+local libffi = require("com.ffi")
+
+-- @BEGIN FfiHeader("BindLibrary", "libffi", "sqlite3.h")
+-- @OUTPUT
+-- Constants
+local SQLITE_BLOB = 4
+local SQLITE_DONE = 101
+local SQLITE_FLOAT = 2
+local SQLITE_INTEGER = 1
+...
+-- @END
+
+local SqliteLoaded = false
 
 local function InitializeDll ()
   -- Load shared library
-  local NewSqlite = ffi.loadlib("windows", "sqlite3.dll", "linux", "libsqlite3.so.0")
+  local NewSqlite = libffi.loadlib("windows", "sqlite3.dll", "linux", "libsqlite3.so.0")
   -- Error handling
   local ErrorString
   if NewSqlite then
-    -- Attach bindings generated from tiny-sqlite3.h
-    NewSqlite:attach(SqliteFfi)
+    -- Load bindings generated from sqlite3.h
+    BindLibrary(NewSqlite)
     -- Build the type name map
     COLUMN_TYPE_NAME = {
-      [NewSqlite.SQLITE_INTEGER] = "integer",
-      [NewSqlite.SQLITE_FLOAT]   = "float",
-      [NewSqlite.SQLITE_TEXT]    = "text",
-      [NewSqlite.SQLITE_BLOB]    = "blob",
-      [NewSqlite.SQLITE_NULL]    = "null",
+      [SQLITE_INTEGER] = "integer",
+      [SQLITE_FLOAT]   = "float",
+      [SQLITE_TEXT]    = "text",
+      [SQLITE_BLOB]    = "blob",
+      [SQLITE_NULL]    = "null",
     }
+    -- Mark as loaded
+    SqliteLoaded = true
   else
     ErrorString = "sqlite3 shared library not found"
   end
   -- Return value
-  return NewSqlite, ErrorString
+  return SqliteLoaded, ErrorString
 end
 ```
 
-The `COLUMN_TYPE_NAME` is a dictionary that maps C integer type codes to readable strings. This lets `statement:ColumnType(1)` return "float" or "integer" instead of `Sqlite.SQLITE_FLOAT` or `Sqlite.SQLITE_INTEGER`.
+The `COLUMN_TYPE_NAME` is a dictionary that maps C integer type codes to readable strings. This lets `statement:gettype(1)` return "float" or "integer" instead of `SQLITE_FLOAT` or `SQLITE_INTEGER`.
 
 ## Opening the database
 
@@ -234,8 +324,8 @@ int sqlite3_open (const char *filename, void **ppDb);
 To retrieve the handle:
 
 ```lua
-local PointerArray    = ffi.newarray(pointer, 1)
-local Result          = Sqlite.sqlite3_open(Filename, PointerArray:getpointer())
+local PointerArray    = libffi.newarray(libffi.pointer, 1)
+local Result          = sqlite3_open(Filename, PointerArray:getpointer())
 local DatabasePointer = PointerArray:get(1)
 ```
 
@@ -247,10 +337,10 @@ local function OpenDatabase (Filename)
   local NewDatabase
   local ErrorString
   -- Allocate pointer array for sqlite3_open output
-  local PointerArray = ffi.newarray(pointer, 1)
-  local Result       = Sqlite.sqlite3_open(Filename, PointerArray:getpointer())
+  local PointerArray = libffi.newarray(pointer, 1)
+  local Result       = sqlite3_open(Filename, PointerArray:getpointer())
   -- Interpret result
-  if (Result == Sqlite.SQLITE_OK) then
+  if (Result == SQLITE_OK) then
     -- Read the output pointer
     local DatabasePointer = PointerArray:get(1)
     -- Create database object
@@ -279,16 +369,16 @@ Straight-forward implementation: call the function and check the result.
 ```lua
 local function DATABASE_Exec (Database, SqlString)
   -- Execute SQL string
-  local Result = Sqlite.sqlite3_exec(Database.Pointer, SqlString, NULL, NULL, NULL)
+  local Result = sqlite3_exec(Database.Pointer, SqlString, NULL, NULL, NULL)
   local Success
-  local ErrorMessage
-  if (Result == Sqlite.SQLITE_OK) then
+  local ErrorString
+  if (Result == SQLITE_OK) then
     Success = true
   else
     Success      = false
-    ErrorMessage = Sqlite.sqlite3_errmsg(Database.Pointer)
+    ErrorString = sqlite3_errmsg(Database.Pointer)
   end
-  return Success, ErrorMessage
+  return Success, ErrorString
 end
 ```
 
@@ -302,11 +392,11 @@ local function DATABASE_Prepare (Database, SqlString)
   local DatabasePointer = Database.Pointer
   local PointerArray    = Database.PointerArray
   -- Prepare statement
-  local Result = Sqlite.sqlite3_prepare_v2(DatabasePointer, SqlString, -1, PointerArray:getpointer(), NULL)
+  local Result = sqlite3_prepare_v2(DatabasePointer, SqlString, -1, PointerArray:getpointer(), NULL)
   local NewStatement
   local ErrorString
   -- Interpret result
-  if (Result == Sqlite.SQLITE_OK) then
+  if (Result == SQLITE_OK) then
     -- Read the output pointer
     local StatementPointer = PointerArray:get(1)
     -- Create statement object
@@ -317,7 +407,7 @@ local function DATABASE_Prepare (Database, SqlString)
     -- Attach metatable
     setmetatable(NewStatement, STATEMENT_METATABLE)
   else
-    ErrorString = Sqlite.sqlite3_errmsg(DatabasePointer)
+    ErrorString = sqlite3_errmsg(DatabasePointer)
   end
   -- Return value
   return NewStatement, ErrorString
@@ -330,9 +420,9 @@ The `nByte` is set to `-1` to tell SQLite that the string is null-terminated. Pa
 
 After a `SELECT` query, the result columns can be inspected, **the C column API is 0-based**:
 
-* `Statement:ColumnCount()`: number of columns
-* `Statement:ColumnName(N)`: name of column N
-* `Statement:ColumnType(N)`: type of column N as a string
+* `Statement:getcount()`: number of columns
+* `Statement:getname(N)`: name of column N
+* `Statement:gettype(N)`: type of column N as a string
 
 `COLUMN_TYPE_NAME` maps the C integer type codes to readable strings:
 
@@ -346,15 +436,15 @@ After a `SELECT` query, the result columns can be inspected, **the C column API 
 
 ```lua
 local function STATEMENT_ColumnCount (Statement)
-  return Sqlite.sqlite3_column_count(Statement.Pointer)
+  return sqlite3_column_count(Statement.Pointer)
 end
 
 local function STATEMENT_ColumnName (Statement, ColumnIndex)
-  return Sqlite.sqlite3_column_name(Statement.Pointer, (ColumnIndex - 1))
+  return sqlite3_column_name(Statement.Pointer, (ColumnIndex - 1))
 end
 
 local function STATEMENT_ColumnType (Statement, ColumnIndex)
-  local ColumnType     = Sqlite.sqlite3_column_type(Statement.Pointer, (ColumnIndex - 1))
+  local ColumnType     = sqlite3_column_type(Statement.Pointer, (ColumnIndex - 1))
   local ColumnTypeName = COLUMN_TYPE_NAME[ColumnType]
   return ColumnTypeName
 end
@@ -366,15 +456,15 @@ These functions are typically used with `SELECT` queries. **The C column API is 
 
 ```lua
 local function STATEMENT_ColumnText (Statement, ColumnIndex)
-  return Sqlite.sqlite3_column_text(Statement.Pointer, (ColumnIndex - 1))
+  return sqlite3_column_text(Statement.Pointer, (ColumnIndex - 1))
 end
 
 local function STATEMENT_ColumnInt (Statement, ColumnIndex)
-  return Sqlite.sqlite3_column_int64(Statement.Pointer, (ColumnIndex - 1))
+  return sqlite3_column_int64(Statement.Pointer, (ColumnIndex - 1))
 end
 
 local function STATEMENT_ColumnDouble (Statement, ColumnIndex)
-  return Sqlite.sqlite3_column_double(Statement.Pointer, (ColumnIndex - 1))
+  return sqlite3_column_double(Statement.Pointer, (ColumnIndex - 1))
 end
 ```
 
@@ -383,27 +473,31 @@ end
 Unlike the C column API, **the C bind API is 1-based**: no adjustment needed here.
 
 ```lua
+-- sqlite3_bind_text 5th parameter: SQLITE_STATIC (0) vs SQLITE_TRANSIENT (-1)
+-- SQLITE_TRANSIENT tells SQLite to copy the string immediately
+local SQLITE_TRANSIENT = libffi.newpointer(0xFFFFFFFF, 0xFFFFFFFF)
+
 local function STATEMENT_BindText (Statement, ParameterIndex, Value)
   local StatementPointer = Statement.Pointer
   local Result
   if Value then
-    Result = Sqlite.sqlite3_bind_text(StatementPointer, ParameterIndex, Value, #Value, SQLITE_TRANSIENT)
+    Result = sqlite3_bind_text(StatementPointer, ParameterIndex, Value, #Value, SQLITE_TRANSIENT)
   else
-    Result = Sqlite.sqlite3_bind_text(StatementPointer, ParameterIndex, NULL, 0, SQLITE_TRANSIENT)
+    Result = sqlite3_bind_text(StatementPointer, ParameterIndex, NULL, 0, SQLITE_TRANSIENT)
   end
   return Result
 end
 
 local function STATEMENT_BindInt (Statement, ParameterIndex, Value)
-  return Sqlite.sqlite3_bind_int64(Statement.Pointer, ParameterIndex, Value)
+  return sqlite3_bind_int64(Statement.Pointer, ParameterIndex, Value)
 end
 
 local function STATEMENT_BindDouble (Statement, ParameterIndex, Value)
-  return Sqlite.sqlite3_bind_double(Statement.Pointer, ParameterIndex, Value)
+  return sqlite3_bind_double(Statement.Pointer, ParameterIndex, Value)
 end
 
 local function STATEMENT_BindNull (Statement, ParameterIndex)
-  return Sqlite.sqlite3_bind_null(Statement.Pointer, ParameterIndex)
+  return sqlite3_bind_null(Statement.Pointer, ParameterIndex)
 end
 ```
 
@@ -415,18 +509,18 @@ Note that `SQLITE_TRANSIENT` tells SQLite to copy the string immediately. The da
 
 ```lua
 local function STATEMENT_ColumnBytes (Statement, ColumnIndex)
-  return Sqlite.sqlite3_column_bytes(Statement.Pointer, (ColumnIndex - 1))
+  return sqlite3_column_bytes(Statement.Pointer, (ColumnIndex - 1))
 end
 
 local function STATEMENT_ColumnBlob (Statement, ColumnIndex)
   local PointerOffset    = (ColumnIndex - 1)
   local StatementPointer = Statement.Pointer
   local Result
-  if (Sqlite.sqlite3_column_type(StatementPointer, PointerOffset) ~= Sqlite.SQLITE_NULL) then
-    local ByteCount = Sqlite.sqlite3_column_bytes(StatementPointer, PointerOffset)
+  if (sqlite3_column_type(StatementPointer, PointerOffset) ~= SQLITE_NULL) then
+    local ByteCount = sqlite3_column_bytes(StatementPointer, PointerOffset)
     if (ByteCount > 0) then
-      local BlobPointer = Sqlite.sqlite3_column_blob(StatementPointer, PointerOffset)
-      Result = ffi.readmemory(BlobPointer, 0, ByteCount)
+      local BlobPointer = sqlite3_column_blob(StatementPointer, PointerOffset)
+      Result = libffi.readmemory(BlobPointer, 0, ByteCount)
     else
       Result = ""
     end
@@ -439,7 +533,7 @@ For **writing**, a binary Lua string is passed to `sqlite3_bind_blob` with its f
 
 ```lua
 local function STATEMENT_BindBlob (Statement, ParameterIndex, Value)
-  return Sqlite.sqlite3_bind_blob(Statement.Pointer, ParameterIndex, Value, #Value, SQLITE_TRANSIENT)
+  return sqlite3_bind_blob(Statement.Pointer, ParameterIndex, Value, #Value, SQLITE_TRANSIENT)
 end
 ```
 
@@ -449,7 +543,7 @@ SQLite provides a useful error message function:
 
 ```lua
 local function DATABASE_GetLastError (Database)
-  return Sqlite.sqlite3_errmsg(Database.Pointer)
+  return sqlite3_errmsg(Database.Pointer)
 end
 ```
 
@@ -461,7 +555,7 @@ Called automatically by the garbage collector if the user forgets.
 local function DATABASE_Close (Database)
   local DatabasePointer = Database.Pointer
   if DatabasePointer then
-    Sqlite.sqlite3_close(DatabasePointer)
+    sqlite3_close(DatabasePointer)
     Database.Pointer = nil
   end
 end
@@ -469,4 +563,4 @@ end
 
 # Full listing
 
-The complete module is at **[tiny-sqlite3.lua](../tests/examples/ffi/tiny-sqlite3.lua)**. It is intended to be used with the test **[test-tiny-sqlite3.lua](../tests/examples/ffi/test-tiny-sqlite3.lua)**
+The complete module is at **[sqlite3.lua](../runtime/comexe/usr/share/lua/5.5/com/sqlite3.lua)**. It is intended to be used with the test **[test-sqlite3.lua](../tests/examples/ffi/test-sqlite3.lua)**
