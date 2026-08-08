@@ -601,15 +601,26 @@ static int FFI_NewArray (lua_State *LuaState)
 
 static int FFI_GetArrayPointer (lua_State *LuaState)
 {
-  struct FFI_Array *Array          = lua_touserdata(LuaState, 1);
-  lua_Integer       Index          = luaL_optinteger(LuaState, 2, 1);
-  uint8_t          *DataPointer    = GB_GetData(Array->Buffer);
-  size_t            Offset         = ((Index - 1) * Array->ElementSize);
-  uint8_t          *ElementPointer = &DataPointer[Offset];
+  struct FFI_Array *Array = lua_touserdata(LuaState, 1);
+  lua_Integer       Index = luaL_optinteger(LuaState, 2, 1);
+  uint8_t          *DataPointer;
+  size_t            Offset;
+  
+  if ((Index >= 1) && (Index <= (int)Array->Count))
+  {
+    DataPointer = GB_GetData(Array->Buffer);
+    Offset      = ((Index - 1) * Array->ElementSize);
 
-  lua_pushlightuserdata(LuaState, ElementPointer);
+    lua_pushlightuserdata(LuaState, &DataPointer[Offset]);
+    lua_pushnil(LuaState);
+  }
+  else
+  {
+    lua_pushnil(LuaState);
+    lua_pushstring(LuaState, "index out of bounds");
+  }
 
-  return 1; /* Number of values returned on the stack */
+  return 2; /* Number of values returned on the stack */
 }
 
 static int FFI_ArrayReadValue (lua_State *LuaState)
@@ -1274,11 +1285,11 @@ static int FFI_WriteValue (lua_State *LuaState)
 
 static int FFI_NewPointerFromLuaInts (lua_State *LuaState)
 {
-  int32_t  HighValue = luaL_checkinteger(LuaState, 1);
-  int32_t  LowValue  = luaL_checkinteger(LuaState, 2);
-  void    *Pointer;
+  uint32_t  HighValue = (uint32_t)luaL_checkinteger(LuaState, 1);
+  uint32_t  LowValue  = (uint32_t)luaL_checkinteger(LuaState, 2);
+  void     *Pointer;
 
-  /* Combine the two int32 values into a pointer value */
+  /* Combine the two uint32 values into a pointer value */
   Pointer = (void*)(((uintptr_t)HighValue << 32) | (uintptr_t)LowValue);
 
   /* Push the pointer as lightuserdata */

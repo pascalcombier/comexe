@@ -109,10 +109,8 @@ local readvalue      = ffi.readvalue
 local readmemory     = ffi.readmemory
 local writevalue     = ffi.writevalue
 local importfunction = ffi.importfunction
-local convertpointer = ffi.convertpointer
 local pointer        = ffi.pointer
 local newcallback    = ffi.newcallback
-local sint32         = ffi.sint32
 local uint32         = ffi.uint32
 local NULL           = ffi.NULL
 local POINTER_SIZE   = ffi.sizeof(pointer)
@@ -380,19 +378,23 @@ local function VA_MethodEnsureCapacity (VariantArray, VariantCount)
   -- Initialize newly-added variants
   local NewItemCapacity = VA_GetItemCapacity(VariantArray)
   if (NewItemCapacity > OldItemCapacity) then
+    -- Update capacity before the loop (GetVariant asserts against it)
+    VariantArray.ItemCapacity = NewItemCapacity
+    -- Initialize the new elements
     for Index = (OldItemCapacity + 1), NewItemCapacity do
       local Variant = VariantArray:GetVariant(Index)
       Variant:init()
       VariantArray.InitDone[Index] = true
     end
   end
-  -- Update data
-  VariantArray.ItemCapacity = NewItemCapacity
 end
 
 -- Variant.Offset is fixed, while the underlying Buffer.RawBuffer will change when
 -- the buffer size increases
 local function VA_MethodGetVariant (VariantArray, Index)
+  -- Validate bounds
+  local MaxIndex = VariantArray.ItemCapacity
+  assert((Index >= 1) and (Index <= MaxIndex), format("VA_MethodGetVariant: index %d out of range [1, %d]", Index, MaxIndex))
   -- Retrieve data
   local Buffer = VariantArray.Buffer
   -- Calculate offset
@@ -434,14 +436,14 @@ local function NewVariantArray (ItemCount)
   setmetatable(NewVariantArrayObject, VA_Metatables)
   -- Initialize the variants
   local ItemCapacity = VA_GetItemCapacity(NewVariantArrayObject)
+  -- Set capacity before the loop (GetVariant asserts against it)
+  NewVariantArrayObject.ItemCapacity = ItemCapacity
   -- Trivially initialize each variant
   for Index = 1, ItemCapacity do
     local Variant = NewVariantArrayObject:GetVariant(Index)
     Variant:init()
     InitDone[Index] = true
   end
-  -- Update data
-  NewVariantArrayObject.ItemCapacity = ItemCapacity
   -- Return new array
   return NewVariantArrayObject
 end
@@ -1467,9 +1469,17 @@ local function HANDLER_MethodGarbageCollector (Handler)
   ffi.free(Handler.Pointer)
 end
 
+local function HANDLER_MethodGetPointer (Handler)
+  return Handler.Pointer
+end
+
 local HANDLER_Metatable = {
   -- METATABLE_LuaDefinedMethods
   __gc = HANDLER_MethodGarbageCollector,
+  -- METATABLE_UserDefinedMethods
+  __index = {
+    getpointer = HANDLER_MethodGetPointer,
+  }
 }
 
 -- The implementation looks so different from other ComEXE objects with a

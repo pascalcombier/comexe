@@ -1329,9 +1329,34 @@ static int SAFEARRAY_ReadData (lua_State *LuaState)
   return 1; /* Number of values returned on the stack */
 }
 
-/* NOTE: that function is absolutely unsafe, the responsability of the caller to
- * provide a properly sized array
- */
+static LONG SAFEARRAY_EvaluateCount (SAFEARRAY *Array)
+{
+  UINT DimensionCount = SafeArrayGetDim(Array);
+  LONG ElementCount   = 1;
+  bool Valid          = true;
+  UINT Dimension;
+  LONG LowerBound;
+  LONG UpperBound;
+
+  for (Dimension = 1; (Valid && (Dimension <= DimensionCount)); Dimension++)
+  {
+    if (SUCCEEDED(SafeArrayGetLBound(Array, Dimension, &LowerBound))
+        && SUCCEEDED(SafeArrayGetUBound(Array, Dimension, &UpperBound)))
+    {
+      ElementCount = (ElementCount * (UpperBound - LowerBound + 1));
+    }
+    else
+    {
+      Valid        = false;
+      ElementCount = 0;
+    }
+  }
+
+  return ElementCount;
+}
+
+/* This function used to be unsafe, but bring crashes when used
+ * improperly. That's the reason of the the out of bounds check. */
 static int SAFEARRAY_WriteData (lua_State *LuaState)
 {
   SAFEARRAY *Array       = lua_touserdata(LuaState, 1);
@@ -1344,6 +1369,7 @@ static int SAFEARRAY_WriteData (lua_State *LuaState)
   char      *Element;
   size_t     ElementSizeInBytes;
   int        ReturnCount;
+  LONG       RealCount;
 
   luaL_checktype(LuaState, 1, LUA_TLIGHTUSERDATA);
   luaL_checktype(LuaState, 2, LUA_TLIGHTUSERDATA);
@@ -1359,6 +1385,14 @@ static int SAFEARRAY_WriteData (lua_State *LuaState)
     {
       Count   = lua_rawlen(LuaState, TableIndex);
       Element = DataPointer;
+
+      /* Safety: error if table exceeds SAFEARRAY dimension */
+      RealCount = SAFEARRAY_EvaluateCount(Array);
+
+      if ((RealCount > 0) && (Count > RealCount))
+      {
+        return luaL_error(LuaState, "SAFEARRAY_WriteData: index out of range (Lua table has %d elements but SAFEARRAY only has %d)", Count, RealCount);
+      }
 
       for (Index = 1; Index <= Count; Index++)
       {
