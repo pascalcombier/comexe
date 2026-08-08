@@ -3,7 +3,7 @@
 --------------------------------------------------------------------------------
 
 local format  = string.format
-local sqlite3 = require("com.ffi.sqlite3")
+local sqlite3 = require("com.sqlite3")
 
 --------------------------------------------------------------------------------
 -- HELPERS                                                                    --
@@ -19,17 +19,17 @@ end
 
 local function PrintRow (Statement, ColumnCount)
   for ColumnIndex = 1, ColumnCount do
-    local ColumnType = Statement:ColumnType(ColumnIndex)
+    local ColumnType = Statement:gettype(ColumnIndex)
     local ValueString
     if (ColumnType == "blob") then
-      local BlobData = Statement:ColumnBlob(ColumnIndex)
+      local BlobData = Statement:getblob(ColumnIndex)
       if BlobData then
         ValueString = HexDump(BlobData)
       else
         ValueString = "(NULL)"
       end
     else
-      local ColumnText = Statement:ColumnText(ColumnIndex)
+      local ColumnText = Statement:gettext(ColumnIndex)
       ValueString = (ColumnText or "(NULL)")
     end
     io.write(format("%-12s[%-6s] ", ValueString, ColumnType))
@@ -54,17 +54,17 @@ Database:exec("INSERT INTO people VALUES (2, 'Bob', 25, NULL)")
 Database:exec("INSERT INTO people VALUES (3, 'Charlie', 35, NULL)")
 
 -- Show changes and last rowid after inserts
-print(format("Last changes: %d", Database:changes()))
-print(format("  Last rowid: %d", Database:lastInsertRowid()))
+print(format("Last changes: %d", Database:getchanges()))
+print(format("  Last rowid: %d", Database:getlastrowid()))
 
 -- Insert row with prepared statement
 local InsertStmt = Database:prepare("INSERT INTO people VALUES (?, ?, ?, ?)")
-InsertStmt:BindInt(1, 4)
-InsertStmt:BindText(2, "Dana")
-InsertStmt:BindNull(3)
-InsertStmt:BindBlob(4, "\xC0\xFF\xEE\x00\xBE\xEF")
-InsertStmt:Step()
-print(format("Row with NULL age and BLOB inserted, rowid: %d", Database:lastInsertRowid()))
+InsertStmt:setint(1, 4)
+InsertStmt:settext(2, "Dana")
+InsertStmt:setnull(3)
+InsertStmt:setblob(4, "\xC0\xFF\xEE\x00\xBE\xEF")
+InsertStmt:step()
+print(format("Row with NULL age and BLOB inserted, rowid: %d", Database:getlastrowid()))
 
 -- Prepare query
 local Statement, PrepareErrorString = Database:prepare("SELECT name, age, data FROM people ORDER BY age")
@@ -75,29 +75,29 @@ if (not Statement) then
 end
 
 -- Print column names
-local ColumnCount = Statement:ColumnCount()
+local ColumnCount = Statement:getcount()
 for ColumnIndex = 1, ColumnCount do
-  io.write(format("%-12s", Statement:ColumnName(ColumnIndex)))
+  io.write(format("%-12s", Statement:getname(ColumnIndex)))
 end
 print()
 
 -- Print each row
 local Continue = true
 while Continue do
-  local Success, Status = Statement:Step()
-  if (not Success) then
-    print(format("ERROR: %s", Status))
-    Continue = false
-  elseif (Status == "DONE") then
-    Continue = false
-  else
+  local StatusString = Statement:step()
+  if (StatusString == "ROW") then
     PrintRow(Statement, ColumnCount)
     print()
+  elseif (StatusString == "DONE") then
+    Continue = false
+  else
+    print(format("ERROR: %s", Database:getlasterror()))
+    Continue = false
   end
 end
 
 -- Show last error
-local LastError = Database:lastError()
+local LastError = Database:getlasterror()
 if LastError then
   print(format("Last error: %s", LastError))
 else

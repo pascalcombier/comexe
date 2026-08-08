@@ -15,17 +15,17 @@
 --   execute, and retrieve results. Column indices are 1-based.
 --
 -- Example:
---   local sqlite3  = require("com.ffi.sqlite3")
+--   local sqlite3  = require("com.sqlite3")
 --   local database = sqlite3.open("test.db")
 --   database:exec("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
 --   database:exec("INSERT INTO users VALUES (1, 'Alice')")
 --
 --   -- Prepared statement with bind parameters
 --   local statement = database:prepare("INSERT INTO users VALUES (?, ?)")
---   statement:BindInt(1, 2)
---   statement:BindText(2, "Bob")
---   statement:Step()
---   statement:Reset()
+--   statement:setint(1, 2)
+--   statement:settext(2, "Bob")
+--   statement:step()
+--   statement:reset()
 
 --------------------------------------------------------------------------------
 -- MODULE                                                                     --
@@ -40,10 +40,7 @@ local pointer = libffi.pointer
 -- FFI IMPORTS                                                                --
 --------------------------------------------------------------------------------
 
--- @BEGIN import-c-header
--- @PARAM file sqlite3.h
--- @PARAM function BindLibrary
--- @PARAM lib libffi
+-- @BEGIN FfiHeader("BindLibrary", "libffi", "sqlite3.h")
 -- @OUTPUT
 -- Constants
 local SQLITE_BLOB = 4
@@ -117,31 +114,28 @@ local COLUMN_TYPE_NAME
 -- SQLITE_TRANSIENT tells SQLite to copy the string immediately
 local SQLITE_TRANSIENT = libffi.newpointer(0xFFFFFFFF, 0xFFFFFFFF)
 
+-- Status strings for most important sqlite3_step results
+local STEP_STATUS = {
+    [5] = "BUSY",
+   [19] = "CONSTRAINT",
+   [21] = "MISUSE",
+  [100] = "ROW",
+  [101] = "DONE",
+}
+
 --------------------------------------------------------------------------------
 -- STATEMENT TYPE                                                             --
 --------------------------------------------------------------------------------
 
 local function STATEMENT_Step (Statement)
   -- local data
-  local Result = sqlite3_step(Statement.Pointer)
-  local Success
-  local Status
-  -- Interpret result code
-  if (Result == SQLITE_ROW) then
-    Success = true
-    Status  = "ROW"
-  elseif (Result == SQLITE_DONE) then
-    Success = true
-    Status  = "DONE"
-  elseif (Result == SQLITE_OK) then
-    Success = true
-    Status  = "OK"
-  else
-    Success = false
-    Status  = sqlite3_errmsg(Statement.Database.Pointer)
+  local StatusInteger = sqlite3_step(Statement.Pointer)
+  local StatusString  = STEP_STATUS[(StatusInteger & 0xFF)]
+  if (not StatusString) then
+    StatusString = "ERROR"
   end
   -- Return value
-  return Success, Status
+  return StatusString, StatusInteger
 end
 
 local function STATEMENT_Reset (Statement)
@@ -171,6 +165,10 @@ local function STATEMENT_ColumnType (Statement, ColumnIndex)
   return ColumnTypeName
 end
 
+local function STATEMENT_ColumnBytes (Statement, ColumnIndex)
+  return sqlite3_column_bytes(Statement.Pointer, (ColumnIndex - 1))
+end
+
 local function STATEMENT_ColumnText (Statement, ColumnIndex)
   return sqlite3_column_text(Statement.Pointer, (ColumnIndex - 1))
 end
@@ -181,10 +179,6 @@ end
 
 local function STATEMENT_ColumnDouble (Statement, ColumnIndex)
   return sqlite3_column_double(Statement.Pointer, (ColumnIndex - 1))
-end
-
-local function STATEMENT_ColumnBytes (Statement, ColumnIndex)
-  return sqlite3_column_bytes(Statement.Pointer, (ColumnIndex - 1))
 end
 
 local function STATEMENT_ColumnBlob (Statement, ColumnIndex)
@@ -221,12 +215,12 @@ local function STATEMENT_BindDouble (Statement, ParameterIndex, Value)
   return sqlite3_bind_double(Statement.Pointer, ParameterIndex, Value)
 end
 
-local function STATEMENT_BindNull (Statement, ParameterIndex)
-  return sqlite3_bind_null(Statement.Pointer, ParameterIndex)
-end
-
 local function STATEMENT_BindBlob (Statement, ParameterIndex, Value)
   return sqlite3_bind_blob(Statement.Pointer, ParameterIndex, Value, #Value, SQLITE_TRANSIENT)
+end
+
+local function STATEMENT_BindNull (Statement, ParameterIndex)
+  return sqlite3_bind_null(Statement.Pointer, ParameterIndex)
 end
 
 local STATEMENT_METATABLE = {
@@ -234,21 +228,21 @@ local STATEMENT_METATABLE = {
   __gc = STATEMENT_CollectGarbage,
   -- METATABLE_UserDefinedMethods
   __index = {
-    Step         = STATEMENT_Step,
-    Reset        = STATEMENT_Reset,
-    ColumnCount  = STATEMENT_ColumnCount,
-    ColumnName   = STATEMENT_ColumnName,
-    ColumnText   = STATEMENT_ColumnText,
-    ColumnInt    = STATEMENT_ColumnInt,
-    ColumnDouble = STATEMENT_ColumnDouble,
-    ColumnType   = STATEMENT_ColumnType,
-    ColumnBytes  = STATEMENT_ColumnBytes,
-    ColumnBlob   = STATEMENT_ColumnBlob,
-    BindText     = STATEMENT_BindText,
-    BindBlob     = STATEMENT_BindBlob,
-    BindInt      = STATEMENT_BindInt,
-    BindDouble   = STATEMENT_BindDouble,
-    BindNull     = STATEMENT_BindNull,
+    step      = STATEMENT_Step,
+    reset     = STATEMENT_Reset,
+    getcount  = STATEMENT_ColumnCount,
+    getname   = STATEMENT_ColumnName,
+    gettype   = STATEMENT_ColumnType,
+    getbytes  = STATEMENT_ColumnBytes,
+    gettext   = STATEMENT_ColumnText,
+    getint    = STATEMENT_ColumnInt,
+    getdouble = STATEMENT_ColumnDouble,
+    getblob   = STATEMENT_ColumnBlob,
+    settext   = STATEMENT_BindText,
+    setint    = STATEMENT_BindInt,
+    setdouble = STATEMENT_BindDouble,
+    setblob   = STATEMENT_BindBlob,
+    setnull   = STATEMENT_BindNull,
   }
 }
 
@@ -260,14 +254,14 @@ local function DATABASE_Exec (Database, SqlString)
   -- Execute SQL string
   local Result = sqlite3_exec(Database.Pointer, SqlString, NULL, NULL, NULL)
   local Success
-  local ErrorMessage
+  local ErrorString
   if (Result == SQLITE_OK) then
     Success = true
   else
     Success      = false
-    ErrorMessage = sqlite3_errmsg(Database.Pointer)
+    ErrorString = sqlite3_errmsg(Database.Pointer)
   end
-  return Success, ErrorMessage
+  return Success, ErrorString
 end
 
 local function DATABASE_Prepare (Database, SqlString)
@@ -321,12 +315,12 @@ local DATABASE_METATABLE = {
   __gc = DATABASE_Close,
   -- METATABLE_UserDefinedMethods
   __index = {
-    exec            = DATABASE_Exec,
-    prepare         = DATABASE_Prepare,
-    close           = DATABASE_Close,
-    lastError       = DATABASE_GetLastError,
-    lastInsertRowid = DATABASE_LastInsertRowid,
-    changes         = DATABASE_Changes,
+    exec         = DATABASE_Exec,
+    prepare      = DATABASE_Prepare,
+    close        = DATABASE_Close,
+    getlasterror = DATABASE_GetLastError,
+    getlastrowid = DATABASE_LastInsertRowid,
+    getchanges   = DATABASE_Changes,
   }
 }
 
