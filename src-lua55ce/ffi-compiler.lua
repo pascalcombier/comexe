@@ -281,7 +281,9 @@ local function ResolveFieldType (LibffiVariable, AstType)
     end
   elseif (Current.tag == "Pointer") then
     local BaseType = UnwrapBaseType(Current.t)
-    if BaseType and (BaseType.tag == "Type") and (BaseType.n == "char") then
+    if BaseType and (BaseType.tag == "Type")
+      and ((BaseType.n == "char") or (BaseType.n == "wchar_t"))
+    then
       Result = format("%s.cstring", LibffiVariable)
     else
       Result = format("%s.pointer", LibffiVariable)
