@@ -304,8 +304,7 @@ local function ARRAY_CopyFrom (Array, LuaTable)
     -- Extend the array on the C side
     arrayresize(ArrayC, NewCount)
     -- Update
-    Array.Pointer = getarraypointer(ArrayC)
-    Array.Count   = arraycount(ArrayC)
+    Array.Count = arraycount(ArrayC)
   end
   -- Reset tracked strings
   for Index = 1, #TrackedStrings do
@@ -327,9 +326,7 @@ local function ARRAY_GetPointer (Array, UserIndex)
   local Index = (UserIndex or 1)
   -- Retrieve data
   local ArrayC     = Array.ArrayC
-  local NewPointer = getarraypointer(ArrayC, 1)
-  -- Update pointer
-  Array.Pointer = NewPointer
+  local NewPointer = getarraypointer(ArrayC, Index)
   -- Return value
   return NewPointer
 end
@@ -365,8 +362,7 @@ local function ARRAY_SetValue (Array, Index, Value)
     -- Resize buffer
     arrayresize(ArrayC, Index)
     -- Update data
-    Array.Pointer = getarraypointer(ArrayC)
-    Array.Count   = arraycount(ArrayC)
+    Array.Count = arraycount(ArrayC)
   end
   -- Remove previous reference
   TrackedStrings[Index] = nil
@@ -389,7 +385,6 @@ local function ARRAY_CollectGarbage (Array)
     -- Free resources
     freearray(ArrayC)
     Array.ArrayC         = nil
-    Array.Pointer        = nil
     Array.Count          = nil
     Array.TrackedStrings = nil
   end
@@ -421,7 +416,6 @@ local function ARRAY_NewArray (ArrayType, ElementCount)
   local NewArrayObject = {
     FfiType        = FfiType,
     ArrayC         = NewArrayC,
-    Pointer        = getarraypointer(NewArrayC),
     Count          = arraycount(NewArrayC),
     TrackedStrings = {},
   }
