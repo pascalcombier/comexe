@@ -277,7 +277,7 @@ During development, the program is run directly with the interpreter:
 When development is complete, the program can be compiled into a standalone program:
 
 ```console
-lua55ce.exe -x --make tests\examples\test-win32-webview2.lua -t x86_64-windows-gui
+> lua55ce.exe -x --make tests\examples\test-win32-webview2.lua -t x86_64-windows-gui
 ```
 
 GUI programs have no console output, so the code reports errors with `win32.messagebox` instead of `print`.
