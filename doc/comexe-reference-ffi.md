@@ -5,7 +5,7 @@
   * [Loading a shared library](#loading-a-shared-library)
   * [Calling foreign functions](#calling-foreign-functions)
   * [Sorting arrays of structures](#sorting-arrays-of-structures)
-* [FFI Module API](#ffi-module-api)
+* [FFI module API](#ffi-module-api)
   * [Basic workflow](#basic-workflow)
   * [Constants](#constants)
   * [Main functions](#main-functions)
@@ -246,7 +246,7 @@ After
    Bob - Age 42
 ```
 
-# FFI Module API
+# FFI module API
 
 ## Basic workflow
 

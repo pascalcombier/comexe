@@ -6,10 +6,10 @@
   * [Generating the bindings](#generating-the-bindings)
   * [Using the generated Win32 binding](#using-the-generated-win32-binding)
   * [Unicode conversion](#unicode-conversion)
-  * [Example Structure](#example-structure)
-  * [State Machine](#state-machine)
+  * [Example structure](#example-structure)
+  * [State machine](#state-machine)
   * [Retrieving string dimensions](#retrieving-string-dimensions)
-  * [Window Procedure](#window-procedure)
+  * [Window procedure](#window-procedure)
   * [Init](#init)
   * [Main loop](#main-loop)
   * [Clean](#clean)
@@ -137,7 +137,7 @@ local function WriteUTF16String ()
 end
 ```
 
-## Example Structure
+## Example structure
 
 The flow is:
 
@@ -147,7 +147,7 @@ Loop()
 Clean()
 ```
 
-## State Machine
+## State machine
 
 The purpose of this program is to draw those strings on the window:
 
@@ -212,7 +212,7 @@ end
 
 We also use [DrawTextW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-drawtextw) in combination with [GetClientRect](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getclientrect) to center the main string in the window.
 
-## Window Procedure
+## Window procedure
 
 The window procedure must be converted to a callback with the [FFI function newcallback](./comexe-reference-ffi.md#main-functions):
 
