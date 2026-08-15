@@ -3,7 +3,7 @@
 --------------------------------------------------------------------------------
 
 --
--- Library "com.win32" is a high-level library on the top of "com.raw.win32"
+-- This library is a high-level library on top of the Win32 API
 --
 -- Error management
 -- Registry
@@ -27,41 +27,171 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local win32   = require("com.raw.win32")
 local Runtime = require("com.runtime")
-local ffi     = require("com.ffi")
+local libffi  = require("com.ffi")
 
 local format = string.format
 local pack   = string.pack
 local unpack = string.unpack
-local concat = table.concat
 local byte   = string.byte
+local concat = table.concat
 
-local append              = Runtime.append
-local NewBuffer           = Runtime.newbuffer
-local hasprefix           = Runtime.hasprefix
-local getlasterror        = win32.getlasterror
-local formatmessageA      = win32.formatmessageA
-local widechartomultibyte = win32.widechartomultibyte
-local multibytetowidechar = win32.multibytetowidechar
-local expandenv           = win32.expandenvironmentstrings
-local shellexecute        = win32.shellexecute
+local append    = Runtime.append
+local NewBuffer = Runtime.newbuffer
+local hasprefix = Runtime.hasprefix
 
-local regcreatekeyex  = win32.regcreatekeyex
-local regopenkeyex    = win32.regopenkeyex
-local regsetvalueex   = win32.regsetvalueex
-local regenumvalue    = win32.regenumvalue
-local regenumkeyex    = win32.regenumkeyex
-local regclosekey     = win32.regclosekey
-local regqueryvalueex = win32.regqueryvalueex
-local regqueryinfokey = win32.regqueryinfokey
-local regdeletekey    = win32.regdeletekey
-local regdeletevalue  = win32.regdeletevalue
-local regflushkey     = win32.regflushkey
+local NULL          = libffi.NULL
+local readstring    = libffi.readstring
+local readstringw   = libffi.readstringw
+local stringpointer = libffi.stringpointer
+local newpointer    = libffi.newpointer
+local newarray      = libffi.newarray
+local newinstance   = libffi.newinstance
+local derefpointer  = libffi.derefpointer
+local readvalue     = libffi.readvalue
+local writevalue    = libffi.writevalue
+local sizeof        = libffi.sizeof
+local uint32        = libffi.uint32
+local pointer       = libffi.pointer
 
-local NULL        = ffi.NULL
-local readstring  = ffi.readstring
-local readstringw = ffi.readstringw
+--------------------------------------------------------------------------------
+-- FFI IMPORTS                                                                --
+--------------------------------------------------------------------------------
+
+-- @BEGIN FfiHeader("BindWin32", "libffi", "win32.h")
+-- @OUTPUT
+-- Constants
+local CP_UTF8 = 65001
+local ERROR_SUCCESS = 0
+local FORMAT_MESSAGE_FROM_SYSTEM = 4096
+local FORMAT_MESSAGE_IGNORE_INSERTS = 512
+local FORMAT_MESSAGE_MAX_WIDTH_MASK = 255
+local IDCANCEL = 2
+local IDNO = 7
+local IDOK = 1
+local IDYES = 6
+local INFINITE = 4294967295
+local KEY_ALL_ACCESS = 983103
+local KEY_CREATE_LINK = 32
+local KEY_CREATE_SUB_KEY = 4
+local KEY_ENUMERATE_SUB_KEYS = 8
+local KEY_EXECUTE = 131097
+local KEY_NOTIFY = 16
+local KEY_QUERY_VALUE = 1
+local KEY_READ = 131097
+local KEY_SET_VALUE = 2
+local KEY_WOW64_32KEY = 512
+local KEY_WOW64_64KEY = 256
+local KEY_WRITE = 131078
+local MB_ERR_INVALID_CHARS = 8
+local MB_ICONERROR = 16
+local MB_ICONINFORMATION = 64
+local MB_ICONQUESTION = 32
+local MB_ICONWARNING = 48
+local MB_OK = 0
+local MB_OKCANCEL = 1
+local MB_YESNO = 4
+local MB_YESNOCANCEL = 3
+local REG_BINARY = 3
+local REG_DWORD = 4
+local REG_DWORD_BIG_ENDIAN = 5
+local REG_DWORD_LITTLE_ENDIAN = 4
+local REG_EXPAND_SZ = 2
+local REG_FULL_RESOURCE_DESCRIPTOR = 9
+local REG_LINK = 6
+local REG_MULTI_SZ = 7
+local REG_NONE = 0
+local REG_OPTION_BACKUP_RESTORE = 4
+local REG_OPTION_CREATE_LINK = 2
+local REG_OPTION_NON_VOLATILE = 0
+local REG_OPTION_VOLATILE = 1
+local REG_QWORD = 11
+local REG_QWORD_LITTLE_ENDIAN = 11
+local REG_RESOURCE_LIST = 8
+local REG_RESOURCE_REQUIREMENTS_LIST = 10
+local REG_SZ = 1
+local SEE_MASK_NOCLOSEPROCESS = 64
+local SW_FORCEMINIMIZE = 11
+local SW_HIDE = 0
+local SW_MAXIMIZE = 3
+local SW_MINIMIZE = 6
+local SW_NORMAL = 1
+local SW_RESTORE = 9
+local SW_SHOW = 5
+local SW_SHOWDEFAULT = 10
+local SW_SHOWMAXIMIZED = 3
+local SW_SHOWMINIMIZED = 2
+local SW_SHOWMINNOACTIVE = 7
+local SW_SHOWNA = 8
+local SW_SHOWNOACTIVATE = 4
+local SW_SHOWNORMAL = 1
+local WC_ERR_INVALID_CHARS = 128
+-- Structures
+local SHELLEXECUTEINFOW
+-- Functions
+local CloseHandle
+local ExpandEnvironmentStringsW
+local FormatMessageW
+local GetExitCodeProcess
+local GetLastError
+local MessageBoxW
+local MultiByteToWideChar
+local RegCloseKey
+local RegCreateKeyExW
+local RegDeleteKeyW
+local RegDeleteValueW
+local RegEnumKeyExW
+local RegEnumValueW
+local RegFlushKey
+local RegOpenKeyExW
+local RegQueryInfoKeyW
+local RegQueryValueExW
+local RegSetValueExW
+local ShellExecuteExW
+local WaitForSingleObject
+local WideCharToMultiByte
+-- Binding function
+local function BindWin32 (Library)
+  SHELLEXECUTEINFOW = libffi.newstructure("SHELLEXECUTEINFOW",
+    libffi.uint32, "cbSize",
+    libffi.uint32, "fMask",
+    libffi.pointer, "hwnd",
+    libffi.cstring, "lpVerb",
+    libffi.cstring, "lpFile",
+    libffi.cstring, "lpParameters",
+    libffi.cstring, "lpDirectory",
+    libffi.sint32, "nShow",
+    libffi.pointer, "hInstApp",
+    libffi.pointer, "lpIDList",
+    libffi.cstring, "lpClass",
+    libffi.pointer, "hkeyClass",
+    libffi.uint32, "dwHotKey",
+    libffi.pointer, "hIcon",
+    libffi.pointer, "hProcess"
+  )
+  CloseHandle = Library:bind(libffi.sint32, "CloseHandle", libffi.pointer)
+  ExpandEnvironmentStringsW = Library:bind(libffi.uint32, "ExpandEnvironmentStringsW", libffi.pointer, libffi.pointer, libffi.uint32)
+  FormatMessageW = Library:bind(libffi.uint32, "FormatMessageW", libffi.uint32, libffi.pointer, libffi.uint32, libffi.uint32, libffi.pointer, libffi.uint32, libffi.pointer)
+  GetExitCodeProcess = Library:bind(libffi.sint32, "GetExitCodeProcess", libffi.pointer, libffi.pointer)
+  GetLastError = Library:bind(libffi.uint32, "GetLastError")
+  MessageBoxW = Library:bind(libffi.sint32, "MessageBoxW", libffi.pointer, libffi.pointer, libffi.pointer, libffi.uint32)
+  MultiByteToWideChar = Library:bind(libffi.sint32, "MultiByteToWideChar", libffi.uint32, libffi.uint32, libffi.pointer, libffi.sint32, libffi.pointer, libffi.sint32)
+  RegCloseKey = Library:bind(libffi.sint32, "RegCloseKey", libffi.pointer)
+  RegCreateKeyExW = Library:bind(libffi.sint32, "RegCreateKeyExW", libffi.pointer, libffi.pointer, libffi.uint32, libffi.pointer, libffi.uint32, libffi.uint32, libffi.pointer, libffi.pointer, libffi.pointer)
+  RegDeleteKeyW = Library:bind(libffi.sint32, "RegDeleteKeyW", libffi.pointer, libffi.pointer)
+  RegDeleteValueW = Library:bind(libffi.sint32, "RegDeleteValueW", libffi.pointer, libffi.pointer)
+  RegEnumKeyExW = Library:bind(libffi.sint32, "RegEnumKeyExW", libffi.pointer, libffi.uint32, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer)
+  RegEnumValueW = Library:bind(libffi.sint32, "RegEnumValueW", libffi.pointer, libffi.uint32, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer)
+  RegFlushKey = Library:bind(libffi.sint32, "RegFlushKey", libffi.pointer)
+  RegOpenKeyExW = Library:bind(libffi.sint32, "RegOpenKeyExW", libffi.pointer, libffi.pointer, libffi.uint32, libffi.uint32, libffi.pointer)
+  RegQueryInfoKeyW = Library:bind(libffi.sint32, "RegQueryInfoKeyW", libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer)
+  RegQueryValueExW = Library:bind(libffi.sint32, "RegQueryValueExW", libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer)
+  RegSetValueExW = Library:bind(libffi.sint32, "RegSetValueExW", libffi.pointer, libffi.pointer, libffi.uint32, libffi.uint32, libffi.pointer, libffi.uint32)
+  ShellExecuteExW = Library:bind(libffi.sint32, "ShellExecuteExW", libffi.pointer)
+  WaitForSingleObject = Library:bind(libffi.uint32, "WaitForSingleObject", libffi.pointer, libffi.uint32)
+  WideCharToMultiByte = Library:bind(libffi.sint32, "WideCharToMultiByte", libffi.uint32, libffi.uint32, libffi.pointer, libffi.sint32, libffi.pointer, libffi.sint32, libffi.pointer, libffi.pointer)
+end
+-- @END
 
 --------------------------------------------------------------------------------
 -- GLOBAL VARIABLES                                                           --
@@ -71,64 +201,140 @@ local readstringw = ffi.readstringw
 local BUFFER_SIZE = 4096
 local Buffer      = NewBuffer(BUFFER_SIZE)
 
--- Note that there is no such thing as a "REG_DWORD_BIG_ENDIAN" constant
+-- Buffers reused in registry functions
+local PointerArray   = newarray(pointer, 1)
+local IntegerArray   = newarray(uint32, 2)
+local PointerPointer = PointerArray:getpointer()
+
+-- Pre-declaration, implemented in WIN32_utf16to8Impl, needed because:
+-- WIN32_FormatMessage calls WIN32_utf16to8
+-- WIN32_utf16to8      calls WIN32_FormatMessage
+local WIN32_utf16to8
+
+--------------------------------------------------------------------------------
+-- LUA MAPPING                                                                --
+--------------------------------------------------------------------------------
+
+-- String -> Win32 constant value
 local WIN32_REG_TYPE_VALUES = {
-  REG_NONE                       = 0,
-  REG_SZ                         = 1,
-  REG_EXPAND_SZ                  = 2,
-  REG_BINARY                     = 3,
-  REG_DWORD                      = 4,
-  REG_DWORD_LITTLE_ENDIAN        = 4,
-  REG_DWORD_BIG_ENDIAN           = 5,
-  REG_LINK                       = 6,
-  REG_MULTI_SZ                   = 7,
-  REG_RESOURCE_LIST              = 8,
-  REG_FULL_RESOURCE_DESCRIPTOR   = 9,
-  REG_RESOURCE_REQUIREMENTS_LIST = 10,
-  REG_QWORD                      = 11,
-  REG_QWORD_LITTLE_ENDIAN        = 11,
+  REG_NONE                       = REG_NONE,
+  REG_SZ                         = REG_SZ,
+  REG_EXPAND_SZ                  = REG_EXPAND_SZ,
+  REG_BINARY                     = REG_BINARY,
+  REG_DWORD                      = REG_DWORD,
+  REG_DWORD_LITTLE_ENDIAN        = REG_DWORD_LITTLE_ENDIAN,
+  REG_DWORD_BIG_ENDIAN           = REG_DWORD_BIG_ENDIAN,
+  REG_LINK                       = REG_LINK,
+  REG_MULTI_SZ                   = REG_MULTI_SZ,
+  REG_RESOURCE_LIST              = REG_RESOURCE_LIST,
+  REG_FULL_RESOURCE_DESCRIPTOR   = REG_FULL_RESOURCE_DESCRIPTOR,
+  REG_RESOURCE_REQUIREMENTS_LIST = REG_RESOURCE_REQUIREMENTS_LIST,
+  REG_QWORD                      = REG_QWORD,
+  REG_QWORD_LITTLE_ENDIAN        = REG_QWORD_LITTLE_ENDIAN,
 }
 
+-- Win32 constant value -> string name
 local WIN32_REG_TYPE_NAMES = {}
 for ConstantName, ConstantValue in pairs(WIN32_REG_TYPE_VALUES) do
   WIN32_REG_TYPE_NAMES[ConstantValue] = ConstantName
 end
 
--- Fix dictionnary: remove duplicated values
+-- Fix dictionary: remove duplicated values
 WIN32_REG_TYPE_NAMES[4]  = "REG_DWORD"
 WIN32_REG_TYPE_NAMES[11] = "REG_QWORD"
 
--- WIN32 CONSTANTS
-local ERROR_SUCCESS                 = 0
-local CP_UTF8                       = 65001
-local FORMAT_MESSAGE_FROM_SYSTEM    = 0x1000
-local FORMAT_MESSAGE_IGNORE_INSERTS = 0x200
-local FORMAT_MESSAGE_MAX_WIDTH_MASK = 0x000000FF
-local WC_ERR_INVALID_CHARS          = 0x00000080
-local MB_ERR_INVALID_CHARS          = 0x00000008
+-- Constants for WIN32_NewSam function API
+local REG_SamConstants = {
+  KEY_ALL_ACCESS         = KEY_ALL_ACCESS,
+  KEY_CREATE_LINK        = KEY_CREATE_LINK,
+  KEY_CREATE_SUB_KEY     = KEY_CREATE_SUB_KEY,
+  KEY_ENUMERATE_SUB_KEYS = KEY_ENUMERATE_SUB_KEYS,
+  KEY_EXECUTE            = KEY_EXECUTE,
+  KEY_NOTIFY             = KEY_NOTIFY,
+  KEY_QUERY_VALUE        = KEY_QUERY_VALUE,
+  KEY_READ               = KEY_READ,
+  KEY_SET_VALUE          = KEY_SET_VALUE,
+  KEY_WOW64_32KEY        = KEY_WOW64_32KEY,
+  KEY_WOW64_64KEY        = KEY_WOW64_64KEY,
+  KEY_WRITE              = KEY_WRITE
+}
+
+-- Constants for REG_OPTION_ values used by RegCreateKeyEx
+local REG_OptionConstants = {
+  REG_OPTION_NON_VOLATILE   = REG_OPTION_NON_VOLATILE,
+  REG_OPTION_VOLATILE       = REG_OPTION_VOLATILE,
+  REG_OPTION_CREATE_LINK    = REG_OPTION_CREATE_LINK,
+  REG_OPTION_BACKUP_RESTORE = REG_OPTION_BACKUP_RESTORE,
+}
+
+-- Constants for the ShellExecute ShowCmd
+local SW_CONSTANTS = {
+  SW_HIDE            = SW_HIDE,
+  SW_SHOWNORMAL      = SW_SHOWNORMAL,
+  SW_NORMAL          = SW_NORMAL,
+  SW_SHOWMINIMIZED   = SW_SHOWMINIMIZED,
+  SW_SHOWMAXIMIZED   = SW_SHOWMAXIMIZED,
+  SW_MAXIMIZE        = SW_MAXIMIZE,
+  SW_SHOWNOACTIVATE  = SW_SHOWNOACTIVATE,
+  SW_SHOW            = SW_SHOW,
+  SW_MINIMIZE        = SW_MINIMIZE,
+  SW_SHOWMINNOACTIVE = SW_SHOWMINNOACTIVE,
+  SW_SHOWNA          = SW_SHOWNA,
+  SW_RESTORE         = SW_RESTORE,
+  SW_SHOWDEFAULT     = SW_SHOWDEFAULT,
+  SW_FORCEMINIMIZE   = SW_FORCEMINIMIZE,
+}
+
+-- MessageBox type, keyed by name for the messagebox API
+local MB_TYPE = {
+  OK          = MB_OK,
+  OKCANCEL    = MB_OKCANCEL,
+  YESNO       = MB_YESNO,
+  YESNOCANCEL = MB_YESNOCANCEL,
+}
+
+-- MessageBox icon, keyed by name for the messagebox API
+local MB_ICON = {
+  NONE        = 0,
+  INFORMATION = MB_ICONINFORMATION,
+  WARNING     = MB_ICONWARNING,
+  ERROR       = MB_ICONERROR,
+  QUESTION    = MB_ICONQUESTION,
+}
+
+-- MB_BUTTON is dict integer->string, NOT string->string
+local MB_BUTTON = {
+  [IDOK]     = "ok",
+  [IDCANCEL] = "cancel",
+  [IDYES]    = "yes",
+  [IDNO]     = "no",
+}
 
 --------------------------------------------------------------------------------
--- MODULE                                                                     --
+-- PRIVATE FUNCTIONS                                                          --
 --------------------------------------------------------------------------------
 
 local function WIN32_FormatMessage (ErrorCode)
   -- local data
   local Result
   -- We don't call Buffer:ensurecapacity(BUFFER_SIZE) because we use a static 4
-  -- KiB static buffer.
+  -- KiB buffer.
   local Flags = (FORMAT_MESSAGE_MAX_WIDTH_MASK | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS)
   -- Retrieve the actual C pointer
   local BufferPointer = Buffer:getpointer(0)
-  -- formatmessageA return the number of characters written, excluding the
+  -- FormatMessageW returns the number of characters written, excluding the
   -- NULL. There is not clear way to remove newline characters.
-  local CharWritten = formatmessageA(Flags, NULL, ErrorCode, 0, BufferPointer, BUFFER_SIZE, NULL)
+  local CharWritten = FormatMessageW(Flags, NULL, ErrorCode, 0, BufferPointer, (BUFFER_SIZE // 2), NULL)
   -- Error handling
   if (CharWritten >= 1) then
-    local AnsiString = Buffer:read(1, CharWritten)
-    -- Trim the string from FormatMessageA to avoid ending newline
-    local CleanAnsiString = AnsiString:gsub("[ \t\r\n]+$", "")
-    Result = CleanAnsiString
-  else
+    local Utf16String = Buffer:read(1, (CharWritten * 2))
+    local Utf8String  = WIN32_utf16to8(Utf16String)
+    if Utf8String then
+      -- Trim the string from FormatMessageW to avoid ending newline
+      Result = Utf8String:gsub("[ \t\r\n]+$", "")
+    end
+  end
+  if (Result == nil) then
     Result = format("Error %d", ErrorCode)
   end
   -- Return value
@@ -166,15 +372,15 @@ local function WIN32_utf8toutf16 (StringUtf8)
   -- Local data
   local StringUtf16
   local ErrorString
-  -- We need this special case because when calling multibytetowidechar with an
+  -- We need this special case because when calling MultiByteToWideChar with an
   -- empty string, it return 0 with GetLastError Invalid param.
   if (StringUtf8 == "") then
     StringUtf16 = "\x00\x00"
   else
     -- Call MultiByteToWideChar a first time to determine the required buffer size
-    local RequiredChars = multibytetowidechar(CP_UTF8, MB_ERR_INVALID_CHARS, StringUtf8, -1, NULL, 0)
+    local RequiredChars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, StringUtf8, -1, NULL, 0)
     if (RequiredChars == 0) then
-      local ErrorCode = getlasterror()
+      local ErrorCode = GetLastError()
       if (ErrorCode == 0) then
         StringUtf16 = "\x00\x00" -- At this stage it shoud not happen
       else
@@ -186,16 +392,16 @@ local function WIN32_utf8toutf16 (StringUtf8)
       Buffer:ensurecapacity(RequiredBytes)
       local DataPointer = Buffer:getpointer(0)
       -- Second call to perform the conversion, pass
-      local WrittenChars = multibytetowidechar(CP_UTF8, MB_ERR_INVALID_CHARS, StringUtf8, -1, DataPointer, RequiredChars)
+      local WrittenChars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, StringUtf8, -1, DataPointer, RequiredChars)
       if (WrittenChars == 0) then
-        local ErrorCode = getlasterror()
+        local ErrorCode = GetLastError()
         if (ErrorCode == 0) then
           ErrorString = "Unknown error" -- Should not happen
         else
           ErrorString = WIN32_FormatMessage(ErrorCode)
         end
       else
-        -- Convert into a Lua string, including 2 additional 0x00 (thanks to -1 in multibytetowidechar)
+        -- Convert into a Lua string, including 2 additional 0x00 (thanks to -1 in MultiByteToWideChar)
         StringUtf16 = Buffer:read(1, (WrittenChars * 2))
       end
     end
@@ -230,7 +436,7 @@ local function WIN32_HasEndingUtf16 (Utf16String)
   return Result
 end
 
-local function WIN32_utf16to8 (StringUtf16)
+local function WIN32_utf16to8Impl (StringUtf16)
   -- Local data
   local SizeInBytes = #StringUtf16
   local CharCount
@@ -247,9 +453,9 @@ local function WIN32_utf16to8 (StringUtf16)
     Result = ""
   else
     -- First call with NULL buffer to collect required byte count using the adjusted char count
-    local RequiredBytes = widechartomultibyte(CP_UTF8, WC_ERR_INVALID_CHARS, StringUtf16, CharCount, NULL, 0, NULL, false)
+    local RequiredBytes = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, StringUtf16, CharCount, NULL, 0, NULL, false)
     if (RequiredBytes == 0) then
-      local ErrorCode = getlasterror()
+      local ErrorCode = GetLastError()
       if (ErrorCode == 0) then
         Result = "" -- Should not happen
       else
@@ -261,9 +467,9 @@ local function WIN32_utf16to8 (StringUtf16)
       Buffer:ensurecapacity(TotalByteCount)
       local DataPointer = Buffer:getpointer(0)
       -- Second call to perform the conversion using the same adjusted count
-      local Written = widechartomultibyte(CP_UTF8, WC_ERR_INVALID_CHARS, StringUtf16, CharCount, DataPointer, TotalByteCount, NULL, false)
+      local Written = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, StringUtf16, CharCount, DataPointer, TotalByteCount, NULL, false)
       if (Written == 0) then
-        local ErrorCode = getlasterror()
+        local ErrorCode = GetLastError()
         if (ErrorCode == 0) then
           Result = "" -- Should not happen
         else
@@ -278,9 +484,11 @@ local function WIN32_utf16to8 (StringUtf16)
   -- Return value
   return Result, ErrorString
 end
+WIN32_utf16to8 = WIN32_utf16to8Impl -- Pre-declaration
 
--- This function is in Win32 and not in ffi.lua common to both Linux/Windows.
--- Because we use the conversion functions from the Win32
+-- This function is in Win32 and not in ffi.lua common to both Linux/Windows
+-- because we use the conversion functions from the Win32.
+--
 -- Can return nil
 local function WIN32_PointerToString (Address, SourceEncoding, TargetEncoding)
   local Result
@@ -310,39 +518,25 @@ end
 -- REGISTRY                                                                   --
 --------------------------------------------------------------------------------
 
-local UTF8  = WIN32_utf16to8
-local UTF16 = WIN32_utf8toutf16
-
--- Root keys are not exported in WIN32_Constants, only used internally
+-- Root keys are not exported in WIN32_Constants, only used internally.
+-- HKEY root constants are integers like 0x80000000 but used as pointers (HKEY)
 local REG_ROOT_KEYS = {
-  { "HKEY_CLASSES_ROOT",                0x80000000 },
-  { "HKEY_CURRENT_USER",                0x80000001 },
-  { "HKEY_LOCAL_MACHINE",               0x80000002 },
-  { "HKEY_USERS",                       0x80000003 },
-  { "HKEY_PERFORMANCE_DATA",            0x80000004 },
-  { "HKEY_PERFORMANCE_TEXT",            0x80000050 },
-  { "HKEY_PERFORMANCE_NLSTEXT",         0x80000060 },
-  { "HKEY_CURRENT_CONFIG",              0x80000005 },
-  { "HKEY_DYN_DATA",                    0x80000006 },
-  { "HKEY_CURRENT_USER_LOCAL_SETTINGS", 0x80000007 },
+  { "HKEY_CLASSES_ROOT",                newpointer(0, 0x80000000) },
+  { "HKEY_CURRENT_USER",                newpointer(0, 0x80000001) },
+  { "HKEY_LOCAL_MACHINE",               newpointer(0, 0x80000002) },
+  { "HKEY_USERS",                       newpointer(0, 0x80000003) },
+  { "HKEY_PERFORMANCE_DATA",            newpointer(0, 0x80000004) },
+  { "HKEY_PERFORMANCE_TEXT",            newpointer(0, 0x80000050) },
+  { "HKEY_PERFORMANCE_NLSTEXT",         newpointer(0, 0x80000060) },
+  { "HKEY_CURRENT_CONFIG",              newpointer(0, 0x80000005) },
+  { "HKEY_DYN_DATA",                    newpointer(0, 0x80000006) },
+  { "HKEY_CURRENT_USER_LOCAL_SETTINGS", newpointer(0, 0x80000007) },
 }
-
--- Registry value types
-local REG_NONE                = WIN32_REG_TYPE_VALUES["REG_NONE"]
-local REG_SZ                  = WIN32_REG_TYPE_VALUES["REG_SZ"]
-local REG_EXPAND_SZ           = WIN32_REG_TYPE_VALUES["REG_EXPAND_SZ"]
-local REG_MULTI_SZ            = WIN32_REG_TYPE_VALUES["REG_MULTI_SZ"]
-local REG_BINARY              = WIN32_REG_TYPE_VALUES["REG_BINARY"]
-local REG_DWORD               = WIN32_REG_TYPE_VALUES["REG_DWORD"]
-local REG_DWORD_LITTLE_ENDIAN = WIN32_REG_TYPE_VALUES["REG_DWORD_LITTLE_ENDIAN"]
-local REG_DWORD_BIG_ENDIAN    = WIN32_REG_TYPE_VALUES["REG_DWORD_BIG_ENDIAN"]
-local REG_QWORD               = WIN32_REG_TYPE_VALUES["REG_QWORD"]
-local REG_QWORD_LITTLE_ENDIAN = WIN32_REG_TYPE_VALUES["REG_QWORD_LITTLE_ENDIAN"]
 
 -- Convert a C pointer to a buffer into a Lua array of UTF-8 strings
 local function REG_ParseMultiString (Utf16String)
   -- Convert whole buffer to UTF-8 first
-  local AllUtf8 = UTF8(Utf16String)
+  local AllUtf8 = WIN32_utf16to8(Utf16String)
   local Parts   = {}
   -- Split in parts
   for Part in AllUtf8:gmatch("[^\x00]+") do
@@ -371,7 +565,7 @@ local function REG_ConvertRawValue (RawValue, RegTypeInteger)
   local ConvertedValue
   -- Convert according to the type
   if (RegTypeInteger == REG_SZ) or (RegTypeInteger == REG_EXPAND_SZ) then
-    ConvertedValue = UTF8(RawValue)
+    ConvertedValue = WIN32_utf16to8(RawValue)
   elseif (RegTypeInteger == REG_BINARY) then
     ConvertedValue = RawValue
   elseif (RegTypeInteger == REG_MULTI_SZ) then
@@ -391,6 +585,14 @@ local function REG_ConvertRawValue (RawValue, RegTypeInteger)
   return ConvertedValue
 end
 
+-- LSTATUS RegQueryValueExW(
+--   [in]                HKEY    hKey,
+--   [in, optional]      LPCWSTR lpValueName,
+--                       LPDWORD lpReserved,
+--   [out, optional]     LPDWORD lpType,
+--   [out, optional]     LPBYTE  lpData,
+--   [in, out, optional] LPDWORD lpcbData
+-- );
 local function KEY_MethodGetImpl (KeyObject, ValueNameUtf16)
   -- local data
   local ResultValue
@@ -398,18 +600,29 @@ local function KEY_MethodGetImpl (KeyObject, ValueNameUtf16)
   local ResultErrorMessage
   -- Retrieve data
   local RawKey = KeyObject.RawKey
-  -- Get the value type and size
-  local Status, Type, SizeInBytes = regqueryvalueex(RawKey, ValueNameUtf16, NULL, 0)
+  -- Get pointers to integer from the shared array
+  local OutTypePointer = IntegerArray:getpointer(1)
+  local OutSizePointer = IntegerArray:getpointer(2)
+  -- Call the Win32 RegQueryValueExW to retrieve the TYPE and SIZE
+  local Status = RegQueryValueExW(RawKey, ValueNameUtf16, NULL, OutTypePointer, NULL, OutSizePointer)
   if (Status == ERROR_SUCCESS) then
+    -- Read back the values TYPE and SIZE
+    local Type        = readvalue(OutTypePointer, 0, uint32)
+    local SizeInBytes = readvalue(OutSizePointer, 0, uint32)
+    -- Evaluate result
     if (SizeInBytes == 0) then
       ResultType = (WIN32_REG_TYPE_NAMES[Type] or "UnknownType")
     else
       -- Retrieve data
       Buffer:ensurecapacity(SizeInBytes)
       local DataPointer = Buffer:getpointer(0)
-      Status, Type, SizeInBytes = regqueryvalueex(RawKey, ValueNameUtf16, DataPointer, SizeInBytes)
+      -- Call the Win32 RegQueryValueExW to retrieve the DATA
+      Status = RegQueryValueExW(RawKey, ValueNameUtf16, NULL, OutTypePointer, DataPointer, OutSizePointer)
       -- Convert the data
       if (Status == ERROR_SUCCESS) then
+        -- Read back the values TYPE and SIZE
+        Type        = readvalue(OutTypePointer, 0, uint32)
+        SizeInBytes = readvalue(OutSizePointer, 0, uint32)
         -- Convert
         local RawData        = Buffer:read(1, SizeInBytes)
         local ConvertedValue = REG_ConvertRawValue(RawData, Type)
@@ -417,14 +630,14 @@ local function KEY_MethodGetImpl (KeyObject, ValueNameUtf16)
         ResultValue = ConvertedValue
         ResultType  = (WIN32_REG_TYPE_NAMES[Type] or "UnknownType")
       else
-        -- Second call to regqueryvalueex failed, the return value is directly
-        -- usable by WIN32_ErrorMessage without GetLastError
+        -- Second call to RegQueryValueExW failed, the return value is directly
+        -- usable by WIN32_FormatMessage without GetLastError
         ResultErrorMessage = WIN32_FormatMessage(Status)
       end
     end
   else
-    -- First call to regqueryvalueex failed, the return value is directly
-    -- usable by WIN32_ErrorMessage without GetLastError
+    -- First call to RegQueryValueExW failed, the return value is directly
+    -- usable by WIN32_FormatMessage without GetLastError
     ResultErrorMessage = WIN32_FormatMessage(Status)
   end
   -- Return value
@@ -437,7 +650,7 @@ local function REG_FormatMultiString (StringArray)
   -- Collect and convert each chunk
   for Index = 1, #StringArray do
     local PartUtf8  = StringArray[Index]
-    local PartUtf16 = UTF16(PartUtf8)
+    local PartUtf16 = WIN32_utf8toutf16(PartUtf8)
     append(Result, PartUtf16)
   end
   append(Result, "\x00\x00") -- Final UTF-16 null to end the array
@@ -452,13 +665,13 @@ local function KEY_MethodSet (KeyObject, ValueNameUtf8, Value, TypeStringUtf8)
   local TypeValue = WIN32_REG_TYPE_VALUES[TypeStringUtf8]
   assert(TypeValue, format("Unknown registry type string: '%s'", TypeStringUtf8))
   -- Encode name
-  local ValueNameUtf16 = UTF16(ValueNameUtf8)
+  local ValueNameUtf16 = WIN32_utf8toutf16(ValueNameUtf8)
   local SizeInBytes
   -- Encode value
   if (TypeValue == REG_SZ) or (TypeValue == REG_EXPAND_SZ) then
     -- REG_SZ/REG_EXPAND_SZ are null-terminated string
     local ValueUtf8  = Value
-    local ValueUtf16 = UTF16(ValueUtf8)
+    local ValueUtf16 = WIN32_utf8toutf16(ValueUtf8)
     Buffer:write(ValueUtf16)
     SizeInBytes = #ValueUtf16
   elseif (TypeValue == REG_MULTI_SZ) then
@@ -513,7 +726,7 @@ local function KEY_MethodSet (KeyObject, ValueNameUtf8, Value, TypeStringUtf8)
   -- Retrieve data
   local RawKey = KeyObject.RawKey
   -- Call C API to set the value (pass the raw data pointer)
-  local Status = regsetvalueex(RawKey, ValueNameUtf16, DataPointer, SizeInBytes, TypeValue)
+  local Status = RegSetValueExW(RawKey, ValueNameUtf16, 0, TypeValue, DataPointer, SizeInBytes)
   -- Set return value
   local Success = (Status == ERROR_SUCCESS)
   local ErrorMessage
@@ -527,7 +740,7 @@ end
 
 -- REG_ReadKeyValue is not intended for interactive call, but to be used for
 -- iterator in KEY_MethodIteratorValues. That's the reason why we don't return
--- an error string from WIN32_FormatMessage and we return regenumvalue's return
+-- an error string from WIN32_FormatMessage and we return RegEnumValueW's return
 -- value.
 local function REG_ReadKeyValue (KeyObject, Index)
   -- Retrieve data
@@ -539,20 +752,28 @@ local function REG_ReadKeyValue (KeyObject, Index)
   local MAX_BUFFER_CHAR = ((MAX_BUFFER // 2) - 1)
   Buffer:ensurecapacity(MAX_BUFFER)
   local NamePointer = Buffer:getpointer(0)
-  -- Call to RegEnumValue to collect the key name
-  local ReturnValue, Type, NameLength = regenumvalue(RawKey, Offset, NamePointer, MAX_BUFFER_CHAR, NULL, 0)
+  -- Get pointers to integer from the shared array
+  local OutCountPointer = IntegerArray:getpointer(1)
+  local OutTypePointer  = IntegerArray:getpointer(2)
+  -- Initialize the API parameters
+  writevalue(OutCountPointer, 0, uint32, MAX_BUFFER_CHAR)
+  -- Call to RegEnumValueW API to collect the key name
+  local ReturnValue = RegEnumValueW(RawKey, Offset, NamePointer, OutCountPointer, NULL, OutTypePointer, NULL, NULL)
   local ValueType
   local ValueNameUtf8
   local ValueObject
   if (ReturnValue == ERROR_SUCCESS) then
+    -- Read back the values TYPE and NAME LENGTH
+    local Type       = readvalue(OutTypePointer,  0, uint32)
+    local NameLength = readvalue(OutCountPointer, 0, uint32)
     -- Documentation: If the data has the REG_SZ, REG_MULTI_SZ or REG_EXPAND_SZ
     -- type, this size includes any terminating null character or characters.
     -- Need to consider the ending 0x00 0x00 to the name buffer
     local NameSizeInBytes = ((NameLength + 1) * 2)
     local ValueNameUtf16  = Buffer:read(1, NameSizeInBytes)
     -- Convert the name for API users
-    ValueNameUtf8 = UTF8(ValueNameUtf16)
-    -- Simply reuse regqueryvalueex to get the value from the name, discard ErrorMessage
+    ValueNameUtf8 = WIN32_utf16to8(ValueNameUtf16)
+    -- Simply reuse RegQueryValueExW to get the value from the name, discard ErrorMessage
     ValueObject, ValueType = KEY_MethodGetImpl(KeyObject, ValueNameUtf16)
   end
   -- Return value
@@ -566,7 +787,7 @@ local function KEY_MethodIteratorValues (KeyObject)
   local function NextFunction ()
     local ReturnValue, ValueType, ValueNameUtf8, Value = REG_ReadKeyValue(KeyObject, CurrentIndex)
     -- ReturnValue is actually the return value of RegEnumValueW
-    if (ReturnValue == 0) then
+    if (ReturnValue == ERROR_SUCCESS) then
       CurrentIndex = (CurrentIndex + 1)
       return ValueType, ValueNameUtf8, Value
     else
@@ -583,10 +804,16 @@ local function KEY_MethodIterateKeys (KeyObject)
   -- Local data
   local BufferCharCount
   local NamePointer
-  -- Use RegQueryInfoKey to determine number of subkeys and maximum name length
-  -- The raw binding regqueryinfokey now returns (Status, SubKeyCount, MaxSubKeyLenChars)
-  local Status, SubKeyCount, MaxSubKeyLen = regqueryinfokey(RawKey)
+  local SubKeyCount
+  -- Get pointers to integer from the shared array
+  local OutCountPointer  = IntegerArray:getpointer(1)
+  local OutLengthPointer = IntegerArray:getpointer(2)
+  -- Call RegQueryInfoKeyW API
+  local Status = RegQueryInfoKeyW(RawKey, NULL, NULL, NULL, OutCountPointer, OutLengthPointer, NULL, NULL, NULL, NULL, NULL, NULL)
   if (Status == ERROR_SUCCESS) then
+    -- Read back the result
+    SubKeyCount        = readvalue(OutCountPointer,  0, uint32)
+    local MaxSubKeyLen = readvalue(OutLengthPointer, 0, uint32)
     -- MaxSubKeyLen does not include terminator
     BufferCharCount = (MaxSubKeyLen + 1)
     -- Ensure we have enough bytes in the shared buffer
@@ -602,12 +829,15 @@ local function KEY_MethodIterateKeys (KeyObject)
   local function NextFunction ()
     -- Stop condition
     if (CurrentIndex < SubKeyCount) then
+      -- Prepare RegEnumKeyEx API call
+      writevalue(OutCountPointer, 0, uint32, BufferCharCount)
       -- Call RegEnumKeyEx for the key at index Index
-      local ReturnValue, NameChars = regenumkeyex(RawKey, CurrentIndex, NamePointer, BufferCharCount)
+      local ReturnValue = RegEnumKeyExW(RawKey, CurrentIndex, NamePointer, OutCountPointer, NULL, NULL, NULL, NULL)
       if (ReturnValue == ERROR_SUCCESS) then
+        local NameChars       = readvalue(OutCountPointer, 0, uint32)
         local NameSizeInBytes = ((NameChars + 1) * 2)
         local NameUtf16       = Buffer:read(1, NameSizeInBytes)
-        local NameUtf8        = UTF8(NameUtf16)
+        local NameUtf8        = WIN32_utf16to8(NameUtf16)
         -- Next key
         CurrentIndex = (CurrentIndex + 1)
         -- Return the key name
@@ -628,7 +858,7 @@ local function KEY_MethodClose (KeyObject)
   -- Retrieve data
   local RawKey = KeyObject.RawKey
   if RawKey then
-    local Status = regclosekey(RawKey)
+    local Status = RegCloseKey(RawKey)
     if (Status == ERROR_SUCCESS) then
       KeyObject.RawKey = nil
       Success          = true
@@ -651,7 +881,7 @@ local function KEY_MethodFlush (KeyObject)
   -- Retrieve data
   local RawKey = KeyObject.RawKey
   -- Call the C API
-  local Status = regflushkey(RawKey)
+  local Status = RegFlushKey(RawKey)
   -- Error handling
   if (Status == ERROR_SUCCESS) then
     Success = true
@@ -674,9 +904,9 @@ local function KEY_MethodDeleteValue (KeyObject, ValueNameUtf8)
   -- Retrieve data
   local RawKey = KeyObject.RawKey
   -- Convert value name to UTF-16
-  local ValueNameUtf16 = UTF16(ValueNameUtf8)
+  local ValueNameUtf16 = WIN32_utf8toutf16(ValueNameUtf8)
   -- Call raw API to delete the value
-  local Status = regdeletevalue(RawKey, ValueNameUtf16)
+  local Status = RegDeleteValueW(RawKey, ValueNameUtf16)
   -- Prepare return values (Only one return statement allowed)
   local Success
   local ErrorMessage
@@ -685,7 +915,7 @@ local function KEY_MethodDeleteValue (KeyObject, ValueNameUtf8)
   else
     local Message = WIN32_FormatMessage(Status)
     ErrorMessage  = format("%s (error %d)", Message, Status)
-    Success = false
+    Success       = false
   end
   -- Return value
   return Success, ErrorMessage
@@ -693,7 +923,7 @@ end
 
 local function KEY_MethodGet (KeyObject, ValueNameUtf8)
   -- Convert to UTF-16
-  local ValueNameUtf16 = UTF16(ValueNameUtf8)
+  local ValueNameUtf16 = WIN32_utf8toutf16(ValueNameUtf8)
   -- Call the data-extraction function
   return KEY_MethodGetImpl(KeyObject, ValueNameUtf16)
 end
@@ -718,25 +948,25 @@ local KEY_Metatable = {
 -- we need to retrieve that constant from a UTF-8 fully designed key string.
 --
 -- "HKEY_CURRENT_USER\Volatile Environment" will return HKEY_CURRENT_USER
--- integer value from REG_ROOT_KEYS and "Volatile Environment" string
+-- pointer value from REG_ROOT_KEYS and "Volatile Environment" string
 --
 local function REG_SplitRegistryKey (KeyUtf8)
   -- Results
-  local Root
+  local RootKey
   local SubKey
   -- local data
   local Prefix
   local Index = 1
   local Found = false
   local Count = #REG_ROOT_KEYS
-  -- Iterate over known keys
+  -- Find the root key from REG_ROOT_KEYS
   while (not Found) and (Index <= Count) do
-    local Entry = REG_ROOT_KEYS[Index]
-    local Name  = Entry[1]
+    local Candidate = REG_ROOT_KEYS[Index]
+    local Name      = Candidate[1]
     if hasprefix(KeyUtf8, Name) then
-      Root   = Entry[2]
-      Prefix = Name
-      Found  = true
+      RootKey = Candidate[2]
+      Prefix  = Name
+      Found   = true
     else
       Index = (Index + 1)
     end
@@ -747,25 +977,9 @@ local function REG_SplitRegistryKey (KeyUtf8)
   else
     SubKey = KeyUtf8
   end
-  -- Return values
-  return Root, SubKey
+  -- Return values: root key (pointer), SubKey (String)
+  return RootKey, SubKey
 end
-
--- Constants for WIN32_NewSam function API
-local REG_SamConstants = {
-  KEY_ALL_ACCESS         = 0xF003F,
-  KEY_CREATE_LINK        = 0x00020,
-  KEY_CREATE_SUB_KEY     = 0x00004,
-  KEY_ENUMERATE_SUB_KEYS = 0x00008,
-  KEY_EXECUTE            = 0x20019,
-  KEY_NOTIFY             = 0x00010,
-  KEY_QUERY_VALUE        = 0x00001,
-  KEY_READ               = 0x20019,
-  KEY_SET_VALUE          = 0x00002,
-  KEY_WOW64_32KEY        = 0x00200,
-  KEY_WOW64_64KEY        = 0x00100,
-  KEY_WRITE              = 0x20006
-}
 
 -- Sam stands for "Registry Key Security and Access Rights". This function is a
 -- convenience function to avoid the API user to deal with constant values and
@@ -785,14 +999,6 @@ local function REG_NewSam (...)
   return NewSam
 end
 
--- Constants for REG_OPTION_ values used by RegCreateKeyEx
-local REG_OptionConstants = {
-  REG_OPTION_NON_VOLATILE    = 0x00000000,
-  REG_OPTION_VOLATILE        = 0x00000001,
-  REG_OPTION_CREATE_LINK     = 0x00000002,
-  REG_OPTION_BACKUP_RESTORE  = 0x00000004,
-}
-
 local function REG_NewOptions (...)
   -- local data
   local Array      = {...}
@@ -808,24 +1014,34 @@ local function REG_NewOptions (...)
   return NewOptions
 end
 
-local KEY_READ                = REG_SamConstants.KEY_READ
-local REG_OPTION_NON_VOLATILE = REG_OptionConstants.REG_OPTION_NON_VOLATILE
-
+-- LSTATUS RegCreateKeyExW(
+--  [in]            HKEY    hKey,
+--  [in]            LPCWSTR lpSubKey,
+--                  DWORD   Reserved,
+--  [in, optional]  LPWSTR  lpClass,
+--  [in]            DWORD   dwOptions,
+--  [in]            REGSAM  samDesired,
+--  [in, optional]  const LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+--  [out]           PHKEY   phkResult,
+--  [out, optional] LPDWORD lpdwDisposition
+-- );
 local function REG_RegCreateKey (KeyUtf8, Sam, Options)
-  -- Validate inputs
+  -- Handle defaults
   local UsedSam     = (Sam or KEY_READ)
   local UsedOptions = (Options or REG_OPTION_NON_VOLATILE)
-  local UsedClass   = nil
+  local UsedClass   = NULL
   -- Extract RootKey constant from string
-  local RootKey, SubKeyUtf8 = REG_SplitRegistryKey(KeyUtf8)
-  assert(RootKey, format("Malformed UTF-8 key '%s'", KeyUtf8))
+  local RootKeyPointer, SubKeyUtf8 = REG_SplitRegistryKey(KeyUtf8)
+  assert(RootKeyPointer, format("Malformed UTF-8 key '%s'", KeyUtf8))
   -- Convert the string
-  local SubKeyUtf16 = UTF16(SubKeyUtf8)
+  local SubKeyUtf16 = WIN32_utf8toutf16(SubKeyUtf8)
   -- Try create the key (or open if exists)
-  local Status, RawKey = regcreatekeyex(RootKey, SubKeyUtf16, UsedClass, UsedOptions, UsedSam)
-  local FormattedError
+  local Status = RegCreateKeyExW(RootKeyPointer, SubKeyUtf16, 0, UsedClass, UsedOptions, UsedSam, NULL, PointerPointer, NULL)
+  local FormattedErrorString
   local NewKeyObject
   if (Status == ERROR_SUCCESS) then
+    -- Read back resulting pointer
+    local RawKey = derefpointer(PointerPointer)
     -- Create the new Lua object
     NewKeyObject = {
       RawKey = RawKey
@@ -833,11 +1049,11 @@ local function REG_RegCreateKey (KeyUtf8, Sam, Options)
     -- Attach methods
     setmetatable(NewKeyObject, KEY_Metatable)
   else
-    local Message  = WIN32_FormatMessage(Status)
-    FormattedError = format("%s (error %d)", Message, Status)
+    local Message        = WIN32_FormatMessage(Status)
+    FormattedErrorString = format("%s (error %d)", Message, Status)
   end
   -- Return value
-  return NewKeyObject, FormattedError
+  return NewKeyObject, FormattedErrorString
 end
 
 local function REG_RegOpenKey (KeyUtf8, Sam)
@@ -845,15 +1061,17 @@ local function REG_RegOpenKey (KeyUtf8, Sam)
   local UsedSam     = (Sam or KEY_READ)
   local UsedOptions = 0
   -- Extract RootKey constant from string
-  local RootKey, SubKeyUtf8 = REG_SplitRegistryKey(KeyUtf8)
-  assert(RootKey, format("Malformed UTF-8 key '%s'", KeyUtf8))
+  local RootKeyPointer, SubKeyUtf8 = REG_SplitRegistryKey(KeyUtf8)
+  assert(RootKeyPointer, format("Malformed UTF-8 key '%s'", KeyUtf8))
   -- Convert the string
-  local SubKeyUtf16 = UTF16(SubKeyUtf8)
+  local SubKeyUtf16 = WIN32_utf8toutf16(SubKeyUtf8)
   -- Try open the key
-  local Status, RawKey = regopenkeyex(RootKey, SubKeyUtf16, UsedOptions, UsedSam)
-  local FormattedError
+  local Status = RegOpenKeyExW(RootKeyPointer, SubKeyUtf16, UsedOptions, UsedSam, PointerPointer)
+  local FormattedErrorString
   local NewKeyObject
   if (Status == ERROR_SUCCESS) then
+    -- Read back resulting pointer
+    local RawKey = derefpointer(PointerPointer)
     -- Create the new Lua object
     NewKeyObject = {
       RawKey = RawKey
@@ -861,28 +1079,28 @@ local function REG_RegOpenKey (KeyUtf8, Sam)
     -- Attach methods
     setmetatable(NewKeyObject, KEY_Metatable)
   else
-    local Message  = WIN32_FormatMessage(Status)
-    FormattedError = format("%s (error %d)", Message, Status)
+    local Message        = WIN32_FormatMessage(Status)
+    FormattedErrorString = format("%s (error %d)", Message, Status)
   end
   -- Return value
-  return NewKeyObject, FormattedError
+  return NewKeyObject, FormattedErrorString
 end
 
 local function REG_RegDeleteKey (KeyUtf8)
   -- Transform the high-level registry key string
-  local RootKey, SubKeyUtf8 = REG_SplitRegistryKey(KeyUtf8)
-  assert(RootKey, format("Malformed UTF-8 key '%s'", KeyUtf8))
+  local RootKeyPointer, SubKeyUtf8 = REG_SplitRegistryKey(KeyUtf8)
+  assert(RootKeyPointer, format("Malformed UTF-8 key '%s'", KeyUtf8))
   -- Call the C API
-  local SubKeyUtf16 = UTF16(SubKeyUtf8)
-  local Status      = regdeletekey(RootKey, SubKeyUtf16)
+  local SubKeyUtf16 = WIN32_utf8toutf16(SubKeyUtf8)
+  local Status      = RegDeleteKeyW(RootKeyPointer, SubKeyUtf16)
   local Success
   local ErrorMessage
   if (Status == ERROR_SUCCESS) then
     Success = true
   else
     local Message = WIN32_FormatMessage(Status)
-    ErrorMessage = format("%s (error %d)", Message, Status)
-    Success      = false
+    ErrorMessage  = format("%s (error %d)", Message, Status)
+    Success       = false
   end
   -- Return value
   return Success, ErrorMessage
@@ -897,13 +1115,13 @@ local function WIN32_ExpandEnvironmentStrings (StringUtf8)
   local StringUtf16, ErrorString = WIN32_utf8toutf16(StringUtf8)
   assert(StringUtf16, ErrorString)
   -- Call the C API
-  local RequiredChars = expandenv(StringUtf16, NULL, 0)
+  local RequiredChars = ExpandEnvironmentStringsW(StringUtf16, NULL, 0)
   -- local data
   local Result
   local ErrorMessage
   -- Error handling
   if (RequiredChars == 0) then
-    local ErrorCode = getlasterror()
+    local ErrorCode = GetLastError()
     if (ErrorCode == 0) then
       ErrorMessage = "Unknown error"
     else
@@ -915,9 +1133,9 @@ local function WIN32_ExpandEnvironmentStrings (StringUtf8)
     Buffer:ensurecapacity(RequiredBytes)
     local DataPointer = Buffer:getpointer(0)
     -- Perform the expansion
-    local WrittenChars = expandenv(StringUtf16, DataPointer, RequiredChars)
+    local WrittenChars = ExpandEnvironmentStringsW(StringUtf16, DataPointer, RequiredChars)
     if (WrittenChars == 0) then
-      local ErrorCode = getlasterror()
+      local ErrorCode = GetLastError()
       if (ErrorCode == 0) then
         ErrorMessage  = "Unknown error"
       else
@@ -939,22 +1157,32 @@ local function WIN32_ExpandEnvironmentStrings (StringUtf8)
   return Result, ErrorMessage
 end
 
-local SW_CONSTANTS = {
-  SW_HIDE            = 0,
-  SW_SHOWNORMAL      = 1,
-  SW_NORMAL          = 1,
-  SW_SHOWMINIMIZED   = 2,
-  SW_SHOWMAXIMIZED   = 3,
-  SW_MAXIMIZE        = 3,
-  SW_SHOWNOACTIVATE  = 4,
-  SW_SHOW            = 5,
-  SW_MINIMIZE        = 6,
-  SW_SHOWMINNOACTIVE = 7,
-  SW_SHOWNA          = 8,
-  SW_RESTORE         = 9,
-  SW_SHOWDEFAULT     = 10,
-  SW_FORCEMINIMIZE   = 11,
-}
+-- int MessageBoxW(
+--   [in] HWND    hWnd,
+--   [in] LPCWSTR lpText,
+--   [in] LPCWSTR lpCaption,
+--   [in] UINT    uType
+-- );
+--
+-- Usage: Win32.messagebox(Hwnd, Text, Title, Type, Icon)
+-- Return "ok" | "cancel" | "yes" | "no"
+local function WIN32_MessageBox (Hwnd, Text, Title, Type, Icon)
+  -- Handle defaults
+  local TypeValue  = (MB_TYPE[Type] or MB_OK)
+  local IconValue  = (MB_ICON[Icon] or 0)
+  local TitleValue = (Title or "Message")
+  -- Prepare data
+  local Flags        = (TypeValue | IconValue)
+  local TextUtf16    = WIN32_utf8toutf16(Text)
+  local TitleUtf16   = WIN32_utf8toutf16(TitleValue)
+  local TextPointer  = stringpointer(TextUtf16)
+  local TitlePointer = stringpointer(TitleUtf16)
+  -- Call the Win32 API
+  local Result = MessageBoxW(Hwnd, TextPointer, TitlePointer, Flags)
+  -- Return value
+  local ReturnValue = (MB_BUTTON[Result] or format("Error-%q", Result))
+  return ReturnValue
+end
 
 local function WIN32_ShellExecute (VerbUtf8, FileUtf8, ParamsUtf8, DirUtf8, ShowCmdString, WaitForProcess)
   -- Convert inputs to UTF-16 (Win32 format)
@@ -964,16 +1192,16 @@ local function WIN32_ShellExecute (VerbUtf8, FileUtf8, ParamsUtf8, DirUtf8, Show
   local DirUtf16
   -- Handle parameters
   if VerbUtf8 then
-    VerbUtf16 = UTF16(VerbUtf8)
+    VerbUtf16 = WIN32_utf8toutf16(VerbUtf8)
   end
   if FileUtf8 then
-    FileUtf16 = UTF16(FileUtf8)
+    FileUtf16 = WIN32_utf8toutf16(FileUtf8)
   end
   if ParamsUtf8 then
-    ParamsUtf16 = UTF16(ParamsUtf8)
+    ParamsUtf16 = WIN32_utf8toutf16(ParamsUtf8)
   end
   if DirUtf8 then
-    DirUtf16 = UTF16(DirUtf8)
+    DirUtf16 = WIN32_utf8toutf16(DirUtf8)
   end
   local OptionShowCmdString = (ShowCmdString or "SW_NORMAL")
   local OptionShowCmd       = SW_CONSTANTS[OptionShowCmdString]
@@ -984,11 +1212,37 @@ local function WIN32_ShellExecute (VerbUtf8, FileUtf8, ParamsUtf8, DirUtf8, Show
   else
     OptionWait = WaitForProcess
   end
-  -- Call the C API
-  local Success, ExitCode = shellexecute(VerbUtf16, FileUtf16, ParamsUtf16, DirUtf16, OptionShowCmd, OptionWait)
+  -- Call the shell
+  local Info = newinstance(SHELLEXECUTEINFOW)
+  Info:set("cbSize",       sizeof(SHELLEXECUTEINFOW))
+  Info:set("fMask",        SEE_MASK_NOCLOSEPROCESS)
+  Info:set("hwnd",         NULL)
+  Info:set("lpVerb",       VerbUtf16)
+  Info:set("lpFile",       FileUtf16)
+  Info:set("lpParameters", ParamsUtf16)
+  Info:set("lpDirectory",  DirUtf16)
+  Info:set("nShow",        OptionShowCmd)
+  Info:set("hInstApp",     NULL)
+  Info:set("hProcess",     NULL)
+  local Success = ShellExecuteExW(Info:getpointer())
+  local ExitCode
+  if Success then
+    local Process = Info:get("hProcess")
+    if (Process ~= NULL) then
+      if OptionWait then
+        WaitForSingleObject(Process, INFINITE)
+        local ExitCodePointer = IntegerArray:getpointer(1)
+        local GotExitCode     = GetExitCodeProcess(Process, ExitCodePointer)
+        if (GotExitCode ~= 0) then
+          ExitCode = readvalue(ExitCodePointer, 0, uint32)
+        end
+      end
+      CloseHandle(Process)
+    end
+  end
   local ErrorMessage
   if (not Success) then
-    local ErrorCode = getlasterror()
+    local ErrorCode = GetLastError()
     -- Format error
     ErrorMessage = WIN32_FormatMessage(ErrorCode)
   end
@@ -1029,6 +1283,13 @@ end
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
+-- Assume that the DLLs are existing
+local Win32 = libffi.loadlib("kernel32.dll")
+Win32:addlibrary("advapi32.dll")
+Win32:addlibrary("shell32.dll")
+Win32:addlibrary("user32.dll")
+BindWin32(Win32)
+
 local PUBLIC_API = {
   -- UTF conversions
   utf8to16        = WIN32_utf8toutf16,
@@ -1041,10 +1302,11 @@ local PUBLIC_API = {
   regopenkey   = REG_RegOpenKey,
   regdeletekey = REG_RegDeleteKey,
   -- Miscellaneous
-  getlasterror  = getlasterror,
+  getlasterror  = GetLastError,
   formatmessage = WIN32_FormatMessage,
   expandstrings = WIN32_ExpandEnvironmentStrings,
   shellexecute  = WIN32_ShellExecute,
+  messagebox    = WIN32_MessageBox,
   -- High level
   openbrowser = WIN32_OpenBrowser
 }

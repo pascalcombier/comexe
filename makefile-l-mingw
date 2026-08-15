@@ -60,7 +60,6 @@ SOURCES += $(SRC_DIR)/trivial-array.c
 SOURCES += $(SRC_DIR)/lua-libbuffer.c
 SOURCES += $(SRC_DIR)/lua-libminizip.c
 SOURCES += $(SRC_DIR)/lua-libffi.c
-SOURCES += $(SRC_DIR)/lua-libwin32.c
 SOURCES += $(SRC_DIR)/lua-libwin32-service.c
 SOURCES += $(SRC_DIR)/lua-libwin32-com.c
 

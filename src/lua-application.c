@@ -1075,7 +1075,6 @@ static void APP_PreloadLibraries (lua_State *LuaState)
   APP_RegisterPreload(LuaState, "lpeg",                  luaopen_lpeg);
 
 #ifdef _WIN32
-  APP_RegisterPreload(LuaState, "com.raw.win32",         luaopen_win32);
   APP_RegisterPreload(LuaState, "com.raw.win32.com",     luaopen_wincom_raw);
   APP_RegisterPreload(LuaState, "com.raw.win32.service", luaopen_service);
 #endif
