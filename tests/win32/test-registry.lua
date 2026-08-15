@@ -34,7 +34,7 @@ local date   = os.date
 
 local regcreatekey  = Win32.regcreatekey
 local regopenkey    = Win32.regopenkey
-local newsam        = Win32.newsam
+local regsam        = Win32.regsam
 local expandstrings = Win32.expandstrings
 
 --------------------------------------------------------------------------------
@@ -47,11 +47,11 @@ local Reporter = reporter.new()
 -- CONSTANTS                                                                      --
 --------------------------------------------------------------------------------
 
-local SAM_READ            = newsam("KEY_READ")
-local SAM_WRITE           = newsam("KEY_WRITE")
-local SAM_READWRITE       = newsam("KEY_READ", "KEY_WRITE")
-local SAM_KEY_QUERY_VALUE = newsam("KEY_QUERY_VALUE")
-local SAM_ENUM_SUBKEYS    = newsam("KEY_ENUMERATE_SUB_KEYS", "KEY_QUERY_VALUE")
+local SAM_READ            = regsam("KEY_READ")
+local SAM_WRITE           = regsam("KEY_WRITE")
+local SAM_READWRITE       = regsam("KEY_READ", "KEY_WRITE")
+local SAM_KEY_QUERY_VALUE = regsam("KEY_QUERY_VALUE")
+local SAM_ENUM_SUBKEYS    = regsam("KEY_ENUMERATE_SUB_KEYS", "KEY_QUERY_VALUE")
 
 Reporter:block("CONSTANTS")
 
@@ -379,7 +379,7 @@ local NewKey, ErrorMessage = regcreatekey(FullKey, SAM_READWRITE)
 Reporter:expect("CREATE-FAIL-01", (NewKey       == nil))
 Reporter:expect("CREATE-FAIL-02", (ErrorMessage ~= nil))
 
-local VOLATILE = Win32.newoptions("REG_OPTION_VOLATILE")
+local VOLATILE = Win32.regoptions("REG_OPTION_VOLATILE")
 Reporter:printf("LOG DEBUG VOLATILE %s", tostring(VOLATILE))
 
 local NewKey, ErrorMessage = regcreatekey(FullKey, SAM_READWRITE, VOLATILE)
