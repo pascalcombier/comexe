@@ -343,15 +343,29 @@ Reporter:expect("ITERATE-KEYS-MAIN-02", (ErrorMessage == nil))
 
 Reporter:printf("LOG # Iterate KEYS %s", RootKey)
 
-local TestIndex  = 1
+local TestIndex   = 1
 local SubKeyCount = 0
+local FirstSubKeyName
 
 for Name in Key:keys() do
   Reporter:printf("LOG SubKey: [%s]", Name)
   Reporter:expect(format("ITERATE-KEYS-ITER-%02d", TestIndex), Name)
   TestIndex = (TestIndex + 1)
   Reporter:expect(format("ITERATE-KEYS-ITER-%02d", TestIndex), type(Name) == "string")
+  if (SubKeyCount == 0) then
+    FirstSubKeyName = Name
+  end
   SubKeyCount = (SubKeyCount + 1)
+end
+
+-- Open the first subkey (may have no subkeys, so nil)
+if FirstSubKeyName then
+  local SubKey, ErrorMessage = Key:open(FirstSubKeyName, SAM_ENUM_SUBKEYS)
+  Reporter:expect("ITERATE-KEYS-OPEN-01", SubKey)
+  Reporter:expect("ITERATE-KEYS-OPEN-02", (ErrorMessage == nil))
+  local Success, ErrorMessage = SubKey:close()
+  Reporter:expect("ITERATE-KEYS-OPEN-03", Success)
+  Reporter:expect("ITERATE-KEYS-OPEN-04", (ErrorMessage == nil))
 end
 
 local Success, ErrorMessage = Key:close()
@@ -385,6 +399,20 @@ Reporter:printf("LOG DEBUG VOLATILE %s", tostring(VOLATILE))
 local NewKey, ErrorMessage = regcreatekey(FullKey, SAM_READWRITE, VOLATILE)
 Reporter:expect("CREATE-NEWKEY-01", NewKey)
 Reporter:expect("CREATE-NEWKEY-02", (ErrorMessage == nil))
+
+-- Create a subkey from the key object
+local TestSubSubKey = format("COMEXE_TEST_SUB_%s", Timestamp)
+local SubSubKey, ErrorMessage = NewKey:create(TestSubSubKey, SAM_READWRITE, VOLATILE)
+Reporter:expect("CREATE-METHOD-01", SubSubKey)
+Reporter:expect("CREATE-METHOD-02", (ErrorMessage == nil))
+local Success, ErrorMessage = SubSubKey:close()
+Reporter:expect("CREATE-METHOD-03", Success)
+Reporter:expect("CREATE-METHOD-04", (ErrorMessage == nil))
+
+-- Delete the subkey
+local Success, ErrorMessage = Win32.regdeletekey(format("%s\\%s", FullKey, TestSubSubKey))
+Reporter:expect("CREATE-METHOD-05", Success)
+Reporter:expect("CREATE-METHOD-06", (ErrorMessage == nil))
 
 -- Set a couple of values
 local Success, ErrorMessage = NewKey:set("COMEXE-TEST-VALUE-1", "Value One 你好", "REG_SZ")

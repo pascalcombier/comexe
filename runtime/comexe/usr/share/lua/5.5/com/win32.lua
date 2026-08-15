@@ -211,6 +211,12 @@ local PointerPointer = PointerArray:getpointer()
 -- WIN32_utf16to8      calls WIN32_FormatMessage
 local WIN32_utf16to8
 
+-- Pre-declaration, implemented in REG_RegCreateKeyImpl
+local REG_RegCreateKey
+
+-- Pre-declaration, implemented in REG_RegOpenKeyImpl
+local REG_RegOpenKey
+
 --------------------------------------------------------------------------------
 -- LUA MAPPING                                                                --
 --------------------------------------------------------------------------------
@@ -928,6 +934,20 @@ local function KEY_MethodGet (KeyObject, ValueNameUtf8)
   return KEY_MethodGetImpl(KeyObject, ValueNameUtf16)
 end
 
+local function KEY_MethodOpen (KeyObject, SubKeyNameUtf8, Sam)
+  -- Validate inputs
+  assert(KeyObject.RawKey, "Key is closed")
+  -- Return value
+  return REG_RegOpenKey(KeyObject.RawKey, SubKeyNameUtf8, Sam)
+end
+
+local function KEY_MethodCreate (KeyObject, SubKeyNameUtf8, Sam, Options)
+  -- Validate inputs
+  assert(KeyObject.RawKey, "Key is closed")
+  -- Return value
+  return REG_RegCreateKey(KeyObject.RawKey, SubKeyNameUtf8, Sam, Options)
+end
+
 local KEY_Metatable = {
   -- Generic methods
   __gc = KEY_MethodGarbage,
@@ -939,6 +959,8 @@ local KEY_Metatable = {
     flush  = KEY_MethodFlush,
     values = KEY_MethodIteratorValues,
     keys   = KEY_MethodIterateKeys,
+    open   = KEY_MethodOpen,
+    create = KEY_MethodCreate,
     close  = KEY_MethodClose,
   }
 }
@@ -1025,14 +1047,11 @@ end
 --  [out]           PHKEY   phkResult,
 --  [out, optional] LPDWORD lpdwDisposition
 -- );
-local function REG_RegCreateKey (KeyUtf8, Sam, Options)
+local function REG_RegCreateKeyImpl (RootKeyPointer, SubKeyUtf8, Sam, Options)
   -- Handle defaults
   local UsedSam     = (Sam or KEY_READ)
   local UsedOptions = (Options or REG_OPTION_NON_VOLATILE)
   local UsedClass   = NULL
-  -- Extract RootKey constant from string
-  local RootKeyPointer, SubKeyUtf8 = REG_SplitRegistryKey(KeyUtf8)
-  assert(RootKeyPointer, format("Malformed UTF-8 key '%s'", KeyUtf8))
   -- Convert the string
   local SubKeyUtf16 = WIN32_utf8toutf16(SubKeyUtf8)
   -- Try create the key (or open if exists)
@@ -1055,14 +1074,20 @@ local function REG_RegCreateKey (KeyUtf8, Sam, Options)
   -- Return value
   return NewKeyObject, FormattedErrorString
 end
+REG_RegCreateKey = REG_RegCreateKeyImpl -- Pre-declaration
 
-local function REG_RegOpenKey (KeyUtf8, Sam)
-  -- Validate inputs
-  local UsedSam     = (Sam or KEY_READ)
-  local UsedOptions = 0
+local function REG_RegCreateKeyFromPath (KeyUtf8, Sam, Options)
   -- Extract RootKey constant from string
   local RootKeyPointer, SubKeyUtf8 = REG_SplitRegistryKey(KeyUtf8)
   assert(RootKeyPointer, format("Malformed UTF-8 key '%s'", KeyUtf8))
+  -- Return value
+  return REG_RegCreateKey(RootKeyPointer, SubKeyUtf8, Sam, Options)
+end
+
+local function REG_RegOpenKeyImpl (RootKeyPointer, SubKeyUtf8, Sam)
+  -- Validate inputs
+  local UsedSam     = (Sam or KEY_READ)
+  local UsedOptions = 0
   -- Convert the string
   local SubKeyUtf16 = WIN32_utf8toutf16(SubKeyUtf8)
   -- Try open the key
@@ -1084,6 +1109,15 @@ local function REG_RegOpenKey (KeyUtf8, Sam)
   end
   -- Return value
   return NewKeyObject, FormattedErrorString
+end
+REG_RegOpenKey = REG_RegOpenKeyImpl -- Pre-declaration
+
+local function REG_RegOpenKeyFromPath (KeyUtf8, Sam)
+  -- Extract RootKey constant from string
+  local RootKeyPointer, SubKeyUtf8 = REG_SplitRegistryKey(KeyUtf8)
+  assert(RootKeyPointer, format("Malformed UTF-8 key '%s'", KeyUtf8))
+  -- Return value
+  return REG_RegOpenKey(RootKeyPointer, SubKeyUtf8, Sam)
 end
 
 local function REG_RegDeleteKey (KeyUtf8)
@@ -1298,8 +1332,8 @@ local PUBLIC_API = {
   -- Registry
   regsam       = REG_RegSam,
   regoptions   = REG_RegOptions,
-  regcreatekey = REG_RegCreateKey,
-  regopenkey   = REG_RegOpenKey,
+  regcreatekey = REG_RegCreateKeyFromPath,
+  regopenkey   = REG_RegOpenKeyFromPath,
   regdeletekey = REG_RegDeleteKey,
   -- Miscellaneous
   getlasterror  = GetLastError,
