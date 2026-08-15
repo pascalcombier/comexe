@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        display:flex;
+        flex-direction:column;
+        align-items:center;     /* horizontally */
+        justify-content:center; /* vertically   */
+        height:100vh;
+        margin:0;
+        gap:1em;
+      }
+      button {
+        width:10em;
+        padding:14px 0;
+        font-size:large;
+        cursor:pointer;
+        border:none;
+        border-radius:8px;
+        color:white;
+      }
+      button:hover { filter:brightness(1.2); }
+      .hello { background: mediumslateblue; }
+      .new   { background: lightseagreen;   }
+      .exit  { background: crimson;         }   
+    </style>
+    <script>
+      <!-- JavaScript to Lua -->
+      function PostEvent (Name) {
+        window.chrome.webview.postMessage(JSON.stringify(Name))
+      }
+      <!-- Lua to JavaScript -->
+      window.chrome.webview.addEventListener('message', function (Event) {
+        if (Event.data.type === 'alert') alert(Event.data.text)
+      })
+      <!-- Auto-exit after 5 seconds -->
+      setTimeout(function () { PostEvent('exit') }, 5000)
+    </script>
+  </head>
+  <body>
+    <button class="hello" onclick="PostEvent('hello')">Alert</button>
+    <button class="new"   onclick="PostEvent('new')">New Window</button>
+    <button class="exit"  onclick="PostEvent('exit')">Exit</button>
+  </body>
+</html>
