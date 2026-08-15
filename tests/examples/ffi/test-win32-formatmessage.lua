@@ -18,7 +18,7 @@ BindLibrary(Kernel32)
 if (CopyFileA("Z:\\this-file-does-not-exist.txt", "C:\\target.txt", 0) == 0) then
   local ErrorCode = win32.getlasterror()
   print(win32.formatmessage(ErrorCode))
-  print("OK")
+  print("TEST PASSED")
 else
   error("CopyFileA should have failed")
 end

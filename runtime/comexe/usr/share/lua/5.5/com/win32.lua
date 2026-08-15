@@ -243,7 +243,7 @@ end
 WIN32_REG_TYPE_NAMES[4]  = "REG_DWORD"
 WIN32_REG_TYPE_NAMES[11] = "REG_QWORD"
 
--- Constants for WIN32_NewSam function API
+-- Constants for WIN32_RegSam function API
 local REG_SamConstants = {
   KEY_ALL_ACCESS         = KEY_ALL_ACCESS,
   KEY_CREATE_LINK        = KEY_CREATE_LINK,
@@ -984,34 +984,34 @@ end
 -- Sam stands for "Registry Key Security and Access Rights". This function is a
 -- convenience function to avoid the API user to deal with constant values and
 -- binary OR.
-local function REG_NewSam (...)
+local function REG_RegSam (...)
   -- Local data
   local Array  = {...}
-  local NewSam = 0
+  local RegSam = 0
   -- Process inputs
   for Index = 1, #Array do
     local Sam   = Array[Index]
     local Value = REG_SamConstants[Sam]
     assert(Value, format("Unknown SAM constant: '%s'", Sam))
-    NewSam = (NewSam | Value)
+    RegSam = (RegSam | Value)
   end
   -- Return the value
-  return NewSam
+  return RegSam
 end
 
-local function REG_NewOptions (...)
+local function REG_RegOptions (...)
   -- local data
   local Array      = {...}
-  local NewOptions = 0
+  local RegOptions = 0
   -- Process inputs
   for Index = 1, #Array do
     local Name  = Array[Index]
     local Value = REG_OptionConstants[Name]
     assert(Value, format("Unknown OPTION constant: '%s'", Name))
-    NewOptions = (NewOptions | Value)
+    RegOptions = (RegOptions | Value)
   end
   -- Return the value
-  return NewOptions
+  return RegOptions
 end
 
 -- LSTATUS RegCreateKeyExW(
@@ -1296,8 +1296,8 @@ local PUBLIC_API = {
   utf16to8        = WIN32_utf16to8,
   pointertostring = WIN32_PointerToString,
   -- Registry
-  newsam       = REG_NewSam,
-  newoptions   = REG_NewOptions,
+  regsam       = REG_RegSam,
+  regoptions   = REG_RegOptions,
   regcreatekey = REG_RegCreateKey,
   regopenkey   = REG_RegOpenKey,
   regdeletekey = REG_RegDeleteKey,

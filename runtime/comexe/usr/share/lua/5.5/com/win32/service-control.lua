@@ -170,8 +170,8 @@ end
 --------------------------------------------------------------------------------
 
 local CURRENT_USER_RUN = [[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run]]
-local SAM_READ         = Win32.newsam("KEY_READ")
-local SAM_WRITE        = Win32.newsam("KEY_WRITE")
+local SAM_READ         = Win32.regsam("KEY_READ")
+local SAM_WRITE        = Win32.regsam("KEY_WRITE")
 
 local function SERVICE_AddAutostart (ServiceName, ServiceCommand)
   -- validate inputs
