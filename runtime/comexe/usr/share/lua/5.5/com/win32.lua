@@ -440,7 +440,7 @@ local function WIN32_utf16to8Impl (StringUtf16)
   -- Local data
   local SizeInBytes = #StringUtf16
   local CharCount
-  local Result
+  local StringUtf8
   local ErrorString
   -- This block makes WIN32_utf16to8 compatible with UTF-16 strings created from luv (not double 0x00 terminated)
   if WIN32_HasEndingUtf16(StringUtf16) then
@@ -450,14 +450,14 @@ local function WIN32_utf16to8Impl (StringUtf16)
   end
   -- Handle special case
   if (CharCount == 0) then
-    Result = ""
+    StringUtf8 = ""
   else
     -- First call with NULL buffer to collect required byte count using the adjusted char count
     local RequiredBytes = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, StringUtf16, CharCount, NULL, 0, NULL, false)
     if (RequiredBytes == 0) then
       local ErrorCode = GetLastError()
       if (ErrorCode == 0) then
-        Result = "" -- Should not happen
+        StringUtf8 = "" -- Should not happen
       else
         ErrorString = WIN32_FormatMessage(ErrorCode)
       end
@@ -471,18 +471,18 @@ local function WIN32_utf16to8Impl (StringUtf16)
       if (Written == 0) then
         local ErrorCode = GetLastError()
         if (ErrorCode == 0) then
-          Result = "" -- Should not happen
+          StringUtf8 = "" -- Should not happen
         else
           ErrorString = WIN32_FormatMessage(ErrorCode)
         end
       else
         -- Convert into a Lua string without additional 0x00
-        Result = Buffer:read(1, Written)
+        StringUtf8 = Buffer:read(1, Written)
       end
     end
   end
   -- Return value
-  return Result, ErrorString
+  return StringUtf8, ErrorString
 end
 WIN32_utf16to8 = WIN32_utf16to8Impl -- Pre-declaration
 
