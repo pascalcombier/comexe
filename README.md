@@ -15,6 +15,7 @@ ComEXE is a statically linked, drop-in replacement for the [Lua standalone progr
 - [x] [Built-in libuv](./doc/comexe-reference-batteries.md#luv-cross-platform-asynchronous-io), [luasocket](./doc/comexe-reference-batteries.md#luasocket), [LPEG](http://www.inf.puc-rio.br/~roberto/lpeg/), [dkjson](https://dkolf.de/dkjson-lua/)
 - [x] [Built-in SQLite support](./doc/comexe-reference-sqlite3.md)
 - [x] [Built-in WebView2 support](./doc/comexe-reference-webview2.md)
+- [x] [Built-in Win32 API support](./doc/comexe-reference-win32.md)
 - [x] [Integrated Package Manager](./doc/comexe-reference-third-party-packages.md)
 - [x] [Improved UTF-8 support on Windows](./doc/comexe-reference-utf8.md)
 - [x] [MIT license](./LICENSE)
