@@ -1052,6 +1052,9 @@ local function REG_RegCreateKeyImpl (RootKeyPointer, SubKeyUtf8, Sam, Options)
   local UsedSam     = (Sam or KEY_READ)
   local UsedOptions = (Options or REG_OPTION_NON_VOLATILE)
   local UsedClass   = NULL
+  -- Validate inputs
+  assert((type(UsedSam)     == "number"), format("Sam: expected number, got %s", type(Sam)))
+  assert((type(UsedOptions) == "number"), format("Options: expected number, got %s", type(Options)))
   -- Convert the string
   local SubKeyUtf16 = WIN32_utf8toutf16(SubKeyUtf8)
   -- Try create the key (or open if exists)
@@ -1085,9 +1088,11 @@ local function REG_RegCreateKeyFromPath (KeyUtf8, Sam, Options)
 end
 
 local function REG_RegOpenKeyImpl (RootKeyPointer, SubKeyUtf8, Sam)
-  -- Validate inputs
+  -- Handle defaults
   local UsedSam     = (Sam or KEY_READ)
   local UsedOptions = 0
+  -- Validate inputs
+  assert((type(UsedSam) == "number"), format("Sam: expected number, got %s", type(Sam)))
   -- Convert the string
   local SubKeyUtf16 = WIN32_utf8toutf16(SubKeyUtf8)
   -- Try open the key
