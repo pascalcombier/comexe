@@ -603,7 +603,7 @@ local function KEY_MethodGetImpl (KeyObject, ValueNameUtf16)
   -- local data
   local ResultValue
   local ResultType
-  local ResultErrorMessage
+  local ResultErrorString
   -- Retrieve data
   local RawKey = KeyObject.RawKey
   -- Get pointers to integer from the shared array
@@ -638,16 +638,16 @@ local function KEY_MethodGetImpl (KeyObject, ValueNameUtf16)
       else
         -- Second call to RegQueryValueExW failed, the return value is directly
         -- usable by WIN32_FormatMessage without GetLastError
-        ResultErrorMessage = WIN32_FormatMessage(Status)
+        ResultErrorString = WIN32_FormatMessage(Status)
       end
     end
   else
     -- First call to RegQueryValueExW failed, the return value is directly
     -- usable by WIN32_FormatMessage without GetLastError
-    ResultErrorMessage = WIN32_FormatMessage(Status)
+    ResultErrorString = WIN32_FormatMessage(Status)
   end
   -- Return value
-  return ResultValue, ResultType, ResultErrorMessage
+  return ResultValue, ResultType, ResultErrorString
 end
 
 local function REG_FormatMultiString (StringArray)
@@ -735,13 +735,13 @@ local function KEY_MethodSet (KeyObject, ValueNameUtf8, Value, TypeStringUtf8)
   local Status = RegSetValueExW(RawKey, ValueNameUtf16, 0, TypeValue, DataPointer, SizeInBytes)
   -- Set return value
   local Success = (Status == ERROR_SUCCESS)
-  local ErrorMessage
+  local ErrorString
   if (not Success) then
     local Message = WIN32_FormatMessage(Status)
-    ErrorMessage = format("%s (error %d)", Message, Status)
+    ErrorString = format("%s (error %d)", Message, Status)
   end
   -- Return value
-  return Success, ErrorMessage
+  return Success, ErrorString
 end
 
 -- REG_ReadKeyValue is not intended for interactive call, but to be used for
@@ -779,7 +779,7 @@ local function REG_ReadKeyValue (KeyObject, Index)
     local ValueNameUtf16  = Buffer:read(1, NameSizeInBytes)
     -- Convert the name for API users
     ValueNameUtf8 = WIN32_utf16to8(ValueNameUtf16)
-    -- Simply reuse RegQueryValueExW to get the value from the name, discard ErrorMessage
+    -- Simply reuse RegQueryValueExW to get the value from the name, discard ErrorString
     ValueObject, ValueType = KEY_MethodGetImpl(KeyObject, ValueNameUtf16)
   end
   -- Return value
@@ -883,7 +883,7 @@ end
 local function KEY_MethodFlush (KeyObject)
   -- Return value
   local Success
-  local ErrorMessage
+  local ErrorString
   -- Retrieve data
   local RawKey = KeyObject.RawKey
   -- Call the C API
@@ -894,12 +894,12 @@ local function KEY_MethodFlush (KeyObject)
   else
     local Message = WIN32_FormatMessage(Status)
     -- Format error
-    ErrorMessage = format("%s (error %d)", Message, Status)
+    ErrorString = format("%s (error %d)", Message, Status)
     -- Set error
     Success = false
   end
   -- Return value
-  return Success, ErrorMessage
+  return Success, ErrorString
 end
 
 local function KEY_MethodGarbage (KeyObject)
@@ -915,16 +915,16 @@ local function KEY_MethodDeleteValue (KeyObject, ValueNameUtf8)
   local Status = RegDeleteValueW(RawKey, ValueNameUtf16)
   -- Prepare return values (Only one return statement allowed)
   local Success
-  local ErrorMessage
+  local ErrorString
   if (Status == ERROR_SUCCESS) then
     Success = true
   else
     local Message = WIN32_FormatMessage(Status)
-    ErrorMessage  = format("%s (error %d)", Message, Status)
+    ErrorString  = format("%s (error %d)", Message, Status)
     Success       = false
   end
   -- Return value
-  return Success, ErrorMessage
+  return Success, ErrorString
 end
 
 local function KEY_MethodGet (KeyObject, ValueNameUtf8)
@@ -1128,16 +1128,16 @@ local function REG_RegDeleteKey (KeyUtf8)
   local SubKeyUtf16 = WIN32_utf8toutf16(SubKeyUtf8)
   local Status      = RegDeleteKeyW(RootKeyPointer, SubKeyUtf16)
   local Success
-  local ErrorMessage
+  local ErrorString
   if (Status == ERROR_SUCCESS) then
     Success = true
   else
     local Message = WIN32_FormatMessage(Status)
-    ErrorMessage  = format("%s (error %d)", Message, Status)
+    ErrorString  = format("%s (error %d)", Message, Status)
     Success       = false
   end
   -- Return value
-  return Success, ErrorMessage
+  return Success, ErrorString
 end
 
 --------------------------------------------------------------------------------
@@ -1152,14 +1152,14 @@ local function WIN32_ExpandEnvironmentStrings (StringUtf8)
   local RequiredChars = ExpandEnvironmentStringsW(StringUtf16, NULL, 0)
   -- local data
   local Result
-  local ErrorMessage
+  local ErrorString
   -- Error handling
   if (RequiredChars == 0) then
     local ErrorCode = GetLastError()
     if (ErrorCode == 0) then
-      ErrorMessage = "Unknown error"
+      ErrorString = "Unknown error"
     else
-      ErrorMessage = WIN32_FormatMessage(ErrorCode)
+      ErrorString = WIN32_FormatMessage(ErrorCode)
     end
   else
     -- Allocate buffer, include terminator
@@ -1171,24 +1171,24 @@ local function WIN32_ExpandEnvironmentStrings (StringUtf8)
     if (WrittenChars == 0) then
       local ErrorCode = GetLastError()
       if (ErrorCode == 0) then
-        ErrorMessage  = "Unknown error"
+        ErrorString  = "Unknown error"
       else
-        ErrorMessage = WIN32_FormatMessage(ErrorCode)
+        ErrorString = WIN32_FormatMessage(ErrorCode)
       end
     else
       if (WrittenChars <= RequiredChars) then
         -- Success: read WrittenChars wide characters (include terminating NUL)
         local StringUtf16 = Buffer:read(1, (WrittenChars * 2))
         -- Convert back to UTF-8
-        Result, ErrorMessage = WIN32_utf16to8(StringUtf16)
+        Result, ErrorString = WIN32_utf16to8(StringUtf16)
       else
         -- The buffer was too small (race condition changed buffer size)
-        ErrorMessage = "buffer too small"
+        ErrorString = "buffer too small"
       end
     end
   end
   -- Return value
-  return Result, ErrorMessage
+  return Result, ErrorString
 end
 
 -- int MessageBoxW(
@@ -1274,14 +1274,14 @@ local function WIN32_ShellExecute (VerbUtf8, FileUtf8, ParamsUtf8, DirUtf8, Show
       CloseHandle(Process)
     end
   end
-  local ErrorMessage
+  local ErrorString
   if (not Success) then
     local ErrorCode = GetLastError()
     -- Format error
-    ErrorMessage = WIN32_FormatMessage(ErrorCode)
+    ErrorString = WIN32_FormatMessage(ErrorCode)
   end
   -- Return value
-  return Success, ExitCode, ErrorMessage
+  return Success, ExitCode, ErrorString
 end
 
 --------------------------------------------------------------------------------
