@@ -1308,15 +1308,16 @@ local function INIT_ParseOptions (Arguments, EatRules)
   return Success, ErrorOption, NewOptions, ScriptIndex, OptionValues
 end
 
-local function INIT_ParseArguments (Arguments)
+local function INIT_ParseArguments (Arguments, RunMode)
   -- Parse the options part
   local Success, ErrorOption, NewOptions, ScriptIndex, OptionValues = INIT_ParseOptions(Arguments, INIT_ParserEatRules)
   -- Collect arguments after script
   local ArgCount     = #Arguments
   local ExeFilename  = Arguments[1]
   local NewArguments = {}
+  local HasLuaScript = (RunMode == "INTERPRETER")
   local Script
-  if Success and ScriptIndex then
+  if HasLuaScript and Success and ScriptIndex then
     Script       = Arguments[ScriptIndex]
     NewArguments = INIT_ArraySlice(Arguments, (ScriptIndex + 1), ArgCount)
   else
@@ -1326,8 +1327,6 @@ local function INIT_ParseArguments (Arguments)
   -- Return values
   return ExeFilename, NewOptions, Script, NewArguments, OptionValues
 end
-
-local ExeFilename, NewOptions, NewScript, NewArguments, NewOptionValues = INIT_ParseArguments(arg)
 
 -- We had to ParseArguments() to determine if we have a script or not. The
 -- behaviour of LuaStandalone varies: without script, LuaStandalone all the
@@ -1391,22 +1390,6 @@ end
 -- CONVENIENT RESOURCE MANAGEMENT: ZIP VS FILE-SYSTEM                         --
 --------------------------------------------------------------------------------
 
--- This useful resource management function depends on ScriptName which depends
--- on command-line parsing.
---
--- From ScriptName we determine the RootDir, from the RootDir we can load the
--- files in InterpreterMode.
-
-local function INIT_DetermineRunMode ()
-  local RunMode
-  if INIT_AppEntryPoint then
-    RunMode = "EMBEDDED"
-  else
-    RunMode = "INTERPRETER"
-  end
-  return RunMode
-end
-
 -- loadresource(Filename): load either from ZIP either from FILE-SYSTEM
 --
 -- At this stage, we already have "arg" setup by lua-application.c
@@ -1459,8 +1442,19 @@ local function INIT_DetermineRootDirectory (RunMode, Script)
   return RootDir
 end
 
--- Global variable for simplicity, used by INIT_LoadResource
-local INIT_RunMode = INIT_DetermineRunMode()
+-- Executables built with the compiler set the "INIT_AppEntryPoint" variable
+-- Based on this we know if we expect a SCRIPT-NAME or not
+local INIT_RunMode
+if INIT_AppEntryPoint then
+  INIT_RunMode = "EMBEDDED"
+else
+  INIT_RunMode = "INTERPRETER"
+end
+
+-- Global variables for simplicity, used by INIT_LoadResource
+local ExeFilename, NewOptions, NewScript, NewArguments, NewOptionValues = INIT_ParseArguments(arg, INIT_RunMode)
+
+-- Determine root directory based on given script
 local INIT_RootDir = INIT_DetermineRootDirectory(INIT_RunMode, NewScript)
 
 -- Methods:
@@ -1792,8 +1786,7 @@ local ModuleToLoad
 if (ThreadId == 1) then
   ModuleToLoad = (INIT_AppEntryPoint or "main")
 else
-  local ModuleName = Thread.getname()
-  ModuleToLoad = ModuleName
+  ModuleToLoad = Thread.getname()
 end
 
 require(ModuleToLoad)
