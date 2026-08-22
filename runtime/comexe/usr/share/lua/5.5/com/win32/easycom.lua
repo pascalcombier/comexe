@@ -64,6 +64,7 @@ local floor         = math.floor
 local newbuffer     = Runtime.newbuffer
 local newidprovider = Runtime.newidprovider
 local utf8to16      = Win32.utf8to16
+local utf16to8      = Win32.utf16to8
 
 -- CLSID/IID
 local newclsid = RawCom.newclsid
@@ -329,6 +330,10 @@ end
 local function VARIANT_MethodGet (Variant)
   local Pointer = Variant:getpointer()
   local Value, VariantType, ErrorString = variant_get(Pointer)
+  -- BSTR is UTF-16
+  if (VariantType == VT_BSTR) and Value then
+    Value = utf16to8(Value)
+  end
   return Value, VariantType, ErrorString
 end
 
@@ -846,6 +851,12 @@ local function SAFEARRAY_MethodRead (SafeArrayObject, Data)
   local ReadCount = safearray_readdata(SafeArrayPointer, DataPointer, Data)
   -- Unlock data
   safearray_unaccessdata(SafeArrayPointer)
+  -- BSTR is UTF-16
+  for Index = 1, #Data do
+    if (type(Data[Index]) == "string") then
+      Data[Index] = utf16to8(Data[Index])
+    end
+  end
   -- Return value
   return ReadCount
 end
@@ -1165,6 +1176,9 @@ local function COM_VariantToLuaImpl (VariantPointer)
     -- Attach methods
     setmetatable(NewSafeArrayObject, SAFEARRAY_Metatable)
     ResultValue = NewSafeArrayObject
+  elseif (ResultType == VT_BSTR) and ResultValue then
+    -- BSTR is UTF-16
+    ResultValue = utf16to8(ResultValue)
   end
   -- API: provide the "VT_XXX" as a string
   local TypeName = VARIANT_GetTypeName(ResultType)

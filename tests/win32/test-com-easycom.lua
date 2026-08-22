@@ -1278,7 +1278,7 @@ function TestCom_007_SafeArrayStrings (Filename)
       local CheckId             = format("%c%d", (64 + Col), Row)
       if (type(ExpectedValue) == "string") then
         Reporter:expect(format("SAFEARRAY-STRINGS-%s-TYPE", CheckId), CellType == "VT_BSTR")
-        Reporter:expect(format("SAFEARRAY-STRINGS-%s-LEN", CheckId), #CellValue == (#ExpectedValue * 2))
+        Reporter:expect(format("SAFEARRAY-STRINGS-%s-LEN", CheckId), #CellValue == #ExpectedValue)
       else
         Reporter:expect(format("SAFEARRAY-STRINGS-%s-VAL", CheckId), CellValue == ExpectedValue)
         Reporter:expect(format("SAFEARRAY-STRINGS-%s-TYPE", CheckId), CellType == "VT_R8")
