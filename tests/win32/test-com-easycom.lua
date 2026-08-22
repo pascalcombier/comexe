@@ -35,6 +35,7 @@ local insert = table.insert
 local newobject    = com.newobject
 local newdate      = com.newdate
 local newsafearray = com.newsafearray
+local newvariant   = com.newvariant
 
 --------------------------------------------------------------------------------
 -- GLOBAL VARIABLES                                                           --
@@ -187,9 +188,9 @@ function TestCom_002_ExcelApi (Filename)
   local Date1String = "2024-03-14 15:30:45"
   local Date2String = "1899-12-30 15:30:45"
   local Date3String = "1900-01-01 15:30:45"
-  local Date1       = { newdate(Date1String), "VT_DATE" }
-  local Date2       = { newdate(Date2String), "VT_DATE" }
-  local Date3       = { newdate(Date3String), "VT_DATE" }
+  local Date1       = newvariant(newdate(Date1String), "VT_DATE")
+  local Date2       = newvariant(newdate(Date2String), "VT_DATE")
+  local Date3       = newvariant(newdate(Date3String), "VT_DATE")
 
   SetCellValue(ActiveSheet, "A1", "Type")
   SetCellValue(ActiveSheet, "B1", "Example of value")
@@ -201,7 +202,7 @@ function TestCom_002_ExcelApi (Filename)
   SetCellValue(ActiveSheet, "A4", "Real VT_R8")
   SetCellValue(ActiveSheet, "B4", 123.456)
   SetCellValue(ActiveSheet, "A5", "Date")
-  SetCellValue(ActiveSheet, "B5", { 0.0, "VT_DATE" } )
+  SetCellValue(ActiveSheet, "B5", newvariant(0.0, "VT_DATE"))
   SetCellValue(ActiveSheet, "C5", "'0.0")
   SetCellValue(ActiveSheet, "A6", "ISO Date")
   SetCellValue(ActiveSheet, "B6", Date1)

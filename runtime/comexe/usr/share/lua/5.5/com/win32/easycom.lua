@@ -14,6 +14,12 @@
 -- with custom Invoker. Here COM_NewCallbackHandler allow to implement that
 -- Invoker in Lua.
 --
+-- COM_NewVariant(Value, TypeName) creates a typed value for get/set/call
+-- arguments that need an explicit VARIANT type, for example Excel dates:
+-- local Date        = newdate("2024-03-14 15:30:45")
+-- local DateVariant = newvariant(Date, "VT_DATE")
+-- Range:set("Value", DateVariant)
+--
 -- REFERENCE COUNT
 --
 -- COM objects have a reference count. CoCreateInstance already returns the
@@ -944,6 +950,27 @@ local function SAFEARRAY_Create (TypeString, ...)
 end
 
 --------------------------------------------------------------------------------
+-- MANUAL VARIANT TYPING                                                      --
+--------------------------------------------------------------------------------
+
+-- newvariant(Value, TypeName) creates a typed value for get/set/call arguments
+local MANUAL_Metatable = {}
+
+local function COM_NewVariant (Value, TypeName)
+  -- Validate inputs
+  assert(VARIANT_TYPE_VALUES[TypeName], format("Unsupported type '%s' for VARIANT", TypeName))
+  -- Create the new Lua object
+  local NewObject = {
+    Value    = Value,
+    TypeName = TypeName,
+  }
+  -- Attach metatable
+  setmetatable(NewObject, MANUAL_Metatable)
+  -- Return value
+  return NewObject
+end
+
+--------------------------------------------------------------------------------
 -- COM OBJECT "EasyCom"                                                       --
 --------------------------------------------------------------------------------
 
@@ -1191,15 +1218,16 @@ local function DISPATCH_Invoke (Object, TypeString, NameUtf8, ...)
     -- Choose type detection versus manual type
     if (type(LuaValue) == "table") then
       local Metatable = getmetatable(LuaValue)
-      if ((Metatable == UNKNOWN_Metatable)
+      if (Metatable == MANUAL_Metatable) then
+        -- Explicit type from newvariant(Value, TypeName)
+        COM_VariantSetManual(Variant, LuaValue.Value, LuaValue.TypeName)
+      elseif ((Metatable == UNKNOWN_Metatable)
         or (Metatable == DISPATCH_Metatable)
         or (Metatable == SAFEARRAY_Metatable))
       then
         COM_VariantSetAuto(Variant, LuaValue)
       else
-        local Value      = LuaValue[1]
-        local TypeString = LuaValue[2]
-        COM_VariantSetManual(Variant, Value, TypeString)
+        error("Unsupported table argument, use newvariant(Value, TypeName) to pass a typed value")
       end
     else
       COM_VariantSetAuto(Variant, LuaValue)
@@ -1595,6 +1623,7 @@ local PUBLIC_API = {
   newsafearray = SAFEARRAY_Create,
   newinterface = COM_NewInterface,
   newhandler   = COM_NewCallbackHandler,
+  newvariant   = COM_NewVariant,
 }
 
 return PUBLIC_API
