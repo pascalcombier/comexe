@@ -281,10 +281,10 @@ local function COM_NewDateFromIso (IsoDateString)
   Month = tonumber(Month)
   Day   = tonumber(Day)
   -- Validate inputs
-  local ErrorMessage = "Invalid date format. Expected YYYY-MM-DD or YYYY-MM-DD HH:MM:SS"
-  assert(Year,  ErrorMessage)
-  assert(Month, ErrorMessage)
-  assert(Day,   ErrorMessage)
+  local ErrorString = "Invalid date format. Expected YYYY-MM-DD or YYYY-MM-DD HH:MM:SS"
+  assert(Year,  ErrorString)
+  assert(Month, ErrorString)
+  assert(Day,   ErrorString)
   -- Optional
   Hour   = tonumber(Hour)   or 0
   Minute = tonumber(Minute) or 0
@@ -328,8 +328,8 @@ end
 
 local function VARIANT_MethodGet (Variant)
   local Pointer = Variant:getpointer()
-  local Value, VariantType, ErrorMessage = variant_get(Pointer)
-  return Value, VariantType, ErrorMessage
+  local Value, VariantType, ErrorString = variant_get(Pointer)
+  return Value, VariantType, ErrorString
 end
 
 local function VARIANT_MethodSet (Variant, Type, Value)
@@ -508,23 +508,23 @@ local function UNKNOWN_NewIEnumVARIANT (InterfacePointer)
     local NextPointer = NextVariant:getpointer()
     local Result, Fetched = enumvariant_next(EnumVariantPointer, 1, NextPointer)
     local ReturnValue
-    local ReturnError
+    local ErrorString
     local ReturnTypeName
     if HRESULT_SUCCEEDED(Result) then
       if (Fetched == 1) then
-        ReturnValue, ReturnTypeName, ReturnError = COM_VariantToLua(NextPointer)
+        ReturnValue, ReturnTypeName, ErrorString = COM_VariantToLua(NextPointer)
       elseif (Fetched == 0) then
         ReturnValue    = nil
-        ReturnError    = nil
+        ErrorString    = nil
         ReturnTypeName = nil
       else
         ReturnValue    = nil
-        ReturnError    = "Unexpected number of items fetched"
+        ErrorString    = "Unexpected number of items fetched"
         ReturnTypeName = nil
       end
     else
       ReturnValue    = nil
-      ReturnError    = format("IEnumVARIANT:Next failed: %8.8X", Result)
+      ErrorString    = format("IEnumVARIANT:Next failed: %8.8X", Result)
       ReturnTypeName = nil
     end
     -- In COM_VariantToLua, implemented in COM_VariantToLuaImpl, the very first
@@ -533,8 +533,8 @@ local function UNKNOWN_NewIEnumVARIANT (InterfacePointer)
     -- caller, so we can now release the reference with Clear().
     NextVariant:clear()
     NextVariant:init()
-    -- Return: ValueOrNil, TypeNameOrNil, ErrorMessageOrNil
-    return ReturnValue, ReturnTypeName, ReturnError
+    -- Return: ValueOrNil, TypeNameOrNil, ErrorStringOrNil
+    return ReturnValue, ReturnTypeName, ErrorString
   end
   local function MethodReset (EnumVariantObject)
     -- Retrieve data
@@ -1145,7 +1145,7 @@ end
 -- COM_VariantToLuaImpl does NOT call addref
 local function COM_VariantToLuaImpl (VariantPointer)
   -- Get the VARIANT value
-  local ResultValue, ResultType, ReturnError = variant_get(VariantPointer)
+  local ResultValue, ResultType, ErrorString = variant_get(VariantPointer)
   -- Automatic promotion of raw value to complex Lua object
   if (ResultType == VT_UNKNOWN) then
     local Unknown = COM_NewUnknown(ResultValue)
@@ -1169,7 +1169,7 @@ local function COM_VariantToLuaImpl (VariantPointer)
   -- API: provide the "VT_XXX" as a string
   local TypeName = VARIANT_GetTypeName(ResultType)
   -- Return values
-  return ResultValue, TypeName, ReturnError
+  return ResultValue, TypeName, ErrorString
 end
 COM_VariantToLua = COM_VariantToLuaImpl -- Pre-declaration
 
@@ -1249,9 +1249,9 @@ local function DISPATCH_Invoke (Object, TypeString, NameUtf8, ...)
   -- Prepare results using COM_VariantToLua
   local ReturnValue
   local ReturnType
-  local ErrorMessage
+  local ErrorString
   if HRESULT_SUCCEEDED(Result) then
-    ReturnValue, ReturnType, ErrorMessage = COM_VariantToLua(VariantResultPointer)
+    ReturnValue, ReturnType, ErrorString = COM_VariantToLua(VariantResultPointer)
     -- Release result and parameter variants immediately to avoid holding refs
     VariantResult:clear()
     VariantResult:init()
@@ -1262,10 +1262,10 @@ local function DISPATCH_Invoke (Object, TypeString, NameUtf8, ...)
     end
   else
     ReturnValue  = false
-    ErrorMessage = format("Invoke failed with HRESULT 0x%08X", Result)
+    ErrorString = format("Invoke failed with HRESULT 0x%08X", Result)
   end
   -- Return values
-  return ReturnValue, ReturnType, ErrorMessage
+  return ReturnValue, ReturnType, ErrorString
 end
 
 -- High-level interface
