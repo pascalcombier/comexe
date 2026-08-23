@@ -35,7 +35,7 @@ if Excel then
   ActiveSheet:get("Range", "B4"):set("Value", true)
   ActiveSheet:get("Range", "B5"):set("Value", false)
   ActiveSheet:get("Range", "B6"):set("Value", false)
-  ActiveSheet:get("Range", "B6"):set("Value", nil)
+  ActiveSheet:get("Range", "B6"):set("Value", nil) -- overwrite
   -- Write date
   local ExcelDate   = EasyCom.datetonumber("2024-03-14 15:30:45")
   local DateVariant = EasyCom.newvariant(ExcelDate, "VT_DATE")
@@ -46,11 +46,11 @@ if Excel then
   ActiveSheet:get("Range", "B8"):set("NumberFormat", EuroFormat)
   -- Read single cells / simple values
   for Index = 1, 9 do
-    local Address = string.format("B%d", Index)
-    local Value   = ActiveSheet:get("Range", Address):get("Value")
-    print(string.format("READ B%d LuaValue=%s", Index, Value))
+    local Address         = string.format("B%d", Index)
+    local Value, TypeName = ActiveSheet:get("Range", Address):get("Value")
+    print(string.format("READ B%d %-8s LuaValue=%s", Index, TypeName, Value))
   end
-  -- Read and format dates with Excel functions 
+  -- Read and format dates with Excel functions
   local DateValue         = ActiveSheet:get("Range", "B7"):get("Value")
   local WorksheetFunction = Excel:get("WorksheetFunction")
   local IsoDateString     = WorksheetFunction:call("Text", DateValue, "yyyy-mm-dd hh:mm:ss")
@@ -66,7 +66,7 @@ if Excel then
       table.insert(Data, Value)
     end
   end
-  -- Write the Lua data in the C-side SAFEARRAY (20 rows, 10 columns)
+  -- Write the Lua data into the C-side SAFEARRAY (20 rows, 10 columns)
   local SafeArray = EasyCom.newsafearray("VT_VARIANT", 1, 20, 1, 10)
   SafeArray:write(Data)
   -- Write the SAFEARRAY to Excel sheet
@@ -74,11 +74,11 @@ if Excel then
   -- Column Alignment and AutoFit
   ActiveSheet:get("Columns", "B"):set("HorizontalAlignment", xlRight)
   ActiveSheet:get("Columns", "A:M"):call("AutoFit")
-  -- Read and store the SAFEARRAY values into a Lua table
+  -- Read the SAFEARRAY of cell values
   local SafeArray = ActiveSheet:get("Range", "A1:B8"):get("Value")
   local ReadTable = SafeArray:newtable()
   print("SAFEARRAY SIZE", #ReadTable)
-  -- Read and store the SAFEARRAY values into a Lua table
+  -- Copy the SAFEARRAY values into the Lua table (1D)
   SafeArray:read(ReadTable)
   for Index, Value in pairs(ReadTable) do
     print("SAFEARRAY", Index, Value)

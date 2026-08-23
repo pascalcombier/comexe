@@ -26,6 +26,7 @@ ComEXE is a statically linked, drop-in replacement for the [Lua standalone progr
 - [Using the FFI to wrap a C library](./doc/page-ffi-sqlite.md)
 - [Building a GUI with WebView2](./doc/page-webview2.md)
 - [Using the FFI to build a Win32 GUI](./doc/page-ffi-win32-gui.md)
+- [Using Easycom with Excel](./doc/page-win32-com-excel.md)
 - [Using Fennel with ComEXE](./doc/page-fennel.md)
 - [Differences with Lua PUC](./doc/page-differences-lua-puc.md)
 
