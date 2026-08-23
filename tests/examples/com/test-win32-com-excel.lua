@@ -1,12 +1,4 @@
---------------------------------------------------------------------------------
--- MODULE                                                                     --
---------------------------------------------------------------------------------
-
 local EasyCom = require("com.win32.easycom")
-
---------------------------------------------------------------------------------
--- MAIN                                                                       --
---------------------------------------------------------------------------------
 
 local Filename = "test-win32-excel.xlsx"
 local Excel    = EasyCom.newobject("Excel.Application")
@@ -72,9 +64,15 @@ if Excel then
   ActiveSheet:get("Columns", "D:M"):call("AutoFit")
   -- Save the Excel file
   local Success, TypeName, ErrorString = Workbook:call("SaveAs", Filename)
-  if (not Success) then
-    error(string.format("SaveAs failed: %s", ErrorString))
+  if Success then
+    -- Retrieve where is the file written
+    local FullName = Workbook:get("FullName")
+    print(string.format("Saved to %s", FullName))
+  else
+    print(string.format("ERROR: SaveAs failed: %s", ErrorString))
   end
-  print(string.format("Saved to %s", Filename))
   Excel:call("Quit")
+  if not Success then
+    os.exit(1)
+  end
 end

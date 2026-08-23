@@ -1276,7 +1276,7 @@ local function DISPATCH_Invoke (Object, TypeString, NameUtf8, ...)
     end
   else
     ReturnValue  = false
-    ErrorString = format("Invoke failed with HRESULT 0x%08X", Result)
+    ErrorString = format("Invoke failed with HRESULT 0x%08X", (Result & 0xFFFFFFFF))
   end
   -- Return values
   return ReturnValue, ReturnType, ErrorString
