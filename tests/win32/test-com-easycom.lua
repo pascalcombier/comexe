@@ -33,7 +33,7 @@ local format = string.format
 local insert = table.insert
 
 local newobject    = com.newobject
-local newdate      = com.newdate
+local datetonumber = com.datetonumber
 local newsafearray = com.newsafearray
 local newvariant   = com.newvariant
 
@@ -188,9 +188,9 @@ function TestCom_002_ExcelApi (Filename)
   local Date1String = "2024-03-14 15:30:45"
   local Date2String = "1899-12-30 15:30:45"
   local Date3String = "1900-01-01 15:30:45"
-  local Date1       = newvariant(newdate(Date1String), "VT_DATE")
-  local Date2       = newvariant(newdate(Date2String), "VT_DATE")
-  local Date3       = newvariant(newdate(Date3String), "VT_DATE")
+  local Date1       = newvariant(datetonumber(Date1String), "VT_DATE")
+  local Date2       = newvariant(datetonumber(Date2String), "VT_DATE")
+  local Date3       = newvariant(datetonumber(Date3String), "VT_DATE")
 
   SetCellValue(ActiveSheet, "A1", "Type")
   SetCellValue(ActiveSheet, "B1", "Example of value")

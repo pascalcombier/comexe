@@ -16,7 +16,7 @@
 --
 -- COM_NewVariant(Value, TypeName) creates a typed value for get/set/call
 -- arguments that need an explicit VARIANT type, for example Excel dates:
--- local Date        = newdate("2024-03-14 15:30:45")
+-- local Date        = datetonumber("2024-03-14 15:30:45")
 -- local DateVariant = newvariant(Date, "VT_DATE")
 -- Range:set("Value", DateVariant)
 --
@@ -275,7 +275,7 @@ local function DateToJulianDay (Year, Month, Day)
 end
 
 -- Parse ISO date string (format: "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS")
-local function COM_NewDateFromIso (IsoDateString)
+local function COM_IsoDateToNumber (IsoDateString)
   local Year, Month, Day, Hour, Minute, Second = IsoDateString:match("(%d+)-(%d+)-(%d+)%s*(%d*):?(%d*):?(%d*)")
   -- Convert strings to numbers
   Year  = tonumber(Year)
@@ -1633,7 +1633,7 @@ end
 local PUBLIC_API = {
   newobject    = COM_NewDispatch,
   castunknown  = COM_CastUnknown,
-  newdate      = COM_NewDateFromIso,
+  datetonumber = COM_IsoDateToNumber,
   newsafearray = SAFEARRAY_Create,
   newinterface = COM_NewInterface,
   newhandler   = COM_NewCallbackHandler,
