@@ -48,7 +48,7 @@
  * [ ] VT_I4
  * [x] VT_R4
  * [x] VT_R8
- * [ ] VT_CY --- Currency
+ * [x] VT_CY --- Currency
  * [x] VT_DATE
  * [x] VT_BSTR
  * [x] VT_DISPATCH
@@ -107,7 +107,8 @@
 #include <combaseapi.h> /* CLSIDFromString */
 
 #include <stdbool.h>
-#include <string.h> /* memcpy */
+#include <string.h> /* memcpy  */
+#include <math.h>   /* llround */
 
 /*============================================================================*/
 /* PRIVATE FUNCTIONS                                                          */
@@ -300,6 +301,7 @@ static int VARIANT_Set (lua_State *LuaState)
   wchar_t    *StringUtf16;
   IDispatch  *Dispatch;
   SAFEARRAY  *Array;
+  double      CyValue;
 
   VariantClear(Variant);
 
@@ -335,6 +337,12 @@ static int VARIANT_Set (lua_State *LuaState)
     case VT_R8:
       Variant->vt     = VT_R8;
       Variant->dblVal = lua_tonumber(LuaState, 3);
+      break;
+    case VT_CY:
+      /* Currency: 64-bit integer scaled by 10000, Lua passes the decimal value */
+      CyValue              = lua_tonumber(LuaState, 3);
+      Variant->vt          = VT_CY;
+      Variant->cyVal.int64 = llround(CyValue * 10000.0);
       break;
     case VT_DATE:
       Variant->vt   = VT_DATE;
@@ -435,6 +443,11 @@ static int VARIANT_Get (lua_State *LuaState)
     break;
   case VT_DATE:
     lua_pushnumber(LuaState, Variant->date);
+    lua_pushinteger(LuaState, VariantType);
+    lua_pushnil(LuaState);
+    break;
+  case VT_CY:
+    lua_pushnumber(LuaState, ((double)Variant->cyVal.int64) / 10000.0);
     lua_pushinteger(LuaState, VariantType);
     lua_pushnil(LuaState);
     break;
@@ -1017,6 +1030,9 @@ static void COM_PushVariantToLua (lua_State *LuaState, VARIANT *Variant)
   case VT_DATE:
     lua_pushnumber (LuaState, Variant->date);
     break;
+  case VT_CY:
+    lua_pushnumber (LuaState, ((double)Variant->cyVal.int64) / 10000.0);
+    break;
   case VT_BSTR:
     VariantString = Variant->bstrVal;
     if (VariantString)
@@ -1100,6 +1116,9 @@ static void COM_PushToLua (lua_State *LuaState, void *Address, VARTYPE Type)
   case VT_UI8: lua_pushinteger(LuaState, *(unsigned long long *)Address); break;
   case VT_R4:  lua_pushnumber (LuaState,              *(float *)Address); break;
   case VT_R8:  lua_pushnumber (LuaState,             *(double *)Address); break;
+  case VT_CY: 
+    lua_pushnumber (LuaState, (double)((CY *)Address)->int64 / 10000.0);
+    break;
   case VT_BOOL:
     VariantBool = *(VARIANT_BOOL *)Address;
     COM_PushVariantBool(LuaState, VariantBool);
@@ -1225,6 +1244,7 @@ static void COM_CopyLuaToAddress (lua_State *LuaState,
   IUnknown      *Unknown;
   IDispatch     *Dispatch;
   OLECHAR       *WideBuffer;
+  double         CyValue;
 
   switch (VariantType)
   {
@@ -1234,6 +1254,11 @@ static void COM_CopyLuaToAddress (lua_State *LuaState,
   case VT_UI8: *(unsigned long long *)Address = lua_tointeger(LuaState, LuaIndex); break;
   case VT_R4:               *(float *)Address = lua_tonumber(LuaState, LuaIndex);  break;
   case VT_R8:              *(double *)Address = lua_tonumber(LuaState, LuaIndex);  break;
+  case VT_CY:
+    /* Currency: 64-bit integer scaled by 10000, Lua passes the decimal value */
+    CyValue                = lua_tonumber(LuaState, LuaIndex);
+    ((CY *)Address)->int64 = llround(CyValue * 10000.0);
+    break;
   case VT_BOOL:
     VariantBool  = Address;
     *VariantBool = COM_LuaBoolToVariant(LuaState, LuaIndex);
