@@ -490,8 +490,14 @@ static void StringAppend(String *pStr, const char *zText, int nByte){
 ** Compute a hash on a string.  The number returned is a non-negative
 ** value between 0 and 2**31 - 1
 */
+/* ComEXE patch: change "int h" to "unsigned int h"
+ *
+ * With a signed int, h<<5 is undefined behavior. It somehow works (dont crash)
+ * with executables produced by gcc, but but crash with executables produced by
+ * clang
+ */
 static int Hash(const char *z, int n){
-  int h = 0;
+  unsigned int h = 0;
   if( n<=0 ){
     n = strlen(z);
   }
