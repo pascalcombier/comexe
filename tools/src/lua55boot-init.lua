@@ -638,6 +638,15 @@ local function RUNTIME_MakeDirectory (Directory)
     end
   end
   -- Create missing directories step by step
+  while Success and (#PathStack > 0) do
+    local PathToCreate = remove(PathStack)
+    local NativePath   = tostring(PathToCreate)
+    -- Create directory
+    local MkdirSuccess, MkdirErrorString = uv.fs_mkdir(NativePath, RUNTIME_DIR_DEFAULT_MODE)
+    if MkdirSuccess then
+      Success = true
+    else
+      local FsStatSuccess = uv.fs_stat(NativePath)
       -- Maybe the directory created in the meantime
       if (FsStatSuccess and (FsStatSuccess.type == "directory")) then
         Success = true
@@ -652,13 +661,13 @@ local function RUNTIME_MakeDirectory (Directory)
 end
 
 local function RUNTIME_DirectoryExists (Directory)
-  local StatResult      = uv.fs_stat(Directory)
-  local Exists          = (StatResult and StatResult.type == "directory")
+  local StatResult, ErrorMessage = fs_stat(Directory)
+  local Exists = (StatResult and StatResult.type == "directory")
   return Exists
 end
 
 local function RUNTIME_FileExists (Filename)
-  local StatResult, ErrorMessage = fs_stat(Filename)
+  local StatResult, ErrorMessage = uv.fs_stat(Filename)
   local Exists = (StatResult and StatResult.type == "file")
   return Exists
 end
