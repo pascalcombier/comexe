@@ -81,8 +81,7 @@ end
 -- FILES                                                                      --
 --------------------------------------------------------------------------------
 
--- Usual POSIX dir mode 0755 (decimal 493) gives rwx for owner and rx for
--- group/others and is a good portable default
+-- Usual POSIX dir mode 0755 is good portable default
 local RUNTIME_DIR_DEFAULT_MODE = tonumber("755", 8)
 
 -- behavior like mkdir -p
@@ -126,7 +125,7 @@ local function RUNTIME_MakeDirectory (Directory)
       if (FsStatSuccess and (FsStatSuccess.type == "directory")) then
         Success = true
       else
-        Success      = false
+        Success     = false
         ErrorString = MkdirErrorString
       end
     end
