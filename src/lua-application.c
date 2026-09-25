@@ -121,16 +121,17 @@ struct LUA_Application;
 /* IMPLEMENTATION HEADERS                                                     */
 /*============================================================================*/
 
-#include <string.h>  /* memcpy */
-#include <stdbool.h> /* bool   */
-#include <time.h>    /* time   */
+#include <string.h> /* memcpy */
 
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
 #include <uv.h>
 
-#include "unzip.h" /* minizip headers */
+/* minizip-ng headers, order is important */
+#include <mz.h>
+#include <mz_strm_os.h>
+#include <mz_zip.h>
 
 #include "comexe.h"
 #include "version.h"
@@ -284,15 +285,6 @@ static struct LUA_Instance* APP_CreateInstance (struct LUA_Application *Applicat
                                                 const char             *ExitEventName);
 
 static void APP_ReleaseInstance (struct LUA_Instance *Instance);
-
-/*============================================================================*/
-/* STANDARD LIBRARIES ADDONS                                                  */
-/*============================================================================*/
-
-static bool STRING_Equals (const char *String1, const char *String2)
-{
-  return (strcmp(String1, String2) == 0);
-}
 
 /*============================================================================*/
 /* APPLICATION-RELATED LUA ADDONS                                             */
@@ -1066,7 +1058,7 @@ static void APP_PreloadLibraries (lua_State *LuaState)
   APP_RegisterPreload(LuaState, "com.thread",            luaopen_threads);
   APP_RegisterPreload(LuaState, "com.event",             luaopen_events);
   APP_RegisterPreload(LuaState, "com.raw.buffer",        luaopen_buffer);
-  APP_RegisterPreload(LuaState, "com.raw.minizip",       luaopen_libminizip);
+  APP_RegisterPreload(LuaState, "com.raw.minizipng",     luaopen_minizipng);
   APP_RegisterPreload(LuaState, "com.raw.libffi",        luaopen_libffiraw);
   APP_RegisterPreload(LuaState, "luv",                   luaopen_luv);
   APP_RegisterPreload(LuaState, "socket.core",           luaopen_socket_core);
@@ -1372,69 +1364,81 @@ static uint8_t *APP_LoadEmbeddedFile (struct LUA_Application *Application,
                                       const char             *ZipEntryName,
                                       size_t                 *FileSize)
 {
-  const char      *ExeFilename = Application->Argv[0];
-  unzFile          UnzFile     = unzOpen64(ExeFilename);
-  char             CurrentFilename[256]; /* UNZ_MAXFILENAMEINZIP */
-  bool             FileFound;
-  uint8_t         *FileBuffer;
-  unz_file_info64  FileInfo;
-  size_t           BytesRead;
-  int              Result;
-  
-  /* Initialize output  */
-  FileBuffer = 0;
+  const char  *ExeFilename = Application->Argv[0];
+  void        *Stream      = mz_stream_os_create();
+  void        *ZipHandle   = mz_zip_create();
+  mz_zip_file *FileInfo    = NULL;
+  uint8_t     *FileBuffer;
+  size_t       TotalSize;
+  size_t       BytesRead;
+  int32_t      Chunk;
+  int32_t      CloseResult;
+  int32_t      Result;
+  bool         Reading;
 
-  if (UnzFile)
+  /* Initialize output */
+  FileBuffer = NULL;
+
+  if ((Stream != NULL) && (ZipHandle != NULL))
   {
-    Result    = unzGoToFirstFile(UnzFile);
-    FileFound = false;
-
-    while (!FileFound && (Result == UNZ_OK))
+    /* Open the executable itself, then read the ZIP appended to it */
+    Result = mz_stream_os_open(Stream, ExeFilename, MZ_OPEN_MODE_READ);
+    if (Result == MZ_OK)
     {
-      /* Get current file info */
-      if (unzGetCurrentFileInfo64(UnzFile,
-                                  &FileInfo,
-                                  CurrentFilename, 
-                                  sizeof(CurrentFilename),
-                                  NULL,
-                                  0,
-                                  NULL,
-                                  0) == UNZ_OK)
+      Result = mz_zip_open(ZipHandle, Stream, MZ_OPEN_MODE_READ);
+    }
+    if (Result == MZ_OK)
+    {
+      /* Locate the entry */
+      Result = mz_zip_locate_entry(ZipHandle, ZipEntryName, 0);
+    }
+    if (Result == MZ_OK)
+    {
+      if (mz_zip_entry_get_info(ZipHandle, &FileInfo) == MZ_OK)
       {
-        if (STRING_Equals(CurrentFilename, ZipEntryName))
-        {
-          /* Found the requested file */
-          if (unzOpenCurrentFile(UnzFile) == UNZ_OK)
-          {
-            /* Read file content */
-            FileBuffer = PLAT_SafeAlloc0(1, FileInfo.uncompressed_size);
-            BytesRead  = unzReadCurrentFile(UnzFile, FileBuffer, (unsigned int)FileInfo.uncompressed_size);
+        TotalSize = FileInfo->uncompressed_size;
 
-            if (BytesRead > 0)
+        if (mz_zip_entry_read_open(ZipHandle, 0, NULL) == MZ_OK)
+        {
+          FileBuffer = PLAT_SafeAlloc0(1, TotalSize);
+          BytesRead  = 0;
+          Reading    = true;
+
+          /* mz_zip_entry_read is a streaming read: loop (limited to 2 GiB entry) */
+          while (Reading && (BytesRead < TotalSize))
+          {
+            Chunk = mz_zip_entry_read(ZipHandle, (FileBuffer + BytesRead), (TotalSize - BytesRead));
+            if (Chunk > 0)
             {
-              *FileSize = BytesRead;
-              FileFound = true;
+              BytesRead += Chunk;
             }
             else
             {
-              /* Failed to read, cleanup */
-              PLAT_Free(FileBuffer);
-              FileBuffer = NULL;
+              Reading = false;
             }
-            
-            unzCloseCurrentFile(UnzFile);
+          }
+          /* The entry close verifies the CRC of the data just read */
+          CloseResult = mz_zip_entry_close(ZipHandle);
+          if ((BytesRead > 0) && (CloseResult == MZ_OK))
+          {
+            *FileSize = BytesRead;
+          }
+          else
+          {
+            /* Failed to read or failed to verify, cleanup */
+            PLAT_Free(FileBuffer);
+            FileBuffer = NULL;
           }
         }
       }
-      
-      if (!FileFound)
-      {
-        Result = unzGoToNextFile(UnzFile);
-      }
     }
-    
-    unzClose(UnzFile);
+    mz_zip_close(ZipHandle);
+    mz_stream_os_close(Stream);
   }
+
+  /* Cleanup */
+  mz_stream_os_delete(&Stream);
+  mz_zip_delete(&ZipHandle);
   
   return FileBuffer;
 }

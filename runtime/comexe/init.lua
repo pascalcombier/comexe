@@ -133,7 +133,7 @@
 
 local Runtime   = require("com.raw.runtime")
 local RawBuffer = require("com.raw.buffer")
-local MiniZip   = require("com.raw.minizip")
+local MiniZip   = require("com.raw.minizipng")
 local libffi    = require("com.raw.libffi")
 local uv        = require("luv")
 
@@ -156,17 +156,26 @@ local fs_lseek           = uv.fs_lseek
 local fs_close           = uv.fs_close
 local fs_dup             = uv.fs_dup
 
--- MiniZip
-local unzip_open                  = MiniZip.unzip_open
-local unzip_goto_first_file       = MiniZip.unzip_goto_first_file
-local unzip_goto_next_file        = MiniZip.unzip_goto_next_file
-local unzip_get_current_file_info = MiniZip.unzip_get_current_file_info
-local unzip_open_current_file     = MiniZip.unzip_open_current_file
-local unzip_read_current_file     = MiniZip.unzip_read_current_file
-local unzip_close_current_file    = MiniZip.unzip_close_current_file
-local unzip_close                 = MiniZip.unzip_close
-local UNZ_OK                      = MiniZip.UNZ_OK
-local UNZ_END_OF_LIST_OF_FILE     = MiniZip.UNZ_END_OF_LIST_OF_FILE
+-- Minizip-ng
+local mz_stream_os_create               = MiniZip.mz_stream_os_create
+local mz_stream_os_open                 = MiniZip.mz_stream_os_open
+local mz_stream_os_close                = MiniZip.mz_stream_os_close
+local mz_stream_os_delete               = MiniZip.mz_stream_os_delete
+local mz_zip_create                     = MiniZip.mz_zip_create
+local mz_zip_delete                     = MiniZip.mz_zip_delete
+local mz_zip_open                       = MiniZip.mz_zip_open
+local mz_zip_close                      = MiniZip.mz_zip_close
+local mz_zip_goto_first_entry           = MiniZip.mz_zip_goto_first_entry
+local mz_zip_goto_next_entry            = MiniZip.mz_zip_goto_next_entry
+local mz_zip_entry_get_info             = MiniZip.mz_zip_entry_get_info
+local mz_zip_entry_read_open            = MiniZip.mz_zip_entry_read_open
+local mz_zip_entry_read                 = MiniZip.mz_zip_entry_read
+local mz_zip_entry_close                = MiniZip.mz_zip_entry_close
+local mz_zip_file_get_filename          = MiniZip.mz_zip_file_get_filename
+local mz_zip_file_get_uncompressed_size = MiniZip.mz_zip_file_get_uncompressed_size
+local MZ_OK                             = MiniZip.MZ_OK
+local MZ_END_OF_LIST                    = MiniZip.MZ_END_OF_LIST
+local MZ_OPEN_MODE_READ                 = MiniZip.MZ_OPEN_MODE_READ
 
 -- Standard errno constants for error handling
 local ENOENT =  2 -- No such file or directory
@@ -857,33 +866,39 @@ end
 local ZIP_Filename = INIT_Arg[1] -- the executable always embed a ZIP file
 local PAGE_SIZE    = GetPageSize()
 local ZIP_Buffer   = NewBuffer(PAGE_SIZE)
-local ZIP_File     = unzip_open(ZIP_Filename)
+local ZIP_Stream   = mz_stream_os_create()
+local ZIP_File     = mz_zip_create()
+local ZIP_OpenCode = mz_stream_os_open(ZIP_Stream, ZIP_Filename, MZ_OPEN_MODE_READ)
 
-assert(ZIP_File, format("Failed to open ZIP file: %s", ZIP_Filename))
+if (ZIP_OpenCode == MZ_OK) then
+  ZIP_OpenCode = mz_zip_open(ZIP_File, ZIP_Stream, MZ_OPEN_MODE_READ)
+end
+
+assert((ZIP_OpenCode == MZ_OK), format("Failed to open ZIP file: %s (mz error %d)", ZIP_Filename, ZIP_OpenCode))
 
 local function ZIP_ExtractFile (FileInfo)
   -- local data
-  local Result = unzip_open_current_file(ZIP_File)
+  local Result = mz_zip_entry_read_open(ZIP_File)
   local FileContent
   -- Extract file content
-  if (Result == UNZ_OK) then
-    local SizeInBytes = FileInfo.uncompressed_size
+  if (Result == MZ_OK) then
+    local SizeInBytes = mz_zip_file_get_uncompressed_size(FileInfo)
     -- Read the entire file content
     if (SizeInBytes > 0) then
       -- Ensure our buffer has enough capacity for the entire file
       ZIP_Buffer:ensurecapacity(SizeInBytes)
       -- The buffer might have moved in memory
       local BufferData = ZIP_Buffer:getpointer()
-      -- Read the entire file in one operation
-      local Data, ErrorString = unzip_read_current_file(ZIP_File, SizeInBytes, BufferData, SizeInBytes)
-      if Data and (#Data > 0) then
-        FileContent = Data
+      -- Read the entire file
+      local BytesRead = mz_zip_entry_read(ZIP_File, BufferData, SizeInBytes)
+      if (BytesRead == SizeInBytes) then
+        FileContent = ZIP_Buffer:read(1, BytesRead)
       end
     elseif (SizeInBytes == 0) then
       FileContent = ""
     end
     -- Close entry
-    unzip_close_current_file(ZIP_File)
+    mz_zip_entry_close(ZIP_File)
   end
   -- Return value
   return FileContent
@@ -891,25 +906,25 @@ end
 
 local function INIT_ZipLoadFile (ZipEntryName)
   -- local data
-  local FileContent = nil
-  local Result      = unzip_goto_first_file(ZIP_File)
-  local Continue    = (Result == UNZ_OK)
-  local FileFound   = false
+  local Result    = mz_zip_goto_first_entry(ZIP_File)
+  local Continue  = (Result == MZ_OK)
+  local FileFound = false
+  local FileContent
   -- Process files while we have more files and haven't found our target
   while Continue and (not FileFound) do
     -- Get current file information
-    local FileInfo, ErrorString = unzip_get_current_file_info(ZIP_File)
+    local FileInfo, ErrorString = mz_zip_entry_get_info(ZIP_File)
     -- Check entry
-    if FileInfo and (FileInfo.filename == ZipEntryName) then
+    if FileInfo and (mz_zip_file_get_filename(FileInfo) == ZipEntryName) then
       FileContent = ZIP_ExtractFile(FileInfo)
       FileFound   = true
     else
       -- Move to next file
-      Result = unzip_goto_next_file(ZIP_File)
+      Result = mz_zip_goto_next_entry(ZIP_File)
       -- Error handling
-      if (Result == UNZ_END_OF_LIST_OF_FILE) then
+      if (Result == MZ_END_OF_LIST) then
         Continue = false -- Normal end of file list
-      elseif (Result ~= UNZ_OK) then
+      elseif (Result ~= MZ_OK) then
         Continue = false -- Error occurred
       end
     end
@@ -1792,6 +1807,13 @@ end
 require(ModuleToLoad)
 
 if ZIP_File then
-  unzip_close(ZIP_File)
+  mz_zip_close(ZIP_File)
+  mz_zip_delete(ZIP_File)
   ZIP_File = nil
+end
+
+if ZIP_Stream then
+  mz_stream_os_close(ZIP_Stream)
+  mz_stream_os_delete(ZIP_Stream)
+  ZIP_Stream = nil
 end

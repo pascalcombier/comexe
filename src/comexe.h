@@ -75,7 +75,7 @@ size_t TA_GetCapacity(struct TA_Array *Array);
 bool TA_IsValid(struct TA_Array *Array,size_t Offset);
 void *TA_GetObject(struct TA_Array *Array,size_t Offset);
 void TA_RemoveObject(struct TA_Array *Array,size_t Offset);
-int luaopen_libminizip(lua_State *LuaState);
+int luaopen_minizipng(lua_State *LuaState);
 LUALIB_API int luaopen_libffiraw(lua_State *LuaState);
 int luaopen_buffer(lua_State *LuaState);
 void SERVICE_Initialize(struct LUA_Application *Application);

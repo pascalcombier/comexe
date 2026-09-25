@@ -1,90 +1,183 @@
--------------------------------------------------------------------------------
--- DOCUMENTATION                                                              --
--------------------------------------------------------------------------------
-
--- We only support new ZIP creation, and not ZIP edition. Minizip does not
--- support ZIP edition, it just support APPEND_STATUS_ADDINZIP which essentially
--- add a new record at the end of the file without much check. So one could end
--- with duplicates entries, which may lead to issues.
---
--- We remove the need for APPEND_STATUS_ADDINZIP by providing ZIP_NewMerger: one
--- can create a new ZIP by merging multiple directories/ZIP together.
-
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- MODULE                                                                     --
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-local MiniZip = require("com.raw.minizip")
+local MiniZip = require("com.raw.minizipng")
 local Runtime = require("com.runtime")
 
 local format      = string.format
 local stderr      = io.stderr
-local append      = Runtime.append
+local newbuffer   = Runtime.newbuffer
 local newpathname = Runtime.newpathname
+local append      = Runtime.append
 local readfile    = Runtime.readfile
 local fileexists  = Runtime.fileexists
 local listfiles   = Runtime.listfiles
 
--- functions unzip
-local unzip_open                  = MiniZip.unzip_open
-local unzip_goto_first_file       = MiniZip.unzip_goto_first_file
-local unzip_goto_next_file        = MiniZip.unzip_goto_next_file
-local unzip_get_current_file_info = MiniZip.unzip_get_current_file_info
-local unzip_open_current_file     = MiniZip.unzip_open_current_file
-local unzip_read_current_file     = MiniZip.unzip_read_current_file_string
-local unzip_close_current_file    = MiniZip.unzip_close_current_file
-local unzip_close                 = MiniZip.unzip_close
+-- Stream objects
+local mz_stream_os_create = MiniZip.mz_stream_os_create
+local mz_stream_os_open   = MiniZip.mz_stream_os_open
+local mz_stream_os_close  = MiniZip.mz_stream_os_close
+local mz_stream_os_delete = MiniZip.mz_stream_os_delete
 
--- functions zip
-local zip_open                    = MiniZip.zip_open
-local zip_open_newfile_in_zip     = MiniZip.zip_open_newfile_in_zip
-local zip_write_data              = MiniZip.zip_write_data
-local zip_close_file              = MiniZip.zip_close_file
-local zip_close                   = MiniZip.zip_close
+-- Zip object
+local mz_zip_create              = MiniZip.mz_zip_create
+local mz_zip_delete              = MiniZip.mz_zip_delete
+local mz_zip_open                = MiniZip.mz_zip_open
+local mz_zip_close               = MiniZip.mz_zip_close
+local mz_zip_set_data_descriptor = MiniZip.mz_zip_set_data_descriptor
 
--- Constants
-local UNZ_OK                    = MiniZip.UNZ_OK
-local UNZ_END_OF_LIST_OF_FILE   = MiniZip.UNZ_END_OF_LIST_OF_FILE
-local ZIP_OK                    = MiniZip.ZIP_OK
-local APPEND_STATUS_CREATE      = MiniZip.APPEND_STATUS_CREATE
-local APPEND_STATUS_CREATEAFTER = MiniZip.APPEND_STATUS_CREATEAFTER
-local APPEND_STATUS_ADDINZIP    = MiniZip.APPEND_STATUS_ADDINZIP
-local Z_DEFLATED                = MiniZip.Z_DEFLATED
-local Z_DEFAULT_COMPRESSION     = MiniZip.Z_DEFAULT_COMPRESSION
-local Z_NO_COMPRESSION          = MiniZip.Z_NO_COMPRESSION
-local Z_BEST_SPEED              = MiniZip.Z_BEST_SPEED
-local Z_BEST_COMPRESSION        = MiniZip.Z_BEST_COMPRESSION
+-- Zip write
+local mz_zip_entry_write_open = MiniZip.mz_zip_entry_write_open
+local mz_zip_entry_write      = MiniZip.mz_zip_entry_write
+local mz_zip_entry_close      = MiniZip.mz_zip_entry_close
 
--------------------------------------------------------------------------------
+-- Zip read
+local mz_zip_goto_first_entry = MiniZip.mz_zip_goto_first_entry
+local mz_zip_goto_next_entry  = MiniZip.mz_zip_goto_next_entry
+local mz_zip_entry_get_info   = MiniZip.mz_zip_entry_get_info
+local mz_zip_entry_read_open  = MiniZip.mz_zip_entry_read_open
+local mz_zip_entry_read       = MiniZip.mz_zip_entry_read
+
+-- mz_zip_file descriptor, on the C side, minizip-ng API is simply accessing
+-- structure members directly. Here we have get/set functions
+local mz_zip_file_create                 = MiniZip.mz_zip_file_create
+local mz_zip_file_delete                 = MiniZip.mz_zip_file_delete
+local mz_zip_file_set_filename           = MiniZip.mz_zip_file_set_filename
+local mz_zip_file_set_modified_date      = MiniZip.mz_zip_file_set_modified_date
+local mz_zip_file_set_version_madeby     = MiniZip.mz_zip_file_set_version_madeby
+local mz_zip_file_set_flag               = MiniZip.mz_zip_file_set_flag
+local mz_zip_file_set_compression_method = MiniZip.mz_zip_file_set_compression_method
+local mz_zip_file_set_external_fa        = MiniZip.mz_zip_file_set_external_fa
+local mz_zip_file_get_filename           = MiniZip.mz_zip_file_get_filename
+local mz_zip_file_get_uncompressed_size  = MiniZip.mz_zip_file_get_uncompressed_size
+
+-- minizip-ng constants
+local MZ_OK                      = MiniZip.MZ_OK
+local MZ_MEM_ERROR               = MiniZip.MZ_MEM_ERROR
+local MZ_END_OF_LIST             = MiniZip.MZ_END_OF_LIST
+local MZ_OPEN_MODE_READ          = MiniZip.MZ_OPEN_MODE_READ
+local MZ_OPEN_MODE_WRITE         = MiniZip.MZ_OPEN_MODE_WRITE
+local MZ_OPEN_MODE_CREATE        = MiniZip.MZ_OPEN_MODE_CREATE
+local MZ_COMPRESS_METHOD_STORE   = MiniZip.MZ_COMPRESS_METHOD_STORE
+local MZ_COMPRESS_METHOD_DEFLATE = MiniZip.MZ_COMPRESS_METHOD_DEFLATE
+local MZ_ZIP_FLAG_UTF8           = MiniZip.MZ_ZIP_FLAG_UTF8
+local MZ_VERSION_MADEBY          = MiniZip.MZ_VERSION_MADEBY
+
+-- Compression, zlib values registered from C by the raw binding
+local Z_DEFAULT_COMPRESSION = MiniZip.Z_DEFAULT_COMPRESSION
+local Z_NO_COMPRESSION      = MiniZip.Z_NO_COMPRESSION
+local Z_BEST_COMPRESSION    = MiniZip.Z_BEST_COMPRESSION
+
+-- Writer policy: fixed timestamp, external FA stands for external file attributes
+-- WRITER_DATE is local midnight, not 1980-01-01T00:00:00Z
+local WRITER_TIME               = { year = 1980, month = 1, day = 1, hour = 0, min = 0, sec = 0 }
+local WRITER_DATE               = os.time(WRITER_TIME)
+local WRITER_MODE               = tonumber("644", 8)  -- rw-r--r--
+local WRITER_EXTERNAL_FA        = (WRITER_MODE << 16) -- unix mode in the high 16 bits
+local WRITER_LEVEL_WHEN_DEFAULT = Z_BEST_COMPRESSION
+local READER_BUFFER_CAPACITY    = (64 * 1024) -- 64 KiB
+
+--------------------------------------------------------------------------------
+-- ARCHIVE OPEN/CLOSE                                                         --
+--------------------------------------------------------------------------------
+
+local function ZIP_OpenRead (ZipFilename)
+  -- Local data
+  local NewStream  = mz_stream_os_create()
+  local NewZipFile = mz_zip_create()
+  local NewReader
+  local ErrorString
+  -- Check NewStream and NewZipFile
+  local Result = MZ_MEM_ERROR
+  if NewStream and NewZipFile then
+    Result = mz_stream_os_open(NewStream, ZipFilename, MZ_OPEN_MODE_READ)
+    if (Result == MZ_OK) then
+      Result = mz_zip_open(NewZipFile, NewStream, MZ_OPEN_MODE_READ)
+    end
+  end
+  -- Evaluate the result
+  if (Result == MZ_OK) then
+    NewReader = {
+      ZipFile = NewZipFile,
+      Stream  = NewStream,
+      Buffer  = newbuffer(READER_BUFFER_CAPACITY),
+    }
+  else
+    ErrorString = format("Failed to open ZIP file [%s] (mz error %d)", ZipFilename, Result)
+    mz_zip_delete(NewZipFile)
+    mz_stream_os_delete(NewStream)
+  end
+  -- Return values
+  return NewReader, ErrorString
+end
+
+local function ZIP_CloseRead (Reader)
+  -- Retrieve data
+  local ZipFile = Reader.ZipFile
+  local Stream  = Reader.Stream
+  local Result
+  if ZipFile then
+    Result = mz_zip_close(ZipFile)
+    mz_zip_delete(ZipFile)
+    Reader.ZipFile = nil
+  end
+  if Stream then
+    mz_stream_os_close(Stream)
+    mz_stream_os_delete(Stream)
+    Reader.Stream = nil
+  end
+  -- Release buffer, which has its own __gc
+  Reader.Buffer = nil
+  -- Return value
+  return Result
+end
+
+local function ZIP_ReadOpenedEntry (Reader, SizeInBytes)
+  -- Local data
+  local Buffer = Reader.Buffer
+  local FileContent
+  if (SizeInBytes > 0) then
+    Buffer:ensurecapacity(SizeInBytes)
+    local BytesRead = mz_zip_entry_read(Reader.ZipFile, Buffer:getpointer(), SizeInBytes)
+    if (BytesRead == SizeInBytes) then
+      FileContent = Buffer:read(1, BytesRead)
+    end
+  elseif (SizeInBytes == 0) then
+    FileContent = ""
+  end
+  -- Return value
+  return FileContent
+end
+
+--------------------------------------------------------------------------------
 -- LOCAL FUNCTIONS                                                            --
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-local function ZIP_HandleFile (UnzFile, FileInfo, EntryCallback)
+local function ZIP_HandleFile (Reader, FileInfo, EntryCallback)
   -- Local variables
   local Continue  = true
-  local EntryName = FileInfo.filename
+  local ZipFile   = Reader.ZipFile
+  local EntryName = mz_zip_file_get_filename(FileInfo)
+  local EntrySize = mz_zip_file_get_uncompressed_size(FileInfo)
+  local ErrorString
   -- Provide a function to stop iteration
   local function StopIterationFunction ()
     Continue = false
   end
   -- Provide a function to read content if necessary
   local function ReadFunction ()
-    local OpenResult = unzip_open_current_file(UnzFile)
+    local OpenResult = mz_zip_entry_read_open(ZipFile)
     local FileContent
-    if (OpenResult == UNZ_OK) then
-      local SizeInBytes = FileInfo.uncompressed_size
-      -- Read the entire file content
-      if (SizeInBytes > 0) then
-        -- Read the entire file in one operation
-        local Data, ErrorMessage = unzip_read_current_file(UnzFile, SizeInBytes)
-        if Data then
-          FileContent = Data
-        end
-      elseif (SizeInBytes == 0) then
-        FileContent = ""
+    if (OpenResult == MZ_OK) then
+      -- Read the entire file through the reader buffer
+      FileContent = ZIP_ReadOpenedEntry(Reader, EntrySize)
+      -- mz_zip_entry_close can actually fail due to CRC mismatch
+      local CloseResult = mz_zip_entry_close(ZipFile)
+      if (CloseResult ~= MZ_OK) then
+        FileContent = nil
+        ErrorString = format("Failed to verify entry [%s] (mz error %d)", EntryName, CloseResult)
       end
-      -- Ignore the return value of unzip_close_current_file
-      unzip_close_current_file(UnzFile)
     end
     -- Return value
     return FileContent
@@ -92,103 +185,99 @@ local function ZIP_HandleFile (UnzFile, FileInfo, EntryCallback)
   -- Call the entry function
   EntryCallback(EntryName, ReadFunction, StopIterationFunction)
   -- Return the continue status
-  return Continue
+  return Continue, ErrorString
 end
 
 local function ZIP_IterateRead (ZipFilename, EntryFunc)
   -- Local data
   local Success = false
-  local ErrorMessage
+  local ErrorString
   -- Open the ZIP file for reading
-  local UnzFile, OpenError = unzip_open(ZipFilename)
-  assert(UnzFile, OpenError)
+  local Reader, OpenError = ZIP_OpenRead(ZipFilename)
+  assert(Reader, OpenError)
+  local ZipFile  = Reader.ZipFile
   -- Iterate
-  local Continue = (unzip_goto_first_file(UnzFile) == UNZ_OK)
+  local Continue = (mz_zip_goto_first_entry(ZipFile) == MZ_OK)
   while Continue do
     -- Get current file info
-    local FileInfo, FileError = unzip_get_current_file_info(UnzFile)
+    local FileInfo, FileError = mz_zip_entry_get_info(ZipFile)
     if FileInfo then
       -- Handle the current file
-      Continue = ZIP_HandleFile(UnzFile, FileInfo, EntryFunc)
+      local EntryErrorString
+      Continue, EntryErrorString = ZIP_HandleFile(Reader, FileInfo, EntryFunc)
+      if EntryErrorString then
+        ErrorString = EntryErrorString
+      end
       -- Try to go to next file
       if Continue then
-        local NextResult = unzip_goto_next_file(UnzFile)
-        if (NextResult == UNZ_END_OF_LIST_OF_FILE) then
+        local NextResult = mz_zip_goto_next_entry(ZipFile)
+        if (NextResult == MZ_END_OF_LIST) then
           Continue = false
           Success  = true
-        elseif (NextResult ~= UNZ_OK) then
+        elseif (NextResult ~= MZ_OK) then
           Continue = false
         end
       end
     else
-      ErrorMessage = FileError
-      Continue     = false
+      ErrorString = format("Failed to get current entry info (mz error %d)", FileError)
+      Continue    = false
     end
   end
   -- If we finished the loop without errors, it's successful
-  Success = (not Continue) and (not ErrorMessage)
-  -- Ignore the return value of unzip_close
-  unzip_close(UnzFile)
+  Success = (not Continue) and (not ErrorString)
+  -- Ignore the return value of the reader close
+  ZIP_CloseRead(Reader)
   -- Return values
-  return Success, ErrorMessage
+  return Success, ErrorString
 end
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- TYPE ARCHIVE READER                                                        --
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 local function ZIPR_MethodClose (ReaderObject)
   -- Retrieve handle
-  local ZipFile = ReaderObject.ZipFile
+  local Reader = ReaderObject.Reader
   local Result
-  if ZipFile then
-    Result = unzip_close(ZipFile)
-    ReaderObject.ZipFile = nil
+  if Reader then
+    Result = ZIP_CloseRead(Reader)
+    ReaderObject.Reader = nil
   end
   -- Return value
   return Result
 end
 
-local function ZIPR_ReadCurrentEntry (ZipFile, FileInfo)
-  local FileContent
-  local Result = unzip_open_current_file(ZipFile)
-  if (Result == UNZ_OK) then
-    local SizeInBytes = FileInfo.uncompressed_size
-    if (SizeInBytes > 0) then
-      local Data, ErrorMessage = unzip_read_current_file(ZipFile, SizeInBytes)
-      if Data then
-        FileContent = Data
-      end
-    else
-      FileContent = ""
-    end
-    unzip_close_current_file(ZipFile)
-  end
-  return FileContent
-end
-
 local function ZIPR_MethodRead (ReaderObject, EntryName)
   -- Local variables
   local FileContent
-  local ZipFile = ReaderObject.ZipFile
-  assert(ZipFile, "API misuse: Read after close")
+  local Reader = ReaderObject.Reader
+  assert(Reader, "API misuse: Read after close")
+  local ZipFile = Reader.ZipFile
   -- Reset to beginning
-  local Status   = unzip_goto_first_file(ZipFile)
-  local Continue = (Status == UNZ_OK)
+  local Status   = mz_zip_goto_first_entry(ZipFile)
+  local Continue = (Status == MZ_OK)
   -- Iterate through files
   while Continue do
-    local FileInfo = unzip_get_current_file_info(ZipFile)
+    local FileInfo = mz_zip_entry_get_info(ZipFile)
     if FileInfo then
-      if (FileInfo.filename == EntryName) then
-        FileContent = ZIPR_ReadCurrentEntry(ZipFile, FileInfo)
-        Continue    = false
+      if (mz_zip_file_get_filename(FileInfo) == EntryName) then
+        local OpenResult = mz_zip_entry_read_open(ZipFile)
+        if (OpenResult == MZ_OK) then
+          FileContent = ZIP_ReadOpenedEntry(Reader, mz_zip_file_get_uncompressed_size(FileInfo))
+          -- mz_zip_entry_close can actually fail due to CRC mismatch
+          local CloseResult = mz_zip_entry_close(ZipFile)
+          if (CloseResult ~= MZ_OK) then
+            FileContent = nil
+          end
+        end
+        Continue = false
       else
         -- Go to next file
-        Status   = unzip_goto_next_file(ZipFile)
-        Continue = (Status == UNZ_OK)
+        Status   = mz_zip_goto_next_entry(ZipFile)
+        Continue = (Status == MZ_OK)
       end
     else
-      Continue = false -- Error unzip_get_current_file_info
+      Continue = false -- mz_zip_entry_get_info returned an error code
     end
   end
   -- Return value
@@ -196,9 +285,9 @@ local function ZIPR_MethodRead (ReaderObject, EntryName)
 end
 
 local ZIPR_Metatable = {
-  -- Generic methods
+  -- METATABLE_LuaDefinedMethods
   __gc = ZIPR_MethodClose,
-  -- Custom methods
+  -- METATABLE_UserDefinedMethods
   __index = {
     Read  = ZIPR_MethodRead,
     Close = ZIPR_MethodClose,
@@ -209,33 +298,38 @@ local function ZIP_NewReader (ZipFilename)
   -- Result variables
   local NewReaderObject
   -- Open the ZIP file for reading
-  local ZipFile, ErrorMessage = unzip_open(ZipFilename)
+  local Reader, ErrorString = ZIP_OpenRead(ZipFilename)
   -- Only proceed if zip opening succeeded
-  if ZipFile then
+  if Reader then
     -- Create a new reader object
     NewReaderObject = {
-      ZipFile = ZipFile
+      Reader = Reader
     }
     -- Attach the metatable
     setmetatable(NewReaderObject, ZIPR_Metatable)
   end
   -- Return the reader object and error message
-  return NewReaderObject, ErrorMessage
+  return NewReaderObject, ErrorString
 end
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- TYPE ARCHIVE WRITER                                                        --
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 local function ZIPW_MethodClose (WriterObject)
-  -- Retrieve the zip handle
+  -- Retrieve data
   local ZipFile = WriterObject.ZipFile
   if ZipFile then
     -- Close the zip file
-    local ZipComment  = nil
-    local CloseResult = zip_close(ZipFile, ZipComment)
+    local CloseResult = mz_zip_close(ZipFile)
+    mz_zip_delete(ZipFile)
+    mz_stream_os_close(WriterObject.Stream)
+    mz_stream_os_delete(WriterObject.Stream)
+    mz_zip_file_delete(WriterObject.FileInfo)
     -- Mark as closed
-    WriterObject.ZipFile = nil
+    WriterObject.ZipFile  = nil
+    WriterObject.Stream   = nil
+    WriterObject.FileInfo = nil
     -- Return the result for potential error checking
     return CloseResult
   end
@@ -244,69 +338,110 @@ end
 local function ZIPW_MethodWriteEntry (WriterObject, EntryName, FileContents)
   -- Retrieve data
   local ZipFile          = WriterObject.ZipFile
+  local FileInfo         = WriterObject.FileInfo
   local CompressionLevel = WriterObject.CompressionLevel
   -- Error handling
-  assert(ZipFile,      "API: Write after close")
-  assert(FileContents, "FileContents must be provided")
-  -- Open new file in zip (only Z_DEFLATED is supported by minizip)
-  local Result = zip_open_newfile_in_zip(ZipFile, EntryName, Z_DEFLATED, CompressionLevel)
-  local ErrorMessage
-  if (Result == ZIP_OK) then
-    -- Write the data
-    local WriteResult = zip_write_data(ZipFile, FileContents)
-    if (WriteResult == ZIP_OK) then
+  assert(ZipFile,                          "API: Write after close")
+  assert((type(EntryName) == "string"),    "EntryName must be a string")
+  assert((type(FileContents) == "string"), "FileContents must be a string")
+  -- Entry description
+  mz_zip_file_set_filename(FileInfo,           EntryName)
+  mz_zip_file_set_modified_date(FileInfo,      WriterObject.Date)
+  mz_zip_file_set_version_madeby(FileInfo,     WriterObject.VersionMadeBy)
+  mz_zip_file_set_flag(FileInfo,               MZ_ZIP_FLAG_UTF8)
+  mz_zip_file_set_compression_method(FileInfo, WriterObject.CompressionMethod)
+  mz_zip_file_set_external_fa(FileInfo,        WriterObject.ExternalAttributes)
+  -- Open the new entry in the zip
+  local Result = mz_zip_entry_write_open(ZipFile, FileInfo, CompressionLevel)
+  local ErrorString
+  if (Result == MZ_OK) then
+    -- mz_zip_entry_write returns the number of bytes written
+    local WrittenBytes = mz_zip_entry_write(ZipFile, FileContents)
+    if (WrittenBytes == #FileContents) then
       -- Close file in zip
-      local CloseResult = zip_close_file(ZipFile)
-      if (CloseResult ~= ZIP_OK) then
-        ErrorMessage = format("Failed to close file in zip (error code: %d)", CloseResult)
+      local CloseResult = mz_zip_entry_close(ZipFile)
+      if (CloseResult ~= MZ_OK) then
+        ErrorString = format("Failed to close file in zip (mz error %d)", CloseResult)
       end
     else
-      ErrorMessage = format("Failed to write data to zip (error code: %d)", WriteResult)
+      ErrorString = format("Failed to write data to zip (mz error %d)", WrittenBytes)
     end
   else
-    ErrorMessage = format("Failed to create new file in zip (error code: %d)", Result)
+    ErrorString = format("Failed to create new file in zip (mz error %d)", Result)
   end
   -- Evaluate success
-  local Success = (ErrorMessage == nil)
-  -- Return value: Success is true if ErrorMessage is nil
-  return Success, ErrorMessage
+  local Success = (ErrorString == nil)
+  return Success, ErrorString
 end
 
 local ZIPW_Metatable = {
-  -- Generic methods
+  -- METATABLE_LuaDefinedMethods
   __gc = ZIPW_MethodClose,
-  -- Custom methods
+  -- METATABLE_UserDefinedMethods
   __index = {
     Close      = ZIPW_MethodClose,
     WriteEntry = ZIPW_MethodWriteEntry
   }
 }
 
-local function ZIP_NewWriter (ZipFilename, OptionalMode, OptionalCompressionLevel)
+local function ZIP_NewWriter (ZipFilename, OptionalCompressionLevel)
   -- Result variables
   local NewWriterObject
-  -- Handle default values
-  local Mode             = (OptionalMode or APPEND_STATUS_CREATE)
-  local CompressionLevel = (OptionalCompressionLevel or Z_DEFAULT_COMPRESSION)
-  -- APPEND_STATUS_CREATE basically means OVERWRITE previous ZIP
-  local ZipFile, ErrorMessage = zip_open(ZipFilename, Mode)
+  local ErrorString
+  local CompressionLevel  = (OptionalCompressionLevel or Z_BEST_COMPRESSION)
+  local CompressionMethod = MZ_COMPRESS_METHOD_DEFLATE
+  local RealLevel         = CompressionLevel
+  -- API misuse check
+  assert((CompressionLevel == Z_DEFAULT_COMPRESSION) or ((CompressionLevel >= Z_NO_COMPRESSION) and (CompressionLevel <= Z_BEST_COMPRESSION)), "API misuse: compression level must be -1 or 0..9")
+  if (CompressionLevel == Z_NO_COMPRESSION) then
+    CompressionMethod = MZ_COMPRESS_METHOD_STORE
+    RealLevel         = 0
+  elseif (CompressionLevel == Z_DEFAULT_COMPRESSION) then
+    RealLevel = WRITER_LEVEL_WHEN_DEFAULT
+  end
+  -- Open the file stream, then the archive
+  local Mode     = (MZ_OPEN_MODE_CREATE | MZ_OPEN_MODE_WRITE)
+  local Stream   = mz_stream_os_create()
+  local ZipFile  = mz_zip_create()
+  local FileInfo = mz_zip_file_create()
+  -- Check results
+  local Result = MZ_MEM_ERROR
+  if Stream and ZipFile and FileInfo then
+    Result = mz_stream_os_open(Stream, ZipFilename, Mode)
+    if (Result == MZ_OK) then
+      Result = mz_zip_open(ZipFile, Stream, Mode)
+    end
+  end
   -- Only proceed if zip creation succeeded
-  if ZipFile then
+  if (Result == MZ_OK) then
+    -- Deterministic archives
+    mz_zip_set_data_descriptor(ZipFile, false)
     -- Create a new writer object
     NewWriterObject = {
-      ZipFile          = ZipFile,
-      CompressionLevel = CompressionLevel
+      ZipFile            = ZipFile,
+      Stream             = Stream,
+      FileInfo           = FileInfo,
+      CompressionLevel   = RealLevel,
+      CompressionMethod  = CompressionMethod,
+      Date               = WRITER_DATE,
+      ExternalAttributes = WRITER_EXTERNAL_FA,
+      VersionMadeBy      = MZ_VERSION_MADEBY,
     }
     -- Attach the metatable
     setmetatable(NewWriterObject, ZIPW_Metatable)
+  else
+    ErrorString = format("Failed to create ZIP file [%s] (mz error %d)", ZipFilename, Result)
+    mz_zip_delete(ZipFile)
+    mz_stream_os_delete(Stream)
+    mz_zip_file_delete(FileInfo)
   end
   -- Return the writer object and error message
-  return NewWriterObject, ErrorMessage
+  return NewWriterObject, ErrorString
 end
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- ZIP MERGER                                                                 --
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 -- Add an explicit entry to the ZIP
 local function ZIPM_MergerAddEntry (Merger, ZipEntryName, FileContents)
@@ -485,7 +620,7 @@ local function ZIPM_MethodWriteZip (Merger)
   local Sources          = Merger.Sources
   local EntriesSet       = Merger.EntriesSet
   -- Create a new zip file for writing (overwrite if exists)
-  local Writer, ErrorString = ZIP_NewWriter(ZipFilename, APPEND_STATUS_CREATE, CompressionLevel)
+  local Writer, ErrorString = ZIP_NewWriter(ZipFilename, CompressionLevel)
   assert(Writer, format("Failed to create ZIP file [%s]: %s", ZipFilename, ErrorString))
   -- Write all specific entries first
   if (#Entries > 0) then
@@ -562,9 +697,9 @@ local function ZIP_NewMerger (ZipFilename, CompressionLevel, Options)
   return NewZipMerger
 end
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- MODULE                                                                     --
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 local PUBLIC_API = {
   -- Functions
@@ -573,13 +708,9 @@ local PUBLIC_API = {
   newwriter   = ZIP_NewWriter, --  Low-level writer
   newmerger   = ZIP_NewMerger, -- High-level writer
   -- Constants
-  APPEND_STATUS_CREATE      = APPEND_STATUS_CREATE,
-  APPEND_STATUS_CREATEAFTER = APPEND_STATUS_CREATEAFTER,
-  APPEND_STATUS_ADDINZIP    = APPEND_STATUS_ADDINZIP,
-  Z_DEFAULT_COMPRESSION     = Z_DEFAULT_COMPRESSION,
-  Z_NO_COMPRESSION          = Z_NO_COMPRESSION,
-  Z_BEST_SPEED              = Z_BEST_SPEED,
-  Z_BEST_COMPRESSION        = Z_BEST_COMPRESSION,
+  Z_DEFAULT_COMPRESSION = Z_DEFAULT_COMPRESSION,
+  Z_NO_COMPRESSION      = Z_NO_COMPRESSION,
+  Z_BEST_COMPRESSION    = Z_BEST_COMPRESSION,
 }
 
 return PUBLIC_API
