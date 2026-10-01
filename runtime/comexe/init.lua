@@ -752,6 +752,7 @@ end
 -- Versatile constructor: can create pathname from string
 -- Or from list of strings/pathname that would be appened together
 -- Note that it does not care about multiple ROOT
+-- An empty string is ignored: newpathname("", "a.lua") is "a.lua"
 local function PATH_NewPathname (...)
   -- local data
   local Count = select("#", ...)
@@ -760,7 +761,7 @@ local function PATH_NewPathname (...)
   for Index = 1, Count do
     local Argument = select(Index, ...)
     local Type     = type(Argument)
-    if (Type == "string") then
+    if (Type == "string") and (Argument ~= "") then
       append(Parts, Argument)
     elseif (Type == "table") then
       local Metatable = getmetatable(Argument)

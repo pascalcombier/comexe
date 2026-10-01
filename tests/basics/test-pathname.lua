@@ -478,6 +478,41 @@ Pathname         = newpathname(newpathname("//server/share"), "file.bin")
 InternalPathname = Pathname:convert("internal")
 EXPECT("NEW-007-unc", InternalPathname, "//server/share/file.bin")
 
+-- first "" shall be ignored
+Pathname         = newpathname("", "a.lua")
+InternalPathname = Pathname:convert("internal")
+EXPECT("NEW-008-empty-first", InternalPathname, "a.lua")
+
+-- Empty first part, directory in the second
+Pathname         = newpathname("", "src/a.lua")
+InternalPathname = Pathname:convert("internal")
+EXPECT("NEW-009-empty-first-dir", InternalPathname, "src/a.lua")
+
+-- Empty last part is ignored
+Pathname         = newpathname("a", "")
+InternalPathname = Pathname:convert("internal")
+EXPECT("NEW-010-empty-last", InternalPathname, "a")
+
+-- Empty part in the middle
+Pathname         = newpathname("a", "", "b")
+InternalPathname = Pathname:convert("internal")
+EXPECT("NEW-011-empty-middle", InternalPathname, "a/b")
+
+-- Every part empty: the same as newpathname("")
+Pathname         = newpathname("", "")
+InternalPathname = Pathname:convert("internal")
+EXPECT("NEW-012-all-empty", InternalPathname, ".")
+
+-- Empty pathname OBJECT
+Pathname         = newpathname(newpathname(""), "a")
+InternalPathname = Pathname:convert("internal")
+EXPECT("NEW-013-empty-pathname-part", InternalPathname, "a")
+
+-- Only "" is skipped: an ABSOLUTE part stays absolute
+Pathname         = newpathname("", "/abs/x")
+InternalPathname = Pathname:convert("internal")
+EXPECT("NEW-014-empty-then-absolute", InternalPathname, "/abs/x")
+
 --------------------------------------------------------------------------------
 -- CONVERT                                                                    --
 --------------------------------------------------------------------------------
