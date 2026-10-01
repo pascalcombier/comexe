@@ -33,8 +33,9 @@
 ** merchantability or fitness for a particular purpose.
 */
 /* CHANGES */
-/* Disable feature for ComEXE: automatic typedef generation */
+/* disable feature for ComEXE: automatic typedef generation */
 /* add prefix MKH_ for MKH_INTERFACE and others to avoid messing with windows.h */
+/* add a way to output BINARY instead of text ("-o" option output LF vs CRLF) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -48,6 +49,8 @@
 #  ifndef WIN32
 #    define WIN32
 #  endif
+# include <io.h>    /* _setmode, _fileno */
+# include <fcntl.h> /* _O_BINARY */
 #else
 # include <unistd.h>
 #endif
@@ -374,6 +377,12 @@ static int doc_flag = 0;
 ** generate prototypes for static functions and procedures.
 */
 static int proto_static = 0;
+
+/*
+** ComEXE patch
+** Name of the file set by the -o command-line option
+*/
+static const char *zGlobalHeaderFile = 0;
 
 /*
 ** A list of all declarations.  The list is held together using the
@@ -734,12 +743,18 @@ static char *ReadFile(const char *zFilename){
 }
 
 /*
-** Write the contents of a string into a file.  Return the number of
-** errors
+** ComEXE patch
+** Win32: set a stream in binary mode (avoid the \r\n)
 */
+#ifdef WIN32
+static void MakeBinary(FILE *pStream){
+  _setmode(_fileno(pStream),_O_BINARY);
+}
+#endif
+
 static int WriteFile(const char *zFilename, const char *zOutput){
   FILE *pOut;
-  pOut = fopen(zFilename,"w");
+  pOut = fopen(zFilename,"wb");
   if( pOut==0 ){
     return 1;
   }
@@ -2923,6 +2938,7 @@ static int MakeGlobalHeader(int forExport){
   String outStr;
   IdentTable includeTable;
   Decl *pDecl;
+  int nErr = 0;
 
   sState.pStr = &outStr;
   StringInit(&outStr);
@@ -2940,10 +2956,21 @@ static int MakeGlobalHeader(int forExport){
     }
   }
   ChangeIfContext(0,&sState);
-  printf("%s",StringGet(&outStr));
+  /*
+  ** ComEXE patch
+  ** -o writes the header to a file, to avoid the redirection
+  */
+  if( zGlobalHeaderFile ){
+    if( WriteFile(zGlobalHeaderFile,StringGet(&outStr)) ){
+      fprintf(stderr,"%s: could not write to file\n",zGlobalHeaderFile);
+      nErr++;
+    }
+  }else{
+    printf("%s",StringGet(&outStr));
+  }
   IdentTableReset(&includeTable);
   StringReset(&outStr);
-  return 0;
+  return nErr;
 }
 
 #ifdef DEBUG
@@ -3304,6 +3331,7 @@ static void Usage(const char *argv0, const char *argvN){
     "Options:\n"
     "  -h          Generate a single .h to standard output.\n"
     "  -H          Like -h, but only output EXPORT declarations.\n"
+    "  -o FILE     Write the -h/-H header to FILE\n"
     "  -v          (verbose) Write status information to the screen.\n"
     "  -doc        Generate no header files.  Instead, output information\n"
     "              that can be used by an automatic program documentation\n"
@@ -3350,12 +3378,26 @@ int main(int argc, char **argv){
   int noMoreFlags;      /* True if -- has been seen. */
   FILE *report;         /* Send progress reports to this, if not NULL */
 
+  /* ComEXE patch */
+#ifdef WIN32
+  MakeBinary(stdout);
+#endif
+
   noMoreFlags = 0;
   for(i=1; i<argc; i++){
     if( argv[i][0]=='-' && !noMoreFlags ){
       switch( argv[i][1] ){
         case 'h':   h_flag = 1;   break;
         case 'H':   H_flag = 1;   break;
+        /* ComEXE patch */
+        case 'o':
+          i++;
+          if( i>=argc ){
+            Usage(argv[0],"-o");
+            return 1;
+          }
+          zGlobalHeaderFile = argv[i];
+          break;
         case 'v':   v_flag = 1;   break;
         case 'd':   doc_flag = 1; proto_static = 1; break;
         case 'l':   proto_static = 1; break;
@@ -3380,6 +3422,11 @@ int main(int argc, char **argv){
   }
   if( h_flag && H_flag ){
     h_flag = 0;
+  }
+  /* ComEXE patch */
+  if( zGlobalHeaderFile && !h_flag && !(H_flag) ){
+    fprintf(stderr,"-o FILE needs -h or -H\n");
+    return 1;
   }
   if( v_flag ){
     report = (h_flag || H_flag) ? stderr : stdout;
