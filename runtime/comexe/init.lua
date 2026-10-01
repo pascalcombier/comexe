@@ -320,6 +320,24 @@ end
 local PATH_NativeSeparator   = package.config:sub(1, 1)
 local PATH_InternalSeparator = "/"
 
+local PATH_TARGET_SEPARATORS = {
+  native   = PATH_NativeSeparator,
+  internal = PATH_InternalSeparator,
+  linux    = PATH_InternalSeparator,
+  windows  = "\\",
+}
+
+local function PATH_TargetSeparator (OptionalTarget)
+  -- Handle defaults
+  local Target = (OptionalTarget or "native")
+  -- Retrieve separator
+  local Separator = PATH_TARGET_SEPARATORS[Target]
+  -- Validate
+  assert(Separator, format("unknown pathname target: %q", OptionalTarget))
+  -- Return value
+  return Separator
+end
+
 local INIT_ARCH = "x86_64" -- Only support that for now
 local INIT_OS
 local PATH_InternalPathname
@@ -519,10 +537,9 @@ end
 -- Pre-declaration
 local PATH_Metatable
 
-local function PATH_MethodConvert (Pathname, OptionalMode)
-  -- Handle defaults
-  local Mode = (OptionalMode or "native")
+local function PATH_MethodConvert (Pathname, OptionalTarget)
   -- Retrieve data
+  local Separator  = PATH_TargetSeparator(OptionalTarget)
   local Elements   = Pathname
   local StartIndex = 1
   local EndIndex   = #Elements
@@ -531,31 +548,17 @@ local function PATH_MethodConvert (Pathname, OptionalMode)
   if (EndIndex == 0) then
     Result = "."
   else
-    local Separator
-    if (Mode == "native") then
-      Separator = PATH_NativeSeparator
-    else
-      Separator = PATH_InternalSeparator
-    end
     Result = PATH_BuildStringFromElements(Elements, StartIndex, EndIndex, Separator)
   end
   return Result
 end
 
-local function PATH_MethodGetDirectory (Pathname, OptionalMode)
-  -- Handle defaults
-  local Mode = (OptionalMode or "native")
+local function PATH_MethodGetDirectory (Pathname, OptionalTarget)
   -- Retrieve data
+  local Separator  = PATH_TargetSeparator(OptionalTarget)
   local Elements   = Pathname
   local StartIndex = 1
   local EndIndex   = (#Elements - 1)
-  -- Determine separator
-  local Separator
-  if (Mode == "native") then
-    Separator = PATH_NativeSeparator
-  else
-    Separator = PATH_InternalSeparator
-  end
   -- Build result
   local Result = PATH_BuildStringFromElements(Elements, StartIndex, EndIndex, Separator)
   return Result
@@ -683,13 +686,8 @@ local function PATH_MethodDepth (Pathname)
   return #Pathname
 end
 
-local function PATH_MethodToNative (Pathname)
+local function PATH_MethodToString (Pathname)
   local Result = PATH_MethodConvert(Pathname, "native")
-  return Result
-end
-
-local function PATH_MethodToInternal (Pathname)
-  local Result = PATH_MethodConvert(Pathname, "internal")
   return Result
 end
 
@@ -718,7 +716,7 @@ end
 
 local PATH_MetatableImpl = {
   -- METATABLE_LuaDefinedMethods
-  __tostring = PATH_MethodToNative,
+  __tostring = PATH_MethodToString,
   __concat   = PATH_MethodConcat,
   -- METATABLE_UserDefinedMethods
   __index = {
@@ -729,11 +727,10 @@ local PATH_MetatableImpl = {
     getdirectory = PATH_MethodGetDirectory,
     getname      = PATH_MethodGetName,
     clone        = PATH_MethodClone,
+    convert      = PATH_MethodConvert,
     isabsolute   = PATH_MethodIsAbsolute,
     isrelative   = PATH_MethodIsRelative,
-    depth        = PATH_MethodDepth,
-    tonative     = PATH_MethodToNative,
-    tointernal   = PATH_MethodToInternal
+    depth        = PATH_MethodDepth
   }
 }
 PATH_Metatable = PATH_MetatableImpl

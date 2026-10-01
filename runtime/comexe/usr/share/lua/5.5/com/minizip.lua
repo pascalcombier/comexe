@@ -561,7 +561,7 @@ local function ZIPM_ImportDirectory (Merger, Writer, SourceId, SourcePath, Entri
       -- Remove source root components to build the ZIP entry
       FilePathname:remove(1, SourceRootDepth)
       -- Convert
-      local ZipEntryName = FilePathname:tointernal()
+      local ZipEntryName = FilePathname:convert("internal")
       -- Check the action for this entry
       local Action = ZIP_GetActionForEntry(Merger, SourceId, ZipEntryName)
       if (Action == "COPY") then

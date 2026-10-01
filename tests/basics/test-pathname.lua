@@ -77,7 +77,7 @@ EXPECT("NOM-003-extension", Ext,      "txt")
 EXPECT("NOM-004-directory", GotDirectory, nativepathname("C:/path/to"))
 
 Pathname            = newpathname("a/b/../c.txt")
-InternalPathname    = Pathname:tointernal()
+InternalPathname    = Pathname:convert("internal")
 NativePathname      = tostring(Pathname)
 Name, Basename, Ext = Pathname:getname()
 
@@ -118,7 +118,7 @@ EXPECT("NOM-019-parent-drive", GotDirectory, ExpectedDir)
 
 Pathname = newpathname("dir/sub"):child("file.bin")
 Name, Basename, Ext = Pathname:getname()
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 
 EXPECT("NOM-020-name",      Name,     "file.bin")
 EXPECT("NOM-021-basename",  Basename, "file")
@@ -132,7 +132,7 @@ EXPECT("NOM-025-basename-noext",  Basename, "noext")
 EXPECT("NOM-026-extension-noext", Ext,      nil)
 
 Pathname = newpathname("C:")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 NativePathname   = tostring(Pathname)
 Name, Basename, Ext = Pathname:getname()
 
@@ -143,7 +143,7 @@ EXPECT("NOM-030-drive-internal",  InternalPathname, "C:/")
 EXPECT("NOM-031-drive-native",    NativePathname,   nativepathname("C:/"))
 
 Pathname = newpathname("C:")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("NOM-031-drive-only-internal", InternalPathname, "C:/")
 
 Pathname            = newpathname("/")
@@ -188,22 +188,22 @@ EXPECT("NOM-044-file-isrelative",  IsRelative, true)
 
 Pathname         = newpathname("a/b/c")
 Cloned           = Pathname:clone()
-InternalPathname = Cloned:tointernal()
+InternalPathname = Cloned:convert("internal")
 EXPECT("NOM-045-clone-internal",    InternalPathname, "a/b/c")
 Cloned:setname("d")
-InternalPathname = Pathname:tointernal()
-local ClonedInternal = Cloned:tointernal()
+InternalPathname = Pathname:convert("internal")
+local ClonedInternal = Cloned:convert("internal")
 EXPECT("NOM-046-clone-independent", InternalPathname, "a/b/c")
 EXPECT("NOM-047-clone-changed", ClonedInternal, "a/b/d")
 
 Pathname = newpathname("a/b/c")
 Pathname:remove(2)
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("NOM-048-removeelement", InternalPathname, "a/c")
 
 Pathname = newpathname("a/b/c/d")
 Pathname:remove(2, 3)
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("NOM-049-remove-range", InternalPathname, "a/d")
 --------------------------------------------------------------------------------
 -- RESOLUTION / EDGE CASES                                                    --
@@ -212,106 +212,106 @@ Reporter:block("RESOLUTION / EDGE CASES")
 
 -- relative paths: leading ".." elements are preserved for relative paths
 Pathname         = newpathname("../../a")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-001-rel-preserve", InternalPathname, "../../a")
 
 Pathname         = newpathname("../..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-002-rel-double-preserve", InternalPathname, "../..")
 
 -- relative cancellation: "a/../.." should collapse to ".."
 Pathname         = newpathname("a/../..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-003-rel-cancel", InternalPathname, "..")
 
 -- absolute paths: ".." should not climb above root
 Pathname         = newpathname("/..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 NativePathname   = tostring(Pathname)
 EXPECT("RSL-004-abs-root-up",     InternalPathname, "/")
 EXPECT("RSL-005-abs-root-native", NativePathname,   nativepathname("/"))
 
 -- drive paths: "C:/.." resolves to the drive only
 Pathname         = newpathname("C:/..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 NativePathname   = tostring(Pathname)
 EXPECT("RSL-006-drive-up",        InternalPathname, "C:/")
 EXPECT("RSL-007-drive-up-native", NativePathname,   nativepathname("C:/"))
 
 -- absolute cancellation: "/a/.." should become root
 Pathname         = newpathname("/a/..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 NativePathname   = tostring(Pathname)
 EXPECT("RSL-008-abs-cancel",        InternalPathname, "/")
 EXPECT("RSL-009-abs-cancel-native", NativePathname,   nativepathname("/"))
 
 -- dot handling: "." elements should be removed
 Pathname         = newpathname("a/./b.txt")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-010-dot-middle", InternalPathname, "a/b.txt")
 
 -- leading dot: "./a" -> "a"
 Pathname         = newpathname("./a")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-011-dot-leading", InternalPathname, "a")
 
 -- Multiple slashes
 Pathname         = newpathname("a//////////////b.txt")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-012-dot-multiple-slashes", InternalPathname, "a/b.txt")
 
 Pathname         = newpathname("../test/root/..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-013-rel-complex", InternalPathname, "../test")
 
 Pathname         = newpathname("../../../TEST")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-014-rel-triple-preserve", InternalPathname, "../../../TEST")
 
 Pathname         = newpathname("../../../TEST/pop/..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-015-rel-pop", InternalPathname, "../../../TEST")
 
 -- Additional absolute path tests for ".." behavior
 Pathname         = newpathname("/a/b/..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-016-abs-a-b-pop", InternalPathname, "/a")
 
 Pathname         = newpathname("/a/../../b")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-017-abs-a-up-up-b", InternalPathname, "/b")
 
 Pathname         = newpathname("/../b")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-018-abs-up-b", InternalPathname, "/b")
 
 Pathname         = newpathname("/a/./../b")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-019-abs-a-dot-up-b", InternalPathname, "/b")
 
 Pathname         = newpathname("C:/a/..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-020-drive-a-pop", InternalPathname, "C:/")
 
 Pathname         = newpathname("C:/a/../b")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-021-drive-a-up-b", InternalPathname, "C:/b")
 
 -- Drive-edge cases with many ".." elements
 Pathname         = newpathname("C:/a/../b/../../../../c")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-022-drive-many-up-c", InternalPathname, "C:/c")
 
 Pathname         = newpathname("C:/a/../b/../../../..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-023-drive-many-up-root", InternalPathname, "C:/")
 
 Pathname         = newpathname("C:/a/../b/../../../../")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-024-drive-many-up-trailing", InternalPathname, "C:/")
 
 Pathname         = newpathname("/a/../..")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("RSL-025-abs-a-up-up-root", InternalPathname, "/")
 
 --------------------------------------------------------------------------------
@@ -322,31 +322,31 @@ Reporter:block("SETNAME")
 
 Pathname = newpathname("dir/old.txt")
 Pathname:setname("new.log")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("SET-001-basic", InternalPathname, "dir/new.log")
 
 Pathname = newpathname("base")
 Pathname:setname("other")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("SET-002-simple", InternalPathname, "other")
 
 Pathname = newpathname("/")
 Pathname:setname("foo")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("SET-003-root", InternalPathname, "foo")
 
 Pathname = newpathname("C:")
 Pathname:setname("foo")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("SET-004-drive", InternalPathname, "foo")
 
 Pathname = newpathname("")
 Pathname:setname("foo")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("SET-005-empty", InternalPathname, "foo")
 
 Pathname = newpathname("a/b/c"):setname("d"):setname("e")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("SET-006-chaining", InternalPathname, "a/b/e")
 
 --------------------------------------------------------------------------------
@@ -357,42 +357,42 @@ Reporter:block("PARENT")
 
 Pathname         = newpathname("a/b")
 Pathname:parent()
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("PAR-001-rel-simple", InternalPathname, "a")
 
 Pathname         = newpathname("a")
 Pathname:parent()
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("PAR-002-rel-to-empty", InternalPathname, ".")
 
 Pathname         = newpathname("")
 Pathname:parent()
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("PAR-003-rel-empty-to-up", InternalPathname, "..")
 
 Pathname         = newpathname("..")
 Pathname:parent()
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("PAR-004-rel-up-to-upup", InternalPathname, "../..")
 
 Pathname         = newpathname("/a/b")
 Pathname:parent()
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("PAR-005-abs-simple", InternalPathname, "/a")
 
 Pathname         = newpathname("/")
 Pathname:parent()
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("PAR-006-abs-root-nop", InternalPathname, "/")
 
 Pathname         = newpathname("C:/a")
 Pathname:parent()
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("PAR-007-drive-simple", InternalPathname, "C:/")
 
 Pathname         = newpathname("C:")
 Pathname:parent()
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("PAR-008-drive-nop", InternalPathname, "C:/")
 
 --------------------------------------------------------------------------------
@@ -402,37 +402,37 @@ EXPECT("PAR-008-drive-nop", InternalPathname, "C:/")
 Reporter:block("CONCAT")
 
 Pathname         = newpathname("a/b") .. newpathname("c/d")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 NativePathname   = tostring(Pathname)
 EXPECT("CON-001-rel-rel",        InternalPathname, "a/b/c/d")
 EXPECT("CON-002-rel-rel-native", NativePathname,   nativepathname("a/b/c/d"))
 
 Pathname         = newpathname("/a") .. newpathname("b/c")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 NativePathname   = tostring(Pathname)
 EXPECT("CON-003-abs-rel",        InternalPathname, "/a/b/c")
 EXPECT("CON-004-abs-rel-native", NativePathname,   nativepathname("/a/b/c"))
 
 Pathname         = newpathname("C:") .. newpathname("a")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 NativePathname   = tostring(Pathname)
 EXPECT("CON-005-drive-rel",        InternalPathname, "C:/a")
 EXPECT("CON-006-drive-rel-native", NativePathname,   nativepathname("C:/a"))
 
 Pathname         = newpathname("") .. newpathname("a")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 NativePathname   = tostring(Pathname)
 EXPECT("CON-007-empty-left",        InternalPathname, "a")
 EXPECT("CON-008-empty-left-native", NativePathname,   nativepathname("a"))
 
 Pathname         = newpathname("a") .. newpathname("b") .. newpathname("c")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 NativePathname   = tostring(Pathname)
 EXPECT("CON-009-chain",        InternalPathname, "a/b/c")
 EXPECT("CON-010-chain-native", NativePathname,   nativepathname("a/b/c"))
 
 Pathname         = newpathname("/") .. newpathname("foo")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 NativePathname   = tostring(Pathname)
 EXPECT("CON-011-root-rel",        InternalPathname, "/foo")
 EXPECT("CON-012-root-rel-native", NativePathname,   nativepathname("/foo"))
@@ -445,38 +445,63 @@ Reporter:block("NEWPATHNAME")
 
 -- Drive pathname + string (the exact crash case from ffi-compiler)
 Pathname         = newpathname(newpathname("C:/foo"), "bar.txt")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("NEW-001-drive-string", InternalPathname, "C:/foo/bar.txt")
 
 -- Root pathname + string
 Pathname         = newpathname(newpathname("/home"), "user/file.txt")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("NEW-002-root-string", InternalPathname, "/home/user/file.txt")
 
 -- Relative pathname + string
 Pathname         = newpathname(newpathname("a/b"), "c.txt")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("NEW-003-rel-string", InternalPathname, "a/b/c.txt")
 
 -- Two pathname objects
 Pathname         = newpathname(newpathname("a/b"), newpathname("c/d"))
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("NEW-004-rel-rel", InternalPathname, "a/b/c/d")
 
 -- Drive pathname + string (Windows-specific)
 Pathname         = newpathname(newpathname("E:/workspace"), "file.lua")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("NEW-005-drive-full-path", InternalPathname, "E:/workspace/file.lua")
 
 -- Drive-only pathname + string
 Pathname         = newpathname(newpathname("C:"), "test.txt")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("NEW-006-drive-only", InternalPathname, "C:/test.txt")
 
 -- UNC pathname + string
 Pathname         = newpathname(newpathname("//server/share"), "file.bin")
-InternalPathname = Pathname:tointernal()
+InternalPathname = Pathname:convert("internal")
 EXPECT("NEW-007-unc", InternalPathname, "//server/share/file.bin")
+
+--------------------------------------------------------------------------------
+-- CONVERT                                                                    --
+--------------------------------------------------------------------------------
+
+Reporter:block("CONVERT")
+
+EXPECT("CONV-001-convert-linux-relative",   newpathname("a/b/c.txt"):convert("linux"),    "a/b/c.txt")
+EXPECT("CONV-002-convert-windows-relative", newpathname("a/b/c.txt"):convert("windows"),  "a\\b\\c.txt")
+EXPECT("CONV-003-convert-windows-root",     newpathname("/foo/bar"):convert("windows"),   "\\foo\\bar")
+EXPECT("CONV-004-convert-linux-root",       newpathname("/foo/bar"):convert("linux"),     "/foo/bar")
+EXPECT("CONV-005-convert-windows-drive",    newpathname("C:/path/to"):convert("windows"), "C:\\path\\to")
+EXPECT("CONV-006-convert-linux-drive-only", newpathname("C:"):convert("linux"),           "C:/")
+EXPECT("CONV-007-convert-internal",         newpathname("a/b"):convert("internal"),       "a/b")
+EXPECT("CONV-008-convert-native",           newpathname("a/b"):convert("native"),         nativepathname("a/b"))
+EXPECT("CONV-009-convert-default",          newpathname("a/b"):convert(),                 nativepathname("a/b"))
+EXPECT("CONV-010-convert-normalizes",       newpathname("a/../b"):convert("windows"),     "b")
+EXPECT("CONV-011-convert-empty",            newpathname(""):convert("windows"),           ".")
+
+local function TestUnknownTarget ()
+  return newpathname("a/b"):convert("win32")
+end
+
+local Con012Success = pcall(TestUnknownTarget)
+EXPECT("CONV-012-convert-unknown-target", Con012Success, false)
 
 --------------------------------------------------------------------------------
 -- SUMMARY
