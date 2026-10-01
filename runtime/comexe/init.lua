@@ -201,7 +201,10 @@ local COMEXE_RUNTIME_PREFIX = "COMRAD-RUNTIME-V2/"
 -- MODE-STANDALONE and MODE-INTERPRETER: we adopt Lua "Standalone Mode" rules.
 local INIT_Arg = arg
 
--- Owner: read/write, group/other: nothing
+-- Mode rw-rw-rw-
+local INIT_WRITE_MODE = tonumber("644", 8)
+
+-- Mode rw------- (UIO)
 local INIT_DEFAULT_MODE = tonumber("600", 8)
 
 --------------------------------------------------------------------------------
@@ -263,15 +266,41 @@ local function INIT_ReadFile (Filename, OutputType)
 end
 
 -- Unlike os.open, INIT_WriteFile supports UTF-8 named files on Windows
-local function INIT_WriteFile (Filename, Data)
+-- On new file creation, Mode or INIT_WRITE_MODE will be used
+-- On overwriting file
+--    POSIX: the previous Mode will be preserved 
+--  Windows: requested Mode
+local function INIT_WriteFile (Filename, Data, OptionalMode)
   -- local data
   local Success
   local ErrorString
+  -- Handle defaults
+  local FileMode = (OptionalMode or INIT_WRITE_MODE)
   -- libuv is always binary mode. create if not exists, overwrite contents if exists
-  local fd = fs_open(Filename, "w", INIT_DEFAULT_MODE)
+  local fd = fs_open(Filename, "w", FileMode)
   if fd then
-    local Offset = 0
-    Success, ErrorString = fs_write(fd, Data, Offset)
+    -- A single write can store less than the whole buffer, so loop until done:
+    -- Success stays nil until the buffer is written or a failure is recorded
+    local Offset      = 0
+    local SizeInBytes = #Data
+    while (Success == nil) and (Offset < SizeInBytes) do
+      local Chunk = Data
+      -- In case the first write call actually didn't wrote all the needed bytes
+      -- We go with an unefficient Data:sub loop
+      if (Offset > 0) then
+        Chunk = Data:sub(Offset + 1)
+      end
+      local BytesWritten, WriteErrorString = fs_write(fd, Chunk, Offset)
+      if (BytesWritten == nil) or (BytesWritten == 0) then
+        ErrorString = WriteErrorString
+        Success     = false
+      else
+        Offset = (Offset + BytesWritten)
+      end
+    end
+    if (Success == nil) then
+      Success = Offset
+    end
     fs_close(fd)
   else
     ErrorString = format("Failed to open file for writing: %s", Filename)
