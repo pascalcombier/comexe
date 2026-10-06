@@ -119,7 +119,7 @@ end
 local function FILEOPS_Concat (InputFilenames)
   -- Validate inputs
   local OutputFilename = remove(InputFilenames)
-  assert((#InputFilenames > 1), "at least two input files are required")
+  assert((#InputFilenames >= 1), "at least one input file is required")
   assert((type(OutputFilename) == "string"), "output path must be a string")
   -- Open the output file in WRITE_MODE
   local OutputHandle, OpenErrorString = fs_open(OutputFilename, WRITE_MODE, FILE_MODE)
