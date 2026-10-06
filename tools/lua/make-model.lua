@@ -19,6 +19,7 @@ local sort   = table.sort
 
 local newpathname       = Runtime.newpathname
 local getparam          = Runtime.getparam
+local listfiles         = Runtime.listfiles
 local newstringtemplate = Template.newstringtemplate
 
 --------------------------------------------------------------------------------
@@ -191,6 +192,25 @@ local function MAKE_InternalDirName (Pathname)
   return newpathname(Pathname):getdirectory("internal")
 end
 
+local function MAKE_CollectTreeFiles (Directory)
+  -- local data
+  local NativeDirectory = MAKE_NativePath(Directory)
+  local Files           = {}
+  -- local callback
+  local function ListFilesCallback (Path, FileType)
+    if (FileType ~= "directory") then
+      append(Files, newpathname(Path):convert("internal"))
+    end
+  end
+  local Success, ErrorString = listfiles(NativeDirectory, ListFilesCallback)
+  if Success then
+    sort(Files)
+  else
+    error(format("failed to list files in %s: %s", Directory, ErrorString))
+  end
+  return Files, ErrorString
+end
+
 local function MAKE_ExpandValue (Context, Value, Environment)
   local NewTemplate = newstringtemplate(Value)
   return NewTemplate:render(Environment, nil, Context.PathRenderer)
@@ -316,15 +336,13 @@ end
 
 local function MAKE_ValidateRule (Rule, Filename)
   assert((type(Rule.Run) == "table") and (#Rule.Run > 0), format("rule missing Run list (Out %s): %s", Rule.Outs[1], Filename))
-  if Rule.Always then
-    assert((type(Rule.Always) == "boolean"), "rule Always must be a boolean")
-  end
   if Rule.Preserve then
     assert((type(Rule.Preserve) == "boolean"), "rule Preserve must be a boolean")
   end
   MAKE_RejectPaths(Rule.Outs,  "Outs")
   MAKE_RejectPaths(Rule.Ins,   "Ins")
   MAKE_RejectPaths(Rule.Needs, "Needs")
+  MAKE_RejectPaths(Rule.Trees, "Trees")
 end
 
 local function MAKE_BuildRule (Context, Rule, Environment, Filename)
@@ -342,9 +360,9 @@ local function MAKE_BuildRule (Context, Rule, Environment, Filename)
     Outs     = Outs,
     Ins      = Rule.Ins,
     Needs    = Rule.Needs,
+    Trees    = Rule.Trees,
     Run      = Rule.Run,
     Host     = Rule.Host,
-    Always   = Rule.Always,
     Preserve = Rule.Preserve,
   }
   -- Validate first, *then* expand, order is important
@@ -353,6 +371,7 @@ local function MAKE_BuildRule (Context, Rule, Environment, Filename)
   NewRule.Outs  = MAKE_ExpandList(Context, NewRule.Outs,  Environment)
   NewRule.Ins   = MAKE_ExpandList(Context, NewRule.Ins,   Environment)
   NewRule.Needs = MAKE_ExpandList(Context, NewRule.Needs, Environment)
+  NewRule.Trees = MAKE_ExpandList(Context, NewRule.Trees, Environment)
   NewRule.Run   = MAKE_ExpandList(Context, NewRule.Run,   Environment)
   return NewRule
 end
@@ -394,8 +413,8 @@ local function MAKE_RuleSignature (Rule)
     concat(Rule.Outs,  ItemSeparator),
     concat(Rule.Ins,   ItemSeparator),
     concat(Rule.Needs, ItemSeparator),
+    concat(Rule.Trees, ItemSeparator),
     concat(Rule.Run,   ItemSeparator),
-    tostring(Rule.Always),
     tostring(Rule.Host),
     tostring(Rule.Preserve)
   }
@@ -476,6 +495,14 @@ local function MAKE_BuildPrerequisites (Rule, RuleByMainOutput)
   -- We add all the manual files from "Ins"
   for Index, Entry in ipairs(Rule.Ins) do
     append(Prerequisites, Entry)
+  end
+  -- Dynamic file discovery
+  for Index, Tree in ipairs(Rule.Trees) do
+    local Files, ErrorString = MAKE_CollectTreeFiles(Tree)
+    assert(Files, format("cannot read source tree %s: %s", Tree, ErrorString))
+    for FileIndex, File in ipairs(Files) do
+      append(Prerequisites, File)
+    end
   end
   -- Update rule
   Rule.Prerequisites = MAKE_RemoveDuplicates(Prerequisites)
