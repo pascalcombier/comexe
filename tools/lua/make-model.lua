@@ -752,6 +752,7 @@ local function MAKE_BuildModel (Context, RootFilename, RootDescription, Triples)
   local NewModel = {
     RootFile      = RootFilename,
     HostOS        = Context.OS,
+    HostTriple    = Context.Triple,
     HostSeparator = Context.Separator,
     Triples       = Triples,
     Environment   = (RootDescription.Environment or EMPTY_LIST),
