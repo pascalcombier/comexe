@@ -638,10 +638,10 @@ local function MAKE_InstantiatePasses (Context, RootFile, RootDescription, Tripl
     local NewEnvironment = MAKE_BuildEnvironment(Context, Triple)
     -- RootDescription.Components EXAMPLE
     -- Components = {
-    --   { "HOST", "src/comexe-header.lua" },
-    --   { "ALL",  "src/app.lua"           },
-    --   { "ALL",  "src/runtime.lua"       },
-    --   { "HOST", "src/dist.lua"          },
+    --   { "HOST", "src/build-comexe-header.lua" },
+    --   { "ALL",  "src/build-app.lua"           },
+    --   { "ALL",  "src/build-runtime.lua"       },
+    --   { "HOST", "src/build-dist.lua"          },
     -- },
     for Index, Entry in ipairs(RootDescription.Components) do
       local Scope    = Entry[1]
@@ -677,7 +677,7 @@ local function MAKE_InstantiatePasses (Context, RootFile, RootDescription, Tripl
         --  end
         --
         -- IsHostPass refer to the current triple being HOST
-        -- Rule.Host means a rule to do only for host (even for "ALL", like makeheaders.c in app.lua)
+        -- Rule.Host means a rule to do only for host (even for "ALL", like makeheaders.c in build-app.lua)
         for RuleIndex, Rule in ipairs(Instance.Rules) do
           if (not Rule.Host) or IsHostPass then
             MAKE_RegisterRule(Rule, Registration, PassIndex)
