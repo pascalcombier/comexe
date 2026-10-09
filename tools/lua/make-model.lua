@@ -286,18 +286,36 @@ local function MAKE_ValidateRootDescription (Description, RootFile)
   end
 end
 
-local function MAKE_NormalizeTriples (Context, Description)
-  -- Remove duplicates if any
-  local Triples = MAKE_RemoveDuplicates(Description.Triples)
-  -- Validate
-  for Index, Triple in ipairs(Triples) do
-    MAKE_ValidateTriple(Triple)
+local function MAKE_NeedsHostPass (Description)
+  local Components = Description.Components
+  local Count      = #Components
+  local Needed     = false
+  local Index      = 1
+  while (not Needed) and (Index <= Count) do
+    local Entry = Components[Index]
+    if (Entry[1] == "HOST") then
+      Needed = true
+    else
+      Index = (Index + 1)
+    end
   end
-  -- Add the HOST if none
-  if (#Triples == 0) then
+  return Needed
+end
+
+local function MAKE_NormalizeTriples (Context, Description)
+  -- local data
+  local Triples = {}
+  -- Validate input triples
+  for Index, Triple in ipairs(Description.Triples) do
+    MAKE_ValidateTriple(Triple)
+    append(Triples, Triple)
+  end
+  -- Automatically add HOST triple
+  if ((#Triples == 0) or MAKE_NeedsHostPass(Description)) then
     append(Triples, Context.Triple)
   end
-  return Triples
+  -- Remove duplicates
+  return MAKE_RemoveDuplicates(Triples)
 end
 
 --------------------------------------------------------------------------------
@@ -362,7 +380,6 @@ local function MAKE_BuildRule (Context, Rule, Environment, Filename)
     Needs    = Rule.Needs,
     Trees    = Rule.Trees,
     Run      = Rule.Run,
-    Host     = Rule.Host,
     Preserve = Rule.Preserve,
   }
   -- Validate first, *then* expand, order is important
@@ -415,7 +432,6 @@ local function MAKE_RuleSignature (Rule)
     concat(Rule.Needs, ItemSeparator),
     concat(Rule.Trees, ItemSeparator),
     concat(Rule.Run,   ItemSeparator),
-    tostring(Rule.Host),
     tostring(Rule.Preserve)
   }
   local Signature = concat(Fields, FieldSeparator)
@@ -432,7 +448,7 @@ end
 --   Ins   = { "src/app.c" },
 --   Run   = { "$CC -c $IN -o $OUT" },
 --   Out   = "bin/$TRIPLE/src/app.o" (stored as {  "bin/$TRIPLE/src/app.o" })
---   Host  = true,
+--   Preserve = true,
 -- }
 local function MAKE_RegisterRule (Rule, Registration, CurrentPassIndex)
   -- Retrive data
@@ -672,12 +688,8 @@ local function MAKE_InstantiatePasses (Context, RootFile, RootDescription, Tripl
         --    return NewRule
         --  end
         --
-        -- IsHostPass refer to the current triple being HOST
-        -- Rule.Host means a rule to do only for host (even for "ALL", like makeheaders.c in build-app.lua)
         for RuleIndex, Rule in ipairs(Instance.Rules) do
-          if (not Rule.Host) or IsHostPass then
-            MAKE_RegisterRule(Rule, Registration, PassIndex)
-          end
+          MAKE_RegisterRule(Rule, Registration, PassIndex)
         end
         -- Register component's artifacts and clean directories
         --  Result = {
