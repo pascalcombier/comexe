@@ -471,26 +471,22 @@ end
 -- From the rule:
 -- Rule = {
 --   Outs  = { "bin/app.o" },
---   Needs = { "bin/headers.exe", "does-not-exist.txt" },
+--   Needs = { "bin/headers.exe", "src/app.h" },
 --   Ins   = { "src/app.c", "LICENSE" },
 -- }
 -- 
 -- We add Prerequisites:
--- Rule.Prerequisites = { "bin/headers.exe", "src/app.c", "LICENSE" }
-local function MAKE_BuildPrerequisites (Rule, RuleByMainOutput)
+-- Rule.Prerequisites = { "bin/headers.exe", "src/app.h", "src/app.c", "LICENSE" }
+local function MAKE_BuildPrerequisites (Rule)
   -- local data
   local Prerequisites = {}
   -- Prerequisites refer to Make prerequisites:
   -- target: prerequisites
   --   recipe
   --
-  -- Prerequisites contains all the Rule.Needs which are PRODUCED by our build
-  -- descriptions. "does-not-exist.txt" is not produced by our build
-  -- descriptions, so it won't be append vto Prerequisites
+  -- Every Rule.Needs entry becomes a prerequisite
   for Index, Entry in ipairs(Rule.Needs) do
-    if RuleByMainOutput[Entry] then
-      append(Prerequisites, Entry)
-    end
+    append(Prerequisites, Entry)
   end
   -- We add all the manual files from "Ins"
   for Index, Entry in ipairs(Rule.Ins) do
@@ -730,12 +726,12 @@ local function MAKE_BuildModel (Context, RootFilename, RootDescription, Triples)
   local RulesInOrder     = Registration.RegistrationOrder
   -- Handle passes
   local ArtifactList, CleanDirList = MAKE_InstantiatePasses(Context, RootFilename, RootDescription, Triples, Registration)
-  -- Finalize rules (need RuleByMainOutput to be prepared for prerequisites)
+  -- Finalize rules
   for Index, Rule in ipairs(RulesInOrder) do
     -- target: prerequisites
     --   recipe
     -- A single "recipe" can contain multiple lines
-    MAKE_BuildPrerequisites(Rule, RuleByMainOutput)
+    MAKE_BuildPrerequisites(Rule)
     -- Rules.Outs[1] is guaranteed to exist by MAKE_ValidateRule
     local MainOutput = Rule.Outs[1]
     -- Add more info
