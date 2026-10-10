@@ -62,9 +62,9 @@ local FeatureDefines = {
 }
 
 local IncludeDirs = {
-  "-I$DIR/include",
-  "-I$DIR/src",
-  "-Ithird-party/src/zlib/src",
+  "-I$P$DIR/include",
+  "-I$P$DIR/src",
+  "-I$Pthird-party/src/zlib/src",
 }
 
 local WindowsDefines = {
@@ -113,9 +113,9 @@ local function Render (Environment)
     return NewRule
   end
   -- Create a specific target for each source file
-  local CompileRules = map(Sources, MakeCompileRule)
+  local ObjectRules = map(Sources, MakeCompileRule)
   -- Retrieve objects files from Rules[Index].Out
-  local ObjectList = map(CompileRules, RuleOutput)
+  local ObjectList = map(ObjectRules, RuleOutput)
   -- Rule to build the archive
   local ArchiveRule = {
     Ins = ObjectList,
@@ -124,8 +124,8 @@ local function Render (Environment)
   }
   -- Gather all the rules
   local Result = {
-    Rules     = merge(CompileRules, ArchiveRule),
-    Artifacts = { "bin/$TRIPLE/$NAME/libminizipng.a" },
+    Rules     = merge(ObjectRules, ArchiveRule),
+    Artifacts = { ArchiveRule.Out },
   }
   return Result
 end
