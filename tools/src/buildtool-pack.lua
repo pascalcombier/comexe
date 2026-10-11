@@ -284,6 +284,25 @@ local function WriteZipArchive (Entries, OutputFilename, CompressionLevel)
   return NewWriter.Count
 end
 
+-- Human-readable size
+local function FormatFileSize (SizeInBytes)
+  local Units = { "B", "KiB", "MiB", "GiB", "TiB" }
+  local Value = SizeInBytes
+  local Index = 1
+  while (Value >= 1024) and (Index < #Units) do
+    Value = (Value / 1024)
+    Index = (Index + 1)
+  end
+  local Pattern
+  if (Index > 1) then
+    Pattern = "%.1f %s"
+  else
+    Pattern = "%d %s"
+  end
+  local FormattedString = format(Pattern, Value, Units[Index])
+  return FormattedString
+end
+
 local function PACK_Main (Arguments)
   -- Unpack arguments
   local ManifestFilename = Arguments[1]
@@ -307,7 +326,8 @@ local function PACK_Main (Arguments)
   else
     SizeInBytes = 0
   end
-  print(format("packed %s: %d entries, %d bytes", OutputFilename, Count, SizeInBytes))
+  local HumanSizeString = FormatFileSize(SizeInBytes)
+  print(format("packed %s: %d entries, %d bytes (%s)", OutputFilename, Count, SizeInBytes, HumanSizeString))
   return 0
 end
 
