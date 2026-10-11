@@ -1,0 +1,24 @@
+--------------------------------------------------------------------------------
+-- INFORMATION                                                                --
+--------------------------------------------------------------------------------
+
+-- bin/dist/lua55ce.zip
+
+--------------------------------------------------------------------------------
+-- MANIFEST                                                                   --
+--------------------------------------------------------------------------------
+
+local Entries = {
+  -- Files
+  { File = "bin/x86_64-windows-gnu/src/lua55ce.exe", Entry = "lua55ce-x86_64-windows.exe" },
+  { File = "bin/x86_64-linux-musl/src/lua55ce",      Entry = "lua55ce-x86_64-linux"       },
+  { File = "bin/x86_64-linux-gnu/src/lua55ce-dyn",   Entry = "lua55ce-x86_64-linux-dyn"   },
+  { File = "bin/x86_64-windows-gnu/src/libtcc.dll",  Entry = "libtcc.dll"                 },
+  { File = "bin/x86_64-linux-gnu/src/libtcc.so",     Entry = "libtcc.so"                  },
+  { File = "LICENSE",                                Entry = "LICENSE"                    },
+  -- Directories
+  { Tree = "doc", Prefix = "doc", Exclude = { "DRAFT", "outdated" } },
+}
+
+return Entries
+
