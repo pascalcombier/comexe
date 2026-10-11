@@ -81,7 +81,8 @@ ATOMIC_GEN(uint64_t, 8)
 #define ATOMIC(x)      __tcc_atomic_##x
 #endif
 
-bool ATOMIC(is_lock_free) (unsigned long size, const volatile void *ptr)
+/* ComEXE patch for zig/clang */
+bool ATOMIC(is_lock_free) (size_t size, const volatile void *ptr)
 {
     bool ret;
 
@@ -100,5 +101,22 @@ bool ATOMIC(is_lock_free) (unsigned long size, const volatile void *ptr)
 }
 
 #ifndef __TINYC__
-bool __atomic_is_lock_free(unsigned long size, const volatile void *ptr) __attribute__((alias("__tcc_atomic_is_lock_free")));
+/* ComEXE patch for zig/clang */
+/*
+ * Change
+ * FROM bool __atomic_is_lock_free(unsigned long size, const volatile void *ptr)
+ * TO   bool __atomic_is_lock_free(size_t size, const volatile void *ptr)
+ *                                 ^^^^^^
+ *
+ * Original build output for zig on stdatomic.c:
+ * x86_64-linux-gnu
+ *   SUCCESS
+ * x86_64-windows-gnu
+ *   FAIL: error: conflicting types for '__atomic_is_lock_free'
+ *
+ *                    Windows Linux
+ *   unsigned long is 32-bit  64-bit
+ *   size_t        is 64-bit  64-bit
+ */
+bool __atomic_is_lock_free(size_t size, const volatile void *ptr) __attribute__((alias("__tcc_atomic_is_lock_free")));
 #endif
