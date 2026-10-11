@@ -1,0 +1,53 @@
+dev@DESKTOP-5HIGSSE:~/WORKSPACE/TCC-TEST/tinycc-2ba12e8$ ./configure
+Perhaps you want ./configure --config-musl
+Binary directory    /usr/local/bin
+TinyCC directory    /usr/local/lib/tcc
+Library directory   /usr/local/lib
+Include directory   /usr/local/include
+Manual directory    /usr/local/share/man
+Info directory      /usr/local/share/info
+Doc directory       /usr/local/share/doc
+Source path         /home/dev/WORKSPACE/TCC-TEST/tinycc-2ba12e8
+Build OS            Linux x86_64
+C compiler          gcc (12.2)
+Target OS           Linux
+CPU                 x86_64
+Triplet             x86_64-linux-gnu
+Creating config.mak and config.h
+config.h is unchanged
+dev@DESKTOP-5HIGSSE:~/WORKSPACE/TCC-TEST/tinycc-2ba12e8$ make
+gcc -o tcc.o -c tcc.c -I. -DONE_SOURCE=0 -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+gcc -o libtcc.o -c libtcc.c -I. -DONE_SOURCE=0 -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+gcc -DC2STR conftest.c -o c2str.exe
+./c2str.exe include/tccdefs.h tccdefs_.h
+gcc -o tccpp.o -c tccpp.c -I. -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+gcc -o tccgen.o -c tccgen.c -I. -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+gcc -o tccdbg.o -c tccdbg.c -I. -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+gcc -o tccelf.o -c tccelf.c -I. -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+gcc -o tccasm.o -c tccasm.c -I. -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+gcc -o tccrun.o -c tccrun.c -I. -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+gcc -o x86_64-gen.o -c x86_64-gen.c -I. -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+gcc -o x86_64-link.o -c x86_64-link.c -I. -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+gcc -o i386-asm.o -c i386-asm.c -I. -Wall -O2 -Wdeclaration-after-statement -Wno-unused-result
+ar rcs libtcc.a libtcc.o tccpp.o tccgen.o tccdbg.o tccelf.o tccasm.o tccrun.o x86_64-gen.o x86_64-link.o i386-asm.o
+gcc -o tcc tcc.o libtcc.a -lm -ldl -lpthread
+make[1]: Entering directory '/home/dev/WORKSPACE/TCC-TEST/tinycc-2ba12e8/lib'
+../tcc -c libtcc1.c -o libtcc1.o -B.. -I..
+../tcc -c stdatomic.c -o stdatomic.o -B.. -I..
+../tcc -c atomic.S -o atomic.o -B.. -I..
+../tcc -c builtin.c -o builtin.o -B.. -I..
+../tcc -c alloca.S -o alloca.o -B.. -I..
+../tcc -c alloca-bt.S -o alloca-bt.o -B.. -I..
+../tcc -c tcov.c -o tcov.o -B.. -I..
+../tcc -c va_list.c -o va_list.o -B.. -I..
+../tcc -c dsohandle.c -o dsohandle.o -B.. -I..
+../tcc -ar rcs ../libtcc1.a libtcc1.o stdatomic.o atomic.o builtin.o alloca.o alloca-bt.o tcov.o va_list.o dsohandle.o
+../tcc -c runmain.c -o ../runmain.o -B.. -I..
+../tcc -c bt-exe.c -o ../bt-exe.o -B.. -I..
+../tcc -c bt-log.c -o ../bt-log.o -B.. -I..
+../tcc -c bcheck.c -o ../bcheck.o -B.. -I.. -bt
+make[1]: Leaving directory '/home/dev/WORKSPACE/TCC-TEST/tinycc-2ba12e8/lib'
+perl ./texi2pod.pl tcc-doc.texi tcc-doc.pod
+pod2man --section=1 --center="Tiny C Compiler" --release="0.9.28rc" tcc-doc.pod >tcc.1
+(skipping tcc-doc.html - no makeinfo)
+(skipping tcc-doc.info - no makeinfo)
