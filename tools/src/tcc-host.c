@@ -26,7 +26,7 @@
 extern int tcc_main (void *UserData, int argc, char **argv);
 
 /*============================================================================*/
-/* UIO HOST-FILE BRIDGE                                                       */
+/* UIO LAYER IMPLEMENTATION                                                   */
 /*============================================================================*/
 
 int uio_open (TCCState *TccState, const char *pathname, int flags, int mode)
