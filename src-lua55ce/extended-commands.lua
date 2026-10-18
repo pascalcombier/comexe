@@ -142,9 +142,8 @@ local function GetMakeDefaultTarget ()
   -- local data
   local ARCH = getparam("ARCH")
   local OS   = getparam("OS")
-  local Type = "con" -- console by default, could be "gui" or "dbg"
-  -- Default variant is "-con" for all platforms
-  local Target = format("%s-%s-%s", ARCH, OS, Type)
+  -- Default is the console build, other variants are "-gui" and "-dbg"
+  local Target = format("%s-%s", ARCH, OS)
   -- Return value
   return Target
 end

@@ -15,7 +15,7 @@ E:\my-program>lua55ce src\main.lua
 Hello World!
 ```
 
-## Compile it into a 2.6 MiB executable
+## Compile it into a 2 MiB executable
 
 ```batch
 E:\my-program>lua55ce -x --make src\main.lua
@@ -30,26 +30,26 @@ Hello World!
 lua55ce -x --make src\main.lua --nostdlib
 ```
 
-This removes the standard libraries and gives you a ~2 MiB executable on Windows.
+This removes the standard libraries and gives you a ~1.4 MiB executable on Windows.
 
 ## Cross-compile for other platforms
 
 ```batch
 E:\my-program>lua55ce -x --list-targets
-x86_64-linux-gnu-con
+x86_64-linux-gnu
 x86_64-linux-gnu-dbg
-x86_64-linux-musl-con
+x86_64-linux-musl
 x86_64-linux-musl-dbg
-x86_64-windows-con
+x86_64-windows
 x86_64-windows-dbg
 x86_64-windows-gui
 
-E:\my-program>lua55ce -x --make src\main.lua -t x86_64-linux-musl-con
+E:\my-program>lua55ce -x --make src\main.lua -t x86_64-linux-musl
 ```
 
 Cross-compilation works both ways: build Windows binaries on Linux or Linux binaries on Windows.
 
-*con* stands for console, intended for console applications; *gui* is Win32-only and refers to the Windows subsystem. *dbg* is the debug build, larger and includes debug symbols.
+A target name without the variant suffixes `-dbg` or `-gui` refers to the console build, intended for command line programs. `-gui` is Win32-only and refers to the Windows subsystem. `-dbg` is the debug build, which is larger and includes debug symbols.
 
 # Important note
 

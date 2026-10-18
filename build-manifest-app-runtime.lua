@@ -15,12 +15,12 @@ local Entries = {
   -- The files in bin/ cannot be dynamically listed because the files does not exist yet
   -- So to make simple: just list the files manually
   -- Files
-  { File = "bin/x86_64-windows-gnu/src/comexe-con.exe", Entry = "comexe/usr/bin/comexe-targets/x86_64-windows-con.exe" },
+  { File = "bin/x86_64-windows-gnu/src/comexe-con.exe", Entry = "comexe/usr/bin/comexe-targets/x86_64-windows.exe"     },
   { File = "bin/x86_64-windows-gnu/src/comexe-dbg.exe", Entry = "comexe/usr/bin/comexe-targets/x86_64-windows-dbg.exe" },
   { File = "bin/x86_64-windows-gnu/src/comexe-gui.exe", Entry = "comexe/usr/bin/comexe-targets/x86_64-windows-gui.exe" },
-  { File = "bin/x86_64-linux-musl/src/comexe",          Entry = "comexe/usr/bin/comexe-targets/x86_64-linux-musl-con"  },
+  { File = "bin/x86_64-linux-musl/src/comexe",          Entry = "comexe/usr/bin/comexe-targets/x86_64-linux-musl"      },
   { File = "bin/x86_64-linux-musl/src/comexe-dbg",      Entry = "comexe/usr/bin/comexe-targets/x86_64-linux-musl-dbg"  },
-  { File = "bin/x86_64-linux-gnu/src/comexe-gnu",       Entry = "comexe/usr/bin/comexe-targets/x86_64-linux-gnu-con"   },
+  { File = "bin/x86_64-linux-gnu/src/comexe-gnu",       Entry = "comexe/usr/bin/comexe-targets/x86_64-linux-gnu"       },
   { File = "bin/x86_64-linux-gnu/src/comexe-gnu-dbg",   Entry = "comexe/usr/bin/comexe-targets/x86_64-linux-gnu-dbg"   },
   -- Tcc headers
   { Tree = "third-party/src/tcc-vio/src/include",       Prefix = "comexe/usr/lib/tcc-x86-64-windows-runtime/include"   },
