@@ -518,7 +518,7 @@ local function BuildTccLinux (Environment)
       "zig cc",
       "-target $TRIPLE",
       "-Os",
-      "-DTCC_TARGET_PE",
+      "-fPIC",
       "-DTCC_TARGET_X86_64",
       "-DONE_SOURCE=1",
       "-D_FILE_OFFSET_BITS=64",
