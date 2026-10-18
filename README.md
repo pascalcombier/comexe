@@ -9,8 +9,8 @@ lua55ce -x --make src\hello.lua --nostdlib # Windows x64, 1.4 MiB
 One can also generate executables for different platforms:
 
 ```
-lua55ce -x --make src\hello.lua -t x86_64-linux-musl # Linux x64, static
-lua55ce -x --make src\hello.lua -t x86_64-linux-gnu  # Linux x64, glibc
+lua55ce -x --make src\hello.lua -t x86_64-linux-musl # static
+lua55ce -x --make src\hello.lua -t x86_64-linux-gnu  # glibc
 ```
 
 [![Release](https://img.shields.io/github/v/release/pascalcombier/comexe)](https://github.com/pascalcombier/comexe/releases/latest)
