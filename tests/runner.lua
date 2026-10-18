@@ -140,6 +140,8 @@ local function ShouldSkipTest (Pathname)
   local Skip
   if (OS == "linux") then
     Skip = contains(Pathname, "win32")
+  elseif (OS == "windows") then
+    Skip = contains(Pathname, "linux")
   else
     Skip = false
   end
