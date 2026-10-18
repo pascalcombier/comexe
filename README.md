@@ -1,11 +1,68 @@
-# 📋 Overview
+# 📋 ComEXE
 
-ComEXE is a statically linked, drop-in replacement for the [Lua standalone program](https://www.lua.org/manual/5.5/manual.html#7), with additional command options and built-in libraries for practical use.
+The ComEXE project currently ships one program: `lua55ce`, a statically linked drop-in replacement for the [Lua standalone program](https://www.lua.org/manual/5.5/manual.html#7) with extra command options and built-in libraries. It can turn a Lua script into a standalone executable for Windows x64 or Linux x64, with no C toolchain and no runtime to install.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+```sh
+lua55ce -x --make src\hello.lua --nostdlib # Windows x64, 1.4 MiB
+```
+
+One can also generate executables for different platforms:
+
+```
+lua55ce -x --make src\hello.lua -t x86_64-linux-musl # Linux x64, static
+lua55ce -x --make src\hello.lua -t x86_64-linux-gnu  # Linux x64, glibc
+```
+
+[![Release](https://img.shields.io/github/v/release/pascalcombier/comexe)](https://github.com/pascalcombier/comexe/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)]()
 [![Lua](https://img.shields.io/badge/Lua-5.5-blue)]()
-[![GitHub stars](https://img.shields.io/github/stars/pascalcombier/comexe?style=social)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
+# 🚀 Quick start
+
+Download and extract the [the latest binary release](https://github.com/pascalcombier/comexe/releases/latest). For convenience, rename the `lua55ce-x86_64.exe` to `lua55ce.exe`.
+
+Check the version
+
+```sh
+lua55ce -v
+```
+
+Write and execute a Lua script
+
+```sh
+> mkdir hello
+> echo print("Hello World!") > hello\hello.lua
+> lua55ce hello\hello.lua
+Hello World!
+```
+
+Compile the script
+
+```sh
+> lua55ce -x --make hello\hello.lua --nostdlib
+> hello.exe
+Hello World!
+```
+
+List the available targets
+
+```sh
+> lua55ce -x --list-targets
+x86_64-windows
+x86_64-windows-dbg
+x86_64-windows-gui
+x86_64-linux-musl
+x86_64-linux-musl-dbg
+x86_64-linux-gnu
+x86_64-linux-gnu-dbg
+```
+
+Compile for Linux musl:
+
+```
+> lua55ce -x --make hello\hello.lua --nostdlib -t x86_64-linux-musl -o hello-static
+```
 
 # 🚀 Key features
 
