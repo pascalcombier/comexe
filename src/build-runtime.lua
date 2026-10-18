@@ -2,7 +2,7 @@
 -- INFORMATION                                                                --
 --------------------------------------------------------------------------------
 
--- Build bin/app/lua55ce-runtime.zip
+-- Build bin/app/lua55ce-runtime.zip from build-index.lua
 
 --------------------------------------------------------------------------------
 -- CONSTANTS                                                                  --
@@ -17,28 +17,23 @@ local BuildToolFilename = "bin/tools/buildtool.exe"
 
 local append = table.insert
 
--- Reuse manifest sources (build-manifest-app-runtime.lua, initially designed
--- for buildtool pack). Here, we will just read the entries, "Tree" is already
--- handled properly by the model.
-local function ReadManifest (ManifestFilename)
+local function ReadManifestFiles (ManifestFilename)
   local NewEnvironment = {}
   local Chunk, LoadErrorString = loadfile(ManifestFilename, "t", NewEnvironment)
   if (not Chunk) then
     error(format("cannot load %s: %s", ManifestFilename, LoadErrorString))
   end
-  local Entries = Chunk()
+  local Success, Entries = pcall(Chunk)
+  assert(Success, format("manifest error in %s: %s", ManifestFilename, Entries))
   assert((type(Entries) == "table"), format("invalid format: %s", ManifestFilename))
   local Files = {}
-  local Trees = {}
   for Index = 1, #Entries do
     local Entry = Entries[Index]
     if Entry.File then
       append(Files, Entry.File)
-    elseif Entry.Tree then
-      append(Trees, Entry.Tree)
     end
   end
-  return Files, Trees
+  return Files
 end
 
 --------------------------------------------------------------------------------
@@ -46,14 +41,16 @@ end
 --------------------------------------------------------------------------------
 
 local function Render (Environment)
-  -- Read manifest entries
-  local ManifestFiles, ManifestTrees = ReadManifest(ManifestFilename)
+  -- Prerequisites are from:
+  -- "runtime" and "tccvio" from build-index.lua
+  -- build outputs (bin), listed in ManifestFilename
+  local ManifestFiles = ReadManifestFiles(ManifestFilename)
   -- Format command
   local CommandLine = format("$P%s pack $P%s $OUT 9", BuildToolFilename, ManifestFilename)
-  -- Zip rule
+  -- Zip rule ("runtime" and "tccvio" comes from the build-index.lua file)
   local ZipRule = {
     Ins   = merge({ ManifestFilename, BuildToolFilename }, ManifestFiles),
-    Trees = ManifestTrees,
+    Trees = { "runtime", "tccvio" },
     Run   = { CommandLine },
     Out   = "bin/app/lua55ce-runtime.zip",
   }

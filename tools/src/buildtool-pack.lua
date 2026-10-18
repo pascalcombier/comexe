@@ -2,12 +2,12 @@
 -- INFORMATION                                                                --
 --------------------------------------------------------------------------------
 
--- buildtool-pack.lua: the ComEXE ZIP builder (Lua manifest -> zip)
+-- buildtool-pack.lua: the ComEXE ZIP builder (Lua root manifest + source index -> zip)
 --
 -- The manifest is a Lua file returning a list of entries:
 --
---   { File = "source/path", Entry = "entry/name",    Date?, Mode?       }
---   { Tree = "source/dir",  Prefix = "entry/prefix", Exclude = { ... }? }
+--   { File = "source/path", Entry = "entry/name", Date?, Mode? }
+--   { Tree = "source/dir",  Prefix = "entry/prefix"            }
 --
 -- Try to be deterministic, default date (1980-01-01Z), sort name during
 -- traversal
@@ -23,12 +23,10 @@ local format = string.format
 local sort   = table.sort
 local append = table.insert
 
-local fs_open         = uv.fs_open
-local fs_read         = uv.fs_read
-local fs_close        = uv.fs_close
-local fs_stat         = uv.fs_stat
-local fs_scandir      = uv.fs_scandir
-local fs_scandir_next = uv.fs_scandir_next
+local fs_open  = uv.fs_open
+local fs_read  = uv.fs_read
+local fs_close = uv.fs_close
+local fs_stat  = uv.fs_stat
 
 local MZ_OK                      = Mz.MZ_OK
 local MZ_OPEN_MODE_CREATE        = Mz.MZ_OPEN_MODE_CREATE
@@ -47,42 +45,25 @@ local DEFAULT_LEVEL = 9
 local CHUNK_SIZE    = (64 * 1024)
 local READ_MODE     = "r"
 
-local DEFAULT_EXCLUDES = {
-  "auto-dir-ok",
-  ".gitkeep",
-}
-
-local EMPTY_ARRAY = {}
+-- File index managed with --build-index
+local SOURCE_INDEX_NAME = "build-index.lua"
 
 --------------------------------------------------------------------------------
 -- UTILITIES                                                                  --
 --------------------------------------------------------------------------------
 
-local function ArrayToSet (Array)
-  local NewSet = {}
-  local Count  = #Array
-  for Index = 1, Count do
-    local Value = Array[Index]
-    NewSet[Value] = true
-  end
-  return NewSet
+local NATIVE_SEPARATOR = package.config:sub(1, 1)
+
+local function HasPrefix (String, Prefix)
+  return (String:find(Prefix, 1, true) == 1)
 end
 
---------------------------------------------------------------------------------
--- FILE WALKER                                                                --
---------------------------------------------------------------------------------
+local function RemovePrefix (String, Prefix)
+  return String:sub(#Prefix + 1)
+end
 
-local function NewExcludeSet (ExtraExclude)
-  -- Validate inputs
-  assert((type(ExtraExclude) == "table"), "Exclude must be a list of names")
-  -- Create a new set
-  local NewSet = ArrayToSet(DEFAULT_EXCLUDES)
-  -- Add extra excludes
-  for Index = 1, #ExtraExclude do
-    local Value = ExtraExclude[Index]
-    NewSet[Value] = true
-  end
-  return NewSet
+local function ToNativePath (Path)
+  return (Path:gsub("/", NATIVE_SEPARATOR))
 end
 
 local function JoinPath (Left, Right)
@@ -95,46 +76,53 @@ local function JoinPath (Left, Right)
   return Result
 end
 
-local function CollectFilesRecursive (Directory, Relative, ExcludeSet, FileList)
-  -- Start to scan directory
-  local FileHandle, ScanErrorString = fs_scandir(Directory)
-  if (not FileHandle) then
-    error(format("cannot read directory %s: %s", Directory, ScanErrorString))
+local function LoadLuaDataFile (Filename)
+  -- Load a Lua-data file: do not need the _G
+  local NewEnvironment = {}
+  local Chunk, LoadErrorString = loadfile(Filename, "t", NewEnvironment)
+  if (not Chunk) then
+    error(format("cannot load %s: %s", Filename, LoadErrorString))
   end
-  -- Collect names, sort them to be more deterministic
-  local Names = {}
-  local Name  = fs_scandir_next(FileHandle)
-  while Name do
-    append(Names, Name)
-    Name = fs_scandir_next(FileHandle)
+  local Success, Data = pcall(Chunk)
+  if (not Success) then
+    error(format("error in %s: %s", Filename, Data))
   end
-  sort(Names)
-  -- Process each entry
-  for Index = 1, #Names do
-    local DirEntryName = Names[Index]
-    local FullPath     = JoinPath(Directory, DirEntryName)
-    local EntryName    = JoinPath(Relative,  DirEntryName)
-    local StatTable, StatErrorString = fs_stat(FullPath)
-    if ExcludeSet[DirEntryName] then
-      -- Skip (auto-dir-ok, .gitkeep, ...)
-    elseif (StatTable == nil) then
-      -- Unreadable or bad link
-      error(format("cannot stat %s: %s", FullPath, StatErrorString))
-    elseif (StatTable.type == "directory") then
-      CollectFilesRecursive(FullPath, EntryName, ExcludeSet, FileList)
-    elseif (StatTable.type == "file") then
-      local NewFileEntry = { Source = FullPath, Entry = EntryName }
-      append(FileList, NewFileEntry)
-    else
-      error(format("unsupported file type: %s (%s)", FullPath, StatTable.type))
-    end
-  end
+  assert((type(Data) == "table"), format("must return a table: %s", Filename))
+  return Data
 end
 
-local function CollectFiles (Directory, Relative, ExcludeSet)
-  local FileList = {}
-  CollectFilesRecursive(Directory, Relative, ExcludeSet, FileList)
-  return FileList
+-- Filter from the file index content:
+-- local FILE_LIST = {
+--   runtime = {
+--     "runtime/comexe/init.lua",
+--   }
+-- }
+--
+-- Usage: FilterTreeFiles(FILE_LIST, "runtime")
+local function FilterTreeFiles (FileList, Tree)
+  local Prefix = format("%s/", Tree)
+  local Files  = {}
+  for GroupName, GroupFiles in pairs(FileList) do
+    for FileIndex, File in ipairs(GroupFiles) do
+      if HasPrefix(File, Prefix) then
+        append(Files, File)
+      end
+    end
+  end
+  sort(Files)
+  return Files
+end
+
+-- Make a ZIP entry name
+--
+-- Entry = { Tree = "runtime/comexe", Prefix = "comexe" }
+-- File  = "runtime/comexe/init.lua" 
+-- Result: "comexe/init.lua"
+local function NewEntryName (Entry, File)
+  local TreePrefix = format("%s/", Entry.Tree)
+  local Relative   = RemovePrefix(File, TreePrefix)
+  local Result     = JoinPath(Entry.Prefix, Relative)
+  return Result
 end
 
 --------------------------------------------------------------------------------
@@ -210,32 +198,18 @@ local function AddFileEntry (Writer, Entry, Filename, EntryName, EntriesSeen)
   Writer.Count = (Writer.Count + 1)
 end
 
-local function AddTreeEntries (Writer, Entry, EntriesSeen)
-  local EntryExclude = (Entry.Exclude or EMPTY_ARRAY)
-  local Excludes     = NewExcludeSet(EntryExclude)
-  local FileList     = CollectFiles(Entry.Tree, "", Excludes)
-  for Index = 1, #FileList do
-    local File      = FileList[Index]
-    local EntryName = JoinPath(Entry.Prefix, File.Entry)
-    AddFileEntry(Writer, Entry, File.Source, EntryName, EntriesSeen)
+local function AddTreeEntries (Writer, Entry, FileList, EntriesSeen)
+  local Files = FilterTreeFiles(FileList, Entry.Tree)
+  assert((#Files > 0), format("no source file index entry under tree: %s", Entry.Tree))
+  for Index = 1, #Files do
+    local File       = Files[Index]
+    local SourceFile = ToNativePath(File)
+    local EntryName  = NewEntryName(Entry, File)
+    AddFileEntry(Writer, Entry, SourceFile, EntryName, EntriesSeen)
   end
 end
 
-local function LoadManifest (ManifestFilename)
-  local NewEnvironment = {}
-  local Chunk, LoadErrorString = loadfile(ManifestFilename, "t", NewEnvironment)
-  if (not Chunk) then
-    error(format("cannot load manifest %s: %s", ManifestFilename, LoadErrorString))
-  end
-  local Success, Entries = pcall(Chunk)
-  if (not Success) then
-    local ErrorString = Entries
-    error(format("manifest error in %s: %s", ManifestFilename, ErrorString))
-  end
-  return Entries
-end
-
-local function WriteZipArchive (Entries, OutputFilename, CompressionLevel)
+local function WriteZipArchive (Entries, FileList, OutputFilename, CompressionLevel)
   -- Create the required elements
   local Stream     = Mz.mz_stream_os_create()
   local Zip        = Mz.mz_zip_create()
@@ -256,7 +230,7 @@ local function WriteZipArchive (Entries, OutputFilename, CompressionLevel)
     FileInfo = Mz.mz_zip_file_create(),
     Count    = 0,
   }
-  -- Store all the entries in EntriesSeen to ensure no duplicates
+  -- EntriesSeen is used to ensure no duplicates
   local EntriesSeen = {}
   for Index = 1, #Entries do
     local Entry = Entries[Index]
@@ -265,9 +239,9 @@ local function WriteZipArchive (Entries, OutputFilename, CompressionLevel)
       assert(Entry.Entry, format("manifest entry %d declares File without Entry", Index))
       AddFileEntry(NewWriter, Entry, Entry.File, Entry.Entry, EntriesSeen)
     elseif Entry.Tree then
-      AddTreeEntries(NewWriter, Entry, EntriesSeen)
+      AddTreeEntries(NewWriter, Entry, FileList, EntriesSeen)
     else
-      error(format("manifest entry %d expects either File or Tree", Index))
+      error(format("manifest entry %d expects File or Tree", Index))
     end
   end
   -- Close the archive
@@ -313,12 +287,12 @@ local function PACK_Main (Arguments)
   assert(OutputFilename,   "an output path is required")
   assert((CompressionLevel > 0) and (CompressionLevel <= 9), "a level between 1 and 9 is required")
   -- Load the manifest, then validate what it returned
-  local Entries = LoadManifest(ManifestFilename)
-  -- Validate manifest
-  assert((type(Entries) == "table"), format("manifest must return a list of entries: %s", ManifestFilename))
-  assert((#Entries > 0), format("manifest has no entries: %s", ManifestFilename))
-  -- Pack the ZIP according to the manifest
-  local Count     = WriteZipArchive(Entries, OutputFilename, CompressionLevel)
+  local PackEntries = LoadLuaDataFile(ManifestFilename)
+  assert((#PackEntries > 0), format("manifest has no entries: %s", ManifestFilename))
+  -- The project file index FILE_LIST
+  local FileList = LoadLuaDataFile(SOURCE_INDEX_NAME)
+  -- Pack the ZIP according to the manifest and the source index
+  local Count     = WriteZipArchive(PackEntries, FileList, OutputFilename, CompressionLevel)
   local StatTable = fs_stat(OutputFilename)
   local SizeInBytes
   if StatTable then

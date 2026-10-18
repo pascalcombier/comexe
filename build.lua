@@ -34,6 +34,16 @@ local RootDescription = {
     "bin/app",
     "bin/dist",
   },
+  -- Keep the manual index build-index.lua
+  MonitoredDirs = {
+    -- prerequisites for lua55ce-runtime.zip
+    { "runtime", "runtime/comexe"                            },
+    { "runtime", "src-lua55ce"                               },
+    { "tccvio",  "third-party/src/tcc-vio/src/include"       },
+    { "tccvio",  "third-party/src/tcc-vio/src/win32/include" },
+    -- prerequisites for bin/dist/lua55ce.zip
+    { "doc", "doc" },
+  },
   -- Components
   Components = {
     { "ALL",  "third-party/src/zlib/zlib.lua"                             },

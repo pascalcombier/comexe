@@ -2,7 +2,7 @@
 -- INFORMATION                                                                --
 --------------------------------------------------------------------------------
 
--- This library is design to help generating makefiles.
+-- This library is design to help generating makefiles
 -- Confirmed: generating Makefiles is not straightforward
 
 --------------------------------------------------------------------------------
@@ -20,13 +20,15 @@ local sort   = table.sort
 local newpathname       = Runtime.newpathname
 local getparam          = Runtime.getparam
 local listfiles         = Runtime.listfiles
+local writefile         = Runtime.writefile
 local newstringtemplate = Template.newstringtemplate
 
 --------------------------------------------------------------------------------
 -- GLOBAL VARIABLES                                                           --
 --------------------------------------------------------------------------------
 
-local MAKE_MARKER_NAME = "auto-dir-ok"
+local MAKE_DEFAULT_FILELIST_NAME = "build-index.lua"
+local MAKE_MARKER_NAME           = "auto-dir-ok"
 
 local EMPTY_LIST = {}
 
@@ -114,6 +116,36 @@ local function MAKE_ValidateTriple (Triple)
   assert(MAKE_TRIPLE_VALID_LIBC[Libc], format("invalid target libc: %s (expected gnu, musl, or msvc)", Libc))
 end
 
+local function MAKE_NewContext (OptionalHostTriple)
+  local HostTriple
+  local HostArch
+  local HostOs
+  -- Determine host
+  if OptionalHostTriple then
+    MAKE_ValidateTriple(OptionalHostTriple)
+    HostTriple = OptionalHostTriple
+    HostArch, HostOs = MAKE_SplitTriple(OptionalHostTriple)
+  else
+    HostArch   = getparam("ARCH")
+    HostOs     = getparam("OS")
+    HostTriple = format("%s-%s-gnu", HostArch, HostOs)
+  end
+  -- Select profile
+  local Profile = MAKE_HostProfiles[HostOs]
+  assert(Profile, format("unsupported host os: %s", HostOs))
+  -- Create the new context
+  local NewContext = {
+    FileCache    = {},
+    OS           = HostOs,
+    Separator    = Profile.Separator,
+    Triple       = HostTriple,
+    CommandText  = Profile.Commands,
+    PathRenderer = Profile.PathRenderer,
+  }
+  -- Return value
+  return NewContext
+end
+
 --------------------------------------------------------------------------------
 -- SANDBOX IMPLEMENTATION                                                     --
 --------------------------------------------------------------------------------
@@ -190,25 +222,6 @@ end
 
 local function MAKE_InternalDirName (Pathname)
   return newpathname(Pathname):getdirectory("internal")
-end
-
-local function MAKE_CollectTreeFiles (Directory)
-  -- local data
-  local NativeDirectory = MAKE_NativePath(Directory)
-  local Files           = {}
-  -- local callback
-  local function ListFilesCallback (Path, FileType)
-    if (FileType ~= "directory") then
-      append(Files, newpathname(Path):convert("internal"))
-    end
-  end
-  local Success, ErrorString = listfiles(NativeDirectory, ListFilesCallback)
-  if Success then
-    sort(Files)
-  else
-    error(format("failed to list files in %s: %s", Directory, ErrorString))
-  end
-  return Files, ErrorString
 end
 
 local function MAKE_ExpandValue (Context, Value, Environment)
@@ -484,6 +497,17 @@ end
 -- PREREQUISITES                                                              --
 --------------------------------------------------------------------------------
 
+local function MAKE_ResolveTrees (FileList, Rule, Prerequisites)
+  local Trees = Rule.Trees
+  for Index, Tree in ipairs(Trees) do
+    local FileList = FileList[Tree]
+    assert(FileList, format("no entry for tree %q in the source file index", Tree))
+    for FileIndex, File in ipairs(FileList) do
+      append(Prerequisites, File)
+    end
+  end
+end
+
 -- From the rule:
 -- Rule = {
 --   Outs  = { "bin/app.o" },
@@ -493,7 +517,7 @@ end
 -- 
 -- We add Prerequisites:
 -- Rule.Prerequisites = { "bin/headers.exe", "src/app.h", "src/app.c", "LICENSE" }
-local function MAKE_BuildPrerequisites (Rule)
+local function MAKE_BuildPrerequisites (Rule, FileList)
   -- local data
   local Prerequisites = {}
   -- Prerequisites refer to Make prerequisites:
@@ -508,14 +532,8 @@ local function MAKE_BuildPrerequisites (Rule)
   for Index, Entry in ipairs(Rule.Ins) do
     append(Prerequisites, Entry)
   end
-  -- Dynamic file discovery
-  for Index, Tree in ipairs(Rule.Trees) do
-    local Files, ErrorString = MAKE_CollectTreeFiles(Tree)
-    assert(Files, format("cannot read source tree %s: %s", Tree, ErrorString))
-    for FileIndex, File in ipairs(Files) do
-      append(Prerequisites, File)
-    end
-  end
+  -- Source trees come from build-index.lua
+  MAKE_ResolveTrees(FileList, Rule, Prerequisites)
   -- Update rule
   Rule.Prerequisites = MAKE_RemoveDuplicates(Prerequisites)
 end
@@ -736,6 +754,7 @@ local function MAKE_BuildModel (Context, RootFilename, RootDescription, Triples)
   -- Extract references
   local RuleByMainOutput = Registration.RuleByMainOutput
   local RulesInOrder     = Registration.RegistrationOrder
+  local FileList         = Context.FileList
   -- Handle passes
   local ArtifactList, CleanDirList = MAKE_InstantiatePasses(Context, RootFilename, RootDescription, Triples, Registration)
   -- Finalize rules
@@ -743,7 +762,7 @@ local function MAKE_BuildModel (Context, RootFilename, RootDescription, Triples)
     -- target: prerequisites
     --   recipe
     -- A single "recipe" can contain multiple lines
-    MAKE_BuildPrerequisites(Rule)
+    MAKE_BuildPrerequisites(Rule, FileList)
     -- Rules.Outs[1] is guaranteed to exist by MAKE_ValidateRule
     local MainOutput = Rule.Outs[1]
     -- Add more info
@@ -773,48 +792,188 @@ local function MAKE_BuildModel (Context, RootFilename, RootDescription, Triples)
 end
 
 --------------------------------------------------------------------------------
--- HOST-SPECIFIC THINGS                                                       --
+-- FILE INDEX MANAGEMENT                                                      --
 --------------------------------------------------------------------------------
 
-local function MAKE_NewContext (OptionalHostTriple)
-  local HostTriple
-  local HostArch
-  local HostOs
-  -- Determine host
-  if OptionalHostTriple then
-    MAKE_ValidateTriple(OptionalHostTriple)
-    HostTriple = OptionalHostTriple
-    HostArch, HostOs = MAKE_SplitTriple(OptionalHostTriple)
-  else
-    HostArch   = getparam("ARCH")
-    HostOs     = getparam("OS")
-    HostTriple = format("%s-%s-gnu", HostArch, HostOs)
-  end
-  -- Select profile
-  local Profile = MAKE_HostProfiles[HostOs]
-  assert(Profile, format("unsupported host os: %s", HostOs))
-  -- Create the new context
-  local NewContext = {
-    FileCache    = {},
-    OS           = HostOs,
-    Separator    = Profile.Separator,
-    Triple       = HostTriple,
-    CommandText  = Profile.Commands,
-    PathRenderer = Profile.PathRenderer,
-  }
-  -- Return value
-  return NewContext
+-- "dir/build.lua" -> "dir/build-index.lua"
+local function MAKE_NewIndexFilename (RootFilename)
+  local RootDir = MAKE_InternalDirName(RootFilename)
+  local NewPath = newpathname(RootDir, MAKE_DEFAULT_FILELIST_NAME)
+  return NewPath:convert("internal")
 end
+
+local function MAKE_ValidateFileList (FileList, IndexFilename)
+  assert((type(FileList) == "table"), format("source file list must return a table: %s", IndexFilename))
+  for Name, Files in pairs(FileList) do
+    assert((type(Name) == "string"), format("source file list key must be a string: %s", IndexFilename))
+    assert((type(Files) == "table"), format("source file list entry must be a list: %s (%s)", IndexFilename, Name))
+    for FileIndex, File in ipairs(Files) do
+      assert((type(File) == "string"), format("source file list path must be a string: %s (%s, entry %d)", IndexFilename, Name, FileIndex))
+    end
+  end
+end
+
+-- The index is pure Lua data, no access to Lua facilities so we use {}
+local function MAKE_LoadIndex (IndexFilename)
+  local NativeFilename         = MAKE_NativePath(IndexFilename)
+  local NewEnvironment         = {}
+  local Chunk, LoadErrorString = loadfile(NativeFilename, "t", NewEnvironment)
+  if (not Chunk) then
+    error(format("cannot load source file index %s: %s", IndexFilename, LoadErrorString))
+  end
+  local Success, FileList = pcall(Chunk)
+  if (not Success) then
+    error(format("source file index error in %s: %s", IndexFilename, FileList))
+  end
+  MAKE_ValidateFileList(FileList, IndexFilename)
+  return FileList
+end
+
+-- Scan directories for "--build-index" and "--check-index"
+local function MAKE_ScanMonitoredDirs (Description, RootFilename)
+  local MonitoredDirs = Description.MonitoredDirs
+  assert((type(MonitoredDirs) == "table"), format("root description missing MonitoredDirs list: %s", RootFilename))
+  local FileList   = {} -- name -> sorted pathnames
+  local GroupOrder = {} -- names, in MonitoredDirs declaration order
+  for Index, Entry in ipairs(MonitoredDirs) do
+    local Name = Entry[1]
+    local Dir  = Entry[2]
+    assert((type(Name) == "string"), format("MonitoredDirs entry %d: name must be a string",      Index))
+    assert((type(Dir)  == "string"), format("MonitoredDirs entry %d: directory must be a string", Index))
+    local Files = FileList[Name]
+    if (not Files) then
+      Files = {}
+      FileList[Name] = Files
+      append(GroupOrder, Name)
+    end
+    -- local callbacks
+    local function CollectFile (FileName, FileType)
+      if (FileType ~= "directory") then
+        local NewPathname = newpathname(FileName):convert("internal")
+        append(Files, NewPathname)
+      end
+    end
+    -- Collect files to Files
+    local NativeDir = newpathname(Dir):convert("native")
+    local Success, ErrorString = listfiles(NativeDir, CollectFile)
+    assert(Success, format("cannot scan directory %s: %s", Dir, ErrorString))
+  end
+  -- Deterministism: sort every group
+  for Name, Files in pairs(FileList) do
+    sort(Files)
+  end
+  return FileList, GroupOrder
+end
+
+local function MAKE_RenderIndexFile (FileList, GroupOrder)
+  local Lines = {}
+  append(Lines, "-- GENERATED BY make-generate.lua --build-index")
+  append(Lines, "")
+  append(Lines, "local FILE_LIST = {")
+  for OrderIndex, GroupName in ipairs(GroupOrder) do
+    local Files = FileList[GroupName]
+    append(Lines, format("  %s = {", GroupName))
+    for FileIndex, FileName in ipairs(Files) do
+      append(Lines, format("    %q,", FileName))
+    end
+    append(Lines, "  },")
+  end
+  append(Lines, "}")
+  append(Lines, "")
+  append(Lines, "return FILE_LIST")
+  return concat(Lines, "\n")
+end
+
+-- Used for --check-index
+--
+-- A = { a, b, c }
+-- B = { b, d }
+-- MAKE_MissingFrom(A, B) = { a, c }
+local function MAKE_MissingFrom (SetA, SetB)
+  local PresentInB = {}
+  local NewArray   = {}
+  for Index, ValueInB in ipairs(SetB or {}) do
+    PresentInB[ValueInB] = true
+  end
+  for Index, ValueInA in ipairs(SetA) do
+    if (not PresentInB[ValueInA]) then
+      append(NewArray, ValueInA)
+    end
+  end
+  return NewArray
+end
+
+-- --build-index: scan MonitoredDirs and rewrite the file index
+local function MAKE_BuildIndex (RootFilename)
+  -- Create required objects
+  local NewContext           = MAKE_NewContext()
+  local RootDescription      = MAKE_LoadFile(NewContext, RootFilename)
+  local FileList, GroupOrder = MAKE_ScanMonitoredDirs(RootDescription, RootFilename)
+  local IndexFilename        = MAKE_NewIndexFilename(RootFilename)
+  -- Format the Lua file
+  local LuaIndexString = MAKE_RenderIndexFile(FileList, GroupOrder)
+  local Success, ErrorString = writefile(IndexFilename, LuaIndexString)
+  assert(Success, format("cannot write source file index %s: %s", IndexFilename, ErrorString))
+  return IndexFilename
+end
+
+-- --check-index: report the changes
+local function MAKE_CheckIndex (RootFilename)
+  local NewContext           = MAKE_NewContext()
+  local RootDescription      = MAKE_LoadFile(NewContext, RootFilename)
+  local FileList, GroupOrder = MAKE_ScanMonitoredDirs(RootDescription, RootFilename)
+  local IndexFilename        = MAKE_NewIndexFilename(RootFilename)
+  local FileIndex            = MAKE_LoadIndex(IndexFilename)
+  local NewReport            = {}
+  -- One row per difference: { name, sign, path }
+  local function AddRows (Name, SignString, FileList)
+    for Index = 1, #FileList do
+      local NewReportLine = { Name, SignString, FileList[Index] }
+      append(NewReport, NewReportLine)
+    end
+  end
+  -- Both directions of one group
+  local function AddGroup (Name)
+    AddRows(Name, "+", MAKE_MissingFrom(FileList[Name],  FileIndex[Name]))
+    AddRows(Name, "-", MAKE_MissingFrom(FileIndex[Name], FileList[Name]))
+  end
+  -- Groups in declaration order
+  local Seen     = {}
+  local NewNames = {}
+  for Index = 1, #GroupOrder do
+    local GroupName = GroupOrder[Index]
+    Seen[GroupName] = true
+  end
+  for Name in pairs(FileIndex) do
+    if (not Seen[Name]) then
+      append(NewNames, Name)
+    end
+  end
+  sort(NewNames)
+  for Index = 1, #GroupOrder do
+    AddGroup(GroupOrder[Index])
+  end
+  for Index = 1, #NewNames do
+    AddGroup(NewNames[Index])
+  end
+  return NewReport, IndexFilename
+end
+
+--------------------------------------------------------------------------------
+-- MODEL ENTRY POINT                                                          --
+--------------------------------------------------------------------------------
 
 local function MAKE_NewBuild (RootFilename, OptionalHostTriple)
   -- Create new objects
-  local NewContext  = MAKE_NewContext(OptionalHostTriple)
-  local Description = MAKE_LoadFile(NewContext, RootFilename)
+  local NewContext      = MAKE_NewContext(OptionalHostTriple)
+  local RootDescription = MAKE_LoadFile(NewContext, RootFilename)
   -- Validate
-  MAKE_ValidateRootDescription(Description, RootFilename)
+  MAKE_ValidateRootDescription(RootDescription, RootFilename)
+  -- Attach the file index, always the one beside the root description
+  NewContext.FileList = MAKE_LoadIndex(MAKE_NewIndexFilename(RootFilename))
   -- Create the model from description files
-  local Triples  = MAKE_NormalizeTriples(NewContext, Description)
-  local NewModel = MAKE_BuildModel(NewContext, RootFilename, Description, Triples)
+  local Triples  = MAKE_NormalizeTriples(NewContext, RootDescription)
+  local NewModel = MAKE_BuildModel(NewContext, RootFilename, RootDescription, Triples)
   -- Return value
   return NewModel
 end
@@ -824,7 +983,9 @@ end
 --------------------------------------------------------------------------------
 
 local PUBLIC_API = {
-  Build = MAKE_NewBuild,
+  Build       = MAKE_NewBuild,
+  BuildIndex  = MAKE_BuildIndex,
+  CheckIndex  = MAKE_CheckIndex,
 }
 
 return PUBLIC_API

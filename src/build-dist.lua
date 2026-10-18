@@ -2,7 +2,7 @@
 -- INFORMATION                                                                --
 --------------------------------------------------------------------------------
 
--- Build bin/dist/lua55ce.zip
+-- Build bin/dist/lua55ce.zip from build-index.lua
 
 --------------------------------------------------------------------------------
 -- CONFIGURATION                                                              --
@@ -25,6 +25,7 @@ local function Render (Environment)
   local PackRule = {
     Needs = { "bin/app/lua55ce-runtime.zip" },
     Ins   = { ManifestFilename, BuildToolFilename },
+    Trees = { "doc" },
     Run   = Commands,
     Out   = ZipFilename,
   }

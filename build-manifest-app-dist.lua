@@ -2,7 +2,7 @@
 -- INFORMATION                                                                --
 --------------------------------------------------------------------------------
 
--- bin/dist/lua55ce.zip
+-- build bin/dist/lua55ce.zip from build-index.lua
 
 --------------------------------------------------------------------------------
 -- MANIFEST                                                                   --
@@ -16,8 +16,8 @@ local Entries = {
   { File = "bin/x86_64-windows-gnu/src/libtcc.dll",  Entry = "libtcc.dll"                 },
   { File = "bin/x86_64-linux-gnu/src/libtcc.so",     Entry = "libtcc.so"                  },
   { File = "LICENSE",                                Entry = "LICENSE"                    },
-  -- Directories
-  { Tree = "doc", Prefix = "doc", Exclude = { "DRAFT", "outdated" } },
+  -- Directory
+  { Tree = "doc", Prefix = "doc" },
 }
 
 return Entries

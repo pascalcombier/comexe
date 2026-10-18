@@ -151,6 +151,8 @@ local USAGE = [[usage: lua55ce tools/lua/make-generate.lua <root-description> [o
 options:
   --output <name>       Output filename (optional)
   --host <arch-os-libc> Target host (optional, default: current host)
+  --build-index         Scan the directories and build build-index.lua
+  --check-index         Scan the directories and show the diff with build-index.lua
 
 examples: --host x86_64-linux-musl
 ]]
@@ -170,9 +172,11 @@ end
 
 local function GEN_ParseArguments (Arguments)
   local NewOptions = {
-    Output   = false,
-    Host     = false,
-    RootFile = false,
+    Output     = false,
+    Host       = false,
+    RootFile   = false,
+    BuildIndex = false,
+    CheckIndex = false,
   }
   local Index = 1
   while (Index <= #Arguments) do
@@ -186,6 +190,10 @@ local function GEN_ParseArguments (Arguments)
       local HostTriple = Arguments[Index]
       assert(HostTriple, "--host requires a target triple (like x86_64-linux-musl)")
       NewOptions.Host = HostTriple
+    elseif (Entry == "--build-index") then
+      NewOptions.BuildIndex = true
+    elseif (Entry == "--check-index") then
+      NewOptions.CheckIndex = true
     elseif (not NewOptions.RootFile) then
       NewOptions.RootFile = Entry
     end
@@ -203,6 +211,40 @@ local Options = GEN_ParseArguments(arg)
 if (not Options.RootFile) then
   GEN_FatalError()
 end
+
+--------------------------------------------------------------------------------
+-- FILE INDEX MANAGEMENT                                                      --
+--------------------------------------------------------------------------------
+
+-- Option "--build-index" traverse MonitoredDirs and build the index
+if (Options.BuildIndex) then
+  local IndexFilename = Model.BuildIndex(Options.RootFile)
+  print(format("Built %s", IndexFilename))
+  os.exit(EXIT_SUCCESS)
+end
+
+-- Option "--check-index" traverse MonitoredDirs and show differences
+if (Options.CheckIndex) then
+  local Rows, IndexFilename = Model.CheckIndex(Options.RootFile)
+  local AddedCount   = 0
+  local RemovedCount = 0
+  print(format("Index %s", IndexFilename))
+  for RowIndex = 1, #Rows do
+    local Row = Rows[RowIndex]
+    if (Row[2] == "+") then
+      AddedCount = (AddedCount + 1)
+    else
+      RemovedCount = (RemovedCount + 1)
+    end
+    print(format("%s %s", Row[2], Row[3]))
+  end
+  print(format("%d added, %d removed", AddedCount, RemovedCount))
+  os.exit(EXIT_SUCCESS)
+end
+
+--------------------------------------------------------------------------------
+-- MAIN                                                                       --
+--------------------------------------------------------------------------------
 
 local MakeModel  = Model.Build(Options.RootFile, Options.Host)
 local OutputName = Options.Output
