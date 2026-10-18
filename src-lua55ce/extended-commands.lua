@@ -452,7 +452,11 @@ local function MAKE_DetermineOutputFilename (UserOutputFile, UserMainModule, Fir
   local TargetWindows = contains(TargetName, "windows")
   local Filename
   if UserOutputFile then
-    Filename = removesuffix(UserOutputFile, ".exe")
+    if hassuffix(UserOutputFile, ".exe") then
+      Filename = removesuffix(UserOutputFile, ".exe")
+    else
+      Filename = UserOutputFile
+    end
   elseif UserMainModule then
     Filename = UserMainModule
   elseif FirstDirectoryName then

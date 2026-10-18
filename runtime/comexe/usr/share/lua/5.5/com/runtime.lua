@@ -52,12 +52,13 @@ local function STRING_HasSuffix (String, Suffix)
   return Result
 end
 
+-- NOTE: Warning, shall be used with hassuffix()
 local function STRING_RemoveSuffix (String, Suffix)
   local Result
   if (Suffix == "") then
     Result = String -- No suffix to remove
   else
-    Result = String:sub(1, -#Suffix - 1) -- Remove the suffix
+    Result = String:sub(1, -#Suffix - 1) -- Remove the suffix (NOTE)
   end
   return Result
 end
