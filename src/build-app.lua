@@ -192,15 +192,15 @@ local LinuxGnuVariants = {
   {
     MainObject = "main-con.o",
     Define     = "-DCOMEXE_CON",
-    Base       = "comexe-dyn",
-    Launcher   = "lua55ce-dyn",
+    Base       = "comexe-gnu",
+    Launcher   = "lua55ce-gnu",
     LinkFlags  = { "-s" },
   },
   {
     MainObject = "main-dbg.o",
     Define     = "-DCOMEXE_DBG",
-    Base       = "comexe-dbg-dyn",
-    Launcher   = "lua55ced-dyn",
+    Base       = "comexe-gnu-dbg",
+    Launcher   = "lua55ced-gnu",
     LinkFlags  = {},
   },
 }

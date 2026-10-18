@@ -36,13 +36,15 @@ This removes the standard libraries and gives you a ~2 MiB executable on Windows
 
 ```batch
 E:\my-program>lua55ce -x --list-targets
-x86_64-linux-dbg
-x86_64-linux-con
+x86_64-linux-gnu-con
+x86_64-linux-gnu-dbg
+x86_64-linux-musl-con
+x86_64-linux-musl-dbg
 x86_64-windows-con
 x86_64-windows-dbg
 x86_64-windows-gui
 
-E:\my-program>lua55ce -x --make src\main.lua -t x86_64-linux-con
+E:\my-program>lua55ce -x --make src\main.lua -t x86_64-linux-musl-con
 ```
 
 Cross-compilation works both ways: build Windows binaries on Linux or Linux binaries on Windows.
