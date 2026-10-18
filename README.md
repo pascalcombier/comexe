@@ -22,6 +22,7 @@ ComEXE is a statically linked, drop-in replacement for the [Lua standalone progr
 
 # 📘 Guides & Notes
 
+- [Building ComEXE from source](./doc/page-build-from-source.md)
 - [Fetching JSON data over HTTP](./doc/page-github-http-client.md)
 - [Using the FFI to wrap a C library](./doc/page-ffi-sqlite.md)
 - [Building a GUI with WebView2](./doc/page-webview2.md)
