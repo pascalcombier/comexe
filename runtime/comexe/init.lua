@@ -138,6 +138,11 @@ local libffi    = require("com.raw.libffi")
 local uv        = require("luv")
 
 local format             = string.format
+local find               = string.find
+local sub                = string.sub
+local match              = string.match
+local gmatch             = string.gmatch
+local gsub               = string.gsub
 local append             = table.insert
 local remove             = table.remove
 local concat             = table.concat
@@ -215,11 +220,17 @@ local INIT_DEFAULT_MODE = tonumber("600", 8)
 -- functions are also used here in init.lua we implement them early.
 
 local function STRING_HasPrefix (String, Prefix)
-  return (String:find(Prefix, 1, true) == 1)
+  return (find(String, Prefix, 1, true) == 1)
 end
 
 local function STRING_RemovePrefix (String, Prefix)
-  return String:sub(#Prefix + 1)
+  local Result
+  if (Prefix ~= "") and STRING_HasPrefix(String, Prefix) then
+    Result = sub(String, (#Prefix + 1))
+  else
+    Result = String
+  end
+  return Result
 end
 
 local function INIT_ArraySlice (Array, IndexStart, IndexEnd)
@@ -256,7 +267,7 @@ local function INIT_ReadFile (Filename, OutputType)
     Result = FileContents
   elseif FileContents and (OutputType == "lines") then
     local Lines = {}
-    for Line in FileContents:gmatch("([^\r\n]*)\r?\n?") do
+    for Line in gmatch(FileContents, "([^\r\n]*)\r?\n?") do
       append(Lines, Line)
     end
     Result = Lines
@@ -288,7 +299,7 @@ local function INIT_WriteFile (Filename, Data, OptionalMode)
       -- In case the first write call actually didn't wrote all the needed bytes
       -- We go with an unefficient Data:sub loop
       if (Offset > 0) then
-        Chunk = Data:sub(Offset + 1)
+        Chunk = sub(Data, (Offset + 1))
       end
       local BytesWritten, WriteErrorString = fs_write(fd, Chunk, Offset)
       if (BytesWritten == nil) or (BytesWritten == 0) then
@@ -317,7 +328,7 @@ end
 -- This was initially implementated in com/pathname.lua but we actually need
 -- part of the implementation in init.lua, so we moved it here.
 
-local PATH_NativeSeparator   = package.config:sub(1, 1)
+local PATH_NativeSeparator   = sub(package.config, 1, 1)
 local PATH_InternalSeparator = "/"
 
 local PATH_TARGET_SEPARATORS = {
@@ -353,10 +364,10 @@ if (PATH_NativeSeparator == "/") then
 else
   INIT_OS               = "windows"
   PATH_InternalPathname = function (Pathname)
-    return Pathname:gsub(PATH_NativeSeparator, PATH_InternalSeparator)
+    return gsub(Pathname, PATH_NativeSeparator, PATH_InternalSeparator)
   end
   PATH_NativePathname = function (Pathname)
-    return Pathname:gsub(PATH_InternalSeparator, PATH_NativeSeparator)
+    return gsub(Pathname, PATH_InternalSeparator, PATH_NativeSeparator)
   end
 end
 
@@ -393,27 +404,27 @@ local function PATH_SplitPathString (Pathname)
   local Elements     = {}
   local InternalPath = Pathname
   local IsAbsolute   = false
-  local DriveLetter  = InternalPath:match("^([A-Za-z]):")
+  local DriveLetter  = match(InternalPath, "^([A-Za-z]):")
   -- Parse
   if DriveLetter then
     -- Perform 2 things after Windows drive letter is found:
     -- remove the "C:"
     -- Remove all the slashes immediatly after C://///////directory
-    InternalPath = InternalPath:gsub("^%a:/*", "")
+    InternalPath = gsub(InternalPath, "^%a:/*", "")
     -- Save the drive
     append(Elements, PATH_MakeDrive(DriveLetter))
     IsAbsolute = true
   elseif STRING_HasPrefix(InternalPath, "//") then
-    local Server, Share, Remaining = InternalPath:match("^//+([^/]+)/+([^/]+)(.*)")
+    local Server, Share, Remaining = match(InternalPath, "^//+([^/]+)/+([^/]+)(.*)")
     if (Server and Share) then
       append(Elements, PATH_MakeUNC(Server, Share))
-      InternalPath = Remaining:gsub("^/*", "")
+      InternalPath = gsub(Remaining, "^/*", "")
       IsAbsolute   = true
     else
       -- Fallback if malformed UNC
       if STRING_HasPrefix(InternalPath, "/") then
         -- Remove multiple leading slashes like ///////directory
-        InternalPath = InternalPath:gsub("^/+", "")
+        InternalPath = gsub(InternalPath, "^/+", "")
         -- Save the root
         append(Elements, PATH_ROOT)
         IsAbsolute = true
@@ -423,14 +434,14 @@ local function PATH_SplitPathString (Pathname)
     -- No drive letter: check for a Linux absolute path "/"
     if STRING_HasPrefix(InternalPath, "/") then
       -- Remove multiple leading slashes like ///////directory
-      InternalPath = InternalPath:gsub("^/+", "")
+      InternalPath = gsub(InternalPath, "^/+", "")
       -- Save the root
       append(Elements, PATH_ROOT)
       IsAbsolute = true
     end
   end
   -- At this point, InternalPath has no drive and no leading slash
-  for Part in InternalPath:gmatch("[^/]+") do
+  for Part in gmatch(InternalPath, "[^/]+") do
     if (Part ~= ".") then
       append(Elements, Part)
     end
@@ -651,10 +662,10 @@ local function PATH_MethodGetName (Pathname)
   local Basename
   local Extension
   if Name then
-    Basename  = (Name:match("^(.+)%.[^%.]+$") or Name)
-    Extension = Name:match("^.+(%.[^%.]+)$")
+    Basename  = (match(Name, "^(.+)%.[^%.]+$") or Name)
+    Extension = match(Name, "^.+(%.[^%.]+)$")
     if Extension then
-      Extension = Extension:sub(2) -- drop the "." of ".txt"
+      Extension = sub(Extension, 2) -- drop the "." of ".txt"
     end
   end
   -- Return value
@@ -1079,7 +1090,7 @@ local function UIO_Read (fd, SizeInBytes)
           local ActualReadCount = min(SizeInBytes, RemainingBytes)
           local IndexStart      = Position
           local IndexEnd        = (IndexStart + ActualReadCount - 1)
-          local ReadData        = FileContents:sub(IndexStart, IndexEnd)
+          local ReadData        = sub(FileContents, IndexStart, IndexEnd)
           -- Update position
           File.Position = (Position + ActualReadCount)
           -- Result
@@ -1598,13 +1609,13 @@ local COMEXE_ZIP_PATH = {
 }
 
 local function ZIP_SearchLuaModule (PathList, ModuleName)
-  local RealModuleName = ModuleName:gsub("%.", "/")
+  local RealModuleName = gsub(ModuleName, "%.", "/")
   local Index          = 1
   local Content
   -- Iterate
   while (Content == nil) and (Index <= #PathList) do
     local Path     = PathList[Index]
-    local ZipEntry = Path:gsub("%?", RealModuleName)
+    local ZipEntry = gsub(Path, "%?", RealModuleName)
     Content = INIT_ZipLoadFile(ZipEntry)
     Index  = (Index + 1)
   end
@@ -1689,7 +1700,7 @@ end
 
 local function INIT_SetSearcher (ConfigurationString)
   local NewSearcher = {}
-  for SearcherName in ConfigurationString:gmatch(".") do
+  for SearcherName in gmatch(ConfigurationString, ".") do
     local SearcherFunction = INIT_GetSearcher(SearcherName)
     if SearcherFunction then
       append(NewSearcher, SearcherFunction)

@@ -259,7 +259,7 @@ local function WriteZipArchive (Entries, FileList, OutputFilename, CompressionLe
 end
 
 -- Human-readable size
-local function FormatFileSize (SizeInBytes)
+local function FormatHumanSize (SizeInBytes)
   local Units = { "B", "KiB", "MiB", "GiB", "TiB" }
   local Value = SizeInBytes
   local Index = 1
@@ -300,7 +300,7 @@ local function PACK_Main (Arguments)
   else
     SizeInBytes = 0
   end
-  local HumanSizeString = FormatFileSize(SizeInBytes)
+  local HumanSizeString = FormatHumanSize(SizeInBytes)
   print(format("packed %s: %d entries, %d bytes (%s)", OutputFilename, Count, SizeInBytes, HumanSizeString))
   return 0
 end

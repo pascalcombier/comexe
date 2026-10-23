@@ -13,6 +13,10 @@ local RawRuntime = require("com.raw.runtime")
 local uv         = require("luv")
 
 local format          = string.format
+local find            = string.find
+local sub             = string.sub
+local match           = string.match
+local gmatch          = string.gmatch
 local append          = table.insert
 local remove          = table.remove
 local concat          = table.concat
@@ -37,7 +41,7 @@ local NATIVE_DIR_SEP  = getparam("NATIVE-DIR-SEP")
 --------------------------------------------------------------------------------
 
 local function STRING_Contains (String, Substring)
-  return (String:find(Substring, 1, true) ~= nil)
+  return find(String, Substring, 1, true)
 end
 
 local function STRING_HasSuffix (String, Suffix)
@@ -47,18 +51,17 @@ local function STRING_HasSuffix (String, Suffix)
   if (StartPos < 1) then
     Result = false
   else
-    Result = (String:find(Suffix, StartPos, true) == StartPos)
+    Result = (find(String, Suffix, StartPos, true) == StartPos)
   end
   return Result
 end
 
--- NOTE: Warning, shall be used with hassuffix()
 local function STRING_RemoveSuffix (String, Suffix)
   local Result
-  if (Suffix == "") then
-    Result = String -- No suffix to remove
+  if (Suffix ~= "") and STRING_HasSuffix(String, Suffix) then
+    Result = sub(String, 1, (-#Suffix - 1))
   else
-    Result = String:sub(1, -#Suffix - 1) -- Remove the suffix (NOTE)
+    Result = String
   end
   return Result
 end
@@ -69,11 +72,11 @@ local function STRING_Trim (String, Option)
   local Result
   -- Trim according to Option
   if (UsedOption == "both") then
-    Result = String:match("^%s*(.-)%s*$")
+    Result = match(String, "^%s*(.-)%s*$")
   elseif (UsedOption == "left") then
-    Result = String:match("^%s*(.*)$")
+    Result = match(String, "^%s*(.*)$")
   elseif (UsedOption == "right") then
-    Result = String:match("^(.-)%s*$")
+    Result = match(String, "^(.-)%s*$")
   end
   return Result
 end
@@ -245,7 +248,7 @@ local function RUNTIME_SplitCommandLine (CommandLine)
   local EscapePending = false
   -- Iterate over all the characters
   for Index = 1, Length do
-    local Character = CommandLine:sub(Index, Index)
+    local Character = sub(CommandLine, Index, Index)
     local IsOutside = ((not InSingle) and (not InDouble))
     -- Handle escaping like [\ ] [\"] [\'] [\\] and store the character verbatim
     -- \t or \n etc are not special here
@@ -268,7 +271,7 @@ local function RUNTIME_SplitCommandLine (CommandLine)
     elseif (Character == [[']]) and (not InDouble) then
       InSingle = (not InSingle)
     -- Whitespace will commit the current argument
-    elseif Character:match("%s") and IsOutside then
+    elseif match(Character, "%s") and IsOutside then
       if (#Buffer > 0) then
         local NewArgument = concat(Buffer)
         append(Arguments, NewArgument)
@@ -373,10 +376,10 @@ local function RUNTIME_ExecuteCommand (CommandLine, StdinString, OutputType, Use
     local ErrorString  = concat(StderrChunks)
     local StdoutLines  = {}
     local StderrLines  = {}
-    for Line in StdoutString:gmatch("[^\r\n]+") do
+    for Line in gmatch(StdoutString, "[^\r\n]+") do
       append(StdoutLines, Line)
     end
-    for Line in ErrorString:gmatch("[^\r\n]+") do
+    for Line in gmatch(ErrorString, "[^\r\n]+") do
       append(StderrLines, Line)
     end
     ResultStdout = StdoutLines
