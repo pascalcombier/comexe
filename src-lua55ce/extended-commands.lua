@@ -16,14 +16,14 @@
 -- MODULE                                                                     --
 --------------------------------------------------------------------------------
 
-local Runtime     = require("com.runtime")
-local Minizip     = require("com.minizip")
-local Http        = require("socket.http")
-local MiniHttpLib = require("com.mini-httpd-lib")
-local Url         = require("socket.url")
-local Fennel      = require("fennel")
-local ApmClient   = require("apm-client")
-local LuaBundle   = require("lua-bundle")
+local Runtime      = require("com.runtime")
+local Minizip      = require("com.minizip")
+local Http         = require("socket.http")
+local MiniHttpLib  = require("com.mini-httpd-lib")
+local Url          = require("socket.url")
+local Fennel       = require("fennel")
+local ApmClient    = require("apm-client")
+local LuaBundle    = require("lua-bundle")
 local Preprocessor = require("preprocessor")
 
 local format           = string.format
@@ -39,7 +39,6 @@ local hasprefix        = Runtime.hasprefix
 local removeprefix     = Runtime.removeprefix
 local hassuffix        = Runtime.hassuffix
 local removesuffix     = Runtime.removesuffix
-local makedirectory    = Runtime.makedirectory
 local fileexists       = Runtime.fileexists
 local directoryexists  = Runtime.directoryexists
 local listfiles        = Runtime.listfiles
@@ -55,7 +54,16 @@ local Z_BEST_COMPRESSION = Minizip.Z_BEST_COMPRESSION
 
 local COMEXE_EXE            = getparam("LUA-EXE")
 local COMEXE_ZIP_INIT_ENTRY = "comexe/init.lua"
-local MAKE_CACHE_DIRECTORY  = ".comexe/cache"
+
+-- Heuristic to print warning if the user try to build EXE from filename instead
+-- of DIR (lua55ce -x --make file.lua instead of lua55ce -x --make dir/file.lua)
+local MAKE_SpecialFilenames = {
+  ["sqlite3.dll"]        = true,
+  ["WebView2Loader.dll"] = true,
+  ["lua55ce.exe"]        = true,
+  ["libtcc.dll"]         = true,
+  ["libtcc.so"]          = true,
+}
 
 --------------------------------------------------------------------------------
 -- COMMAND LONG ALIASES                                                       --
@@ -71,6 +79,26 @@ local COMMAND_LONG_ALIASES = {
 -- PRIVATE FUNCTIONS                                                          --
 --------------------------------------------------------------------------------
 
+-- Copied from tools\src\buildtool-pack.lua
+-- Human-readable size
+local function FormatHumanSize (SizeInBytes)
+  local Units = { "B", "KiB", "MiB", "GiB", "TiB" }
+  local Value = SizeInBytes
+  local Index = 1
+  while (Value >= 1024) and (Index < #Units) do
+    Value = (Value / 1024)
+    Index = (Index + 1)
+  end
+  local Pattern
+  if (Index > 1) then
+    Pattern = "%.1f %s"
+  else
+    Pattern = "%d %s"
+  end
+  local FormattedString = format(Pattern, Value, Units[Index])
+  return FormattedString
+end
+
 local function CreateTempFilename (Prefix, Suffix)
   -- Format date and time
   local Date       = os.date("*t")
@@ -85,56 +113,6 @@ local function CreateTempFilename (Prefix, Suffix)
   local FullString = format("%s%s_%s-%s%s", Prefix, DateString, TimeString, DecimalString, Suffix)
   -- Return value
   return FullString
-end
-
-local function MakeCacheFilename (Prefix, Suffix)
-  local Filename   = CreateTempFilename(Prefix, Suffix)
-  local FullString = format("%s/%s", MAKE_CACHE_DIRECTORY, Filename)
-  return FullString
-end
-
-local function ConcatFiles (OutputFilename, FileList)
-  local OutputFile = open(OutputFilename, "wb")
-  if OutputFile then
-    for Index, Filename in ipairs(FileList) do
-      local Content = readfile(Filename, "string")
-      if Content then
-        OutputFile:write(Content)
-      else
-        error(format("Failed to read input file: %s", Filename))
-      end
-    end
-    OutputFile:close()
-  else
-    error(format("Failed to open output file: %s", OutputFilename))
-  end
-end
-
--- Returns a list of all available target names (without .exe extension)
-local function GetAvailableTargets ()
-  -- local data
-  local Targets = {}
-  -- local callback
-  local function AddTarget (EntryName)
-    local TargetPrefix = [[comexe/usr/bin/comexe-targets/]]
-    if hasprefix(EntryName, TargetPrefix) then
-      local Name1 = removeprefix(EntryName, TargetPrefix)
-      local Name2
-      if hassuffix(Name1, ".exe") then
-        Name2 = removesuffix(Name1, ".exe")
-      else
-        Name2 = Name1
-      end
-      append(Targets, Name2)
-    end
-  end
-  -- Start file iteration
-  local Success, ErrorMessage = IterateRead(COMEXE_EXE, AddTarget)
-  if (not Success) then
-    error(format("ERROR listing targets: %s", ErrorMessage))
-  end
-  -- Return value
-  return Targets
 end
 
 -- Returns the default target name
@@ -162,6 +140,20 @@ local function MAKE_VerboseLog (...)
 end
 
 local MAKE_Log = MAKE_DoNothing
+
+local function MAKE_WarnSpecialFilenames (Directory)
+  -- local callback
+  local function CheckFile (FullPath, Filetype)
+    if (Filetype == "file") then
+      local Name, Basename, Extension = newpathname(FullPath):getname()
+      if Name and MAKE_SpecialFilenames[Name] then
+        print(format("WARN %s packed", FullPath))
+      end
+    end
+  end
+  -- List directory
+  listfiles(Directory, CheckFile)
+end
 
 local function EXT_CreateInitLua (ApplicationEntryPoint)
   local InitLuaContents   = LoadResource(COMEXE_ZIP_INIT_ENTRY, "ZIP")
@@ -192,7 +184,7 @@ local function EXT_AddRuntimeSource (Merger, TargetEntryName)
   Merger:AddRule(Source, ".*",           "SKIP")
 end
 
-local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationEntryPoint, NeedStdlib, VerboseFlag)
+local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationEntryPoint, NeedStdlib)
   -- Validate inputs
   assert(TargetName, "make requires a target name")
   assert(DataInputs and (#DataInputs > 0), "make requires at least one data input (directory or ZIP file)")
@@ -203,26 +195,21 @@ local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationE
   else
     TargetEntryName = format("comexe/usr/bin/comexe-targets/%s", TargetName)
   end
-  -- Extract target EXECUTABLE to temporary file
+  -- Extract target EXECUTABLE and validate it
   local TargetContent = LoadResource(TargetEntryName, "ZIP")
   assert(TargetContent, format("Target [%s] not found", TargetName))
-  -- Create directory if necessary
-  if (not directoryexists(MAKE_CACHE_DIRECTORY)) then
-    local MakeDirectorySuccess, ErrorString = makedirectory(MAKE_CACHE_DIRECTORY)
-    assert(MakeDirectorySuccess, format("Failed to create cache directory %s: %q", MAKE_CACHE_DIRECTORY, ErrorString))
+  -- Print warning first if weird files are given to ZIP
+  -- (if user give individual files instead of a Lua source directory)
+  for Index, Input in ipairs(DataInputs) do
+    if directoryexists(Input) then
+      MAKE_Log("ZIPDIR '%s'", Input)
+      MAKE_WarnSpecialFilenames(Input)
+    end
   end
-  -- Write the content to a temporary files
-  local TempExeFilename = MakeCacheFilename("make-exe-base-", ".exe")
-  local TempZipFilename = MakeCacheFilename("make-exe-data-", ".zip")
-  MAKE_Log("OPENING [%s]", TempExeFilename)
-  assert(writefile(TempExeFilename, TargetContent))
-  MAKE_Log("OPENING [%s]", TempZipFilename)
+  -- Write the ZIP temporary file
+  local TempZipFilename = CreateTempFilename("make-exe-data-", ".zip")
   -- Use NewMerger to build the ZIP
-  local MergerOptions
-  if VerboseFlag then
-    MergerOptions = "VERBOSE"
-  end
-  local Merger = NewMerger(TempZipFilename, Z_BEST_COMPRESSION, MergerOptions)
+  local Merger = NewMerger(TempZipFilename, Z_BEST_COMPRESSION)
   -- runtime/init.lua
   local NewInitLua = EXT_CreateInitLua(ApplicationEntryPoint)
   Merger:AddEntry(COMEXE_ZIP_INIT_ENTRY, NewInitLua)
@@ -237,6 +224,8 @@ local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationE
       Merger:AddRule(Source, ".*", "COPY")
     elseif directoryexists(Input) then
       local Source = Merger:AddSource(Input, "dir")
+      -- Prevent temporary file from being added
+      Merger:AddRule(Source, "^make%-exe%-data%-.*%.zip$", "SKIP")
       -- Prevent from copying .comexe (including .comexe/apm)
       Merger:AddRule(Source, "^%.comexe/*", "SKIP")
       Merger:AddRule(Source, ".*", "COPY")
@@ -246,15 +235,20 @@ local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationE
   end
   -- Write ZIP
   Merger:WriteZip()
-  -- Concatenate the extracted EXE and the new ZIP
-  local FileList = { TempExeFilename, TempZipFilename }
-  ConcatFiles(OutputFilename, FileList)
-  MAKE_Log("%s created", OutputFilename)
-  -- Clean up temporary files
-  deletefile(TempExeFilename)
+  -- Concatenate the EXE and the new ZIP
+  local ZipContent = readfile(TempZipFilename, "string")
+  assert(ZipContent, format("Failed to read temporary ZIP file: %s", TempZipFilename))
+  local OutputFile = open(OutputFilename, "wb")
+  assert(OutputFile, format("Failed to open output file: %s", OutputFilename))
+  OutputFile:write(TargetContent)
+  OutputFile:write(ZipContent)
+  OutputFile:close()
+  -- Report the result, with the size that was actually written
+  local SizeInBytes     = (#TargetContent + #ZipContent)
+  local HumanSizeString = FormatHumanSize(SizeInBytes)
+  MAKE_Log("CREATE '%s' %s", OutputFilename, HumanSizeString)
+  -- Clean up the temporary ZIP
   deletefile(TempZipFilename)
-  MAKE_Log("DEL %s", TempExeFilename)
-  MAKE_Log("DEL %s", TempZipFilename)
 end
 
 --------------------------------------------------------------------------------
@@ -265,7 +259,7 @@ local function HandleHelp ()
   print("Extended Commands:")
   print("  --help, -h                        Show this help message")
   print("  --list-targets                    List available targets for make command")
-  print("  --make, -m DIR/OR/ZIP/my-prog.lua [-v] [--nostdlib] [-t target] [-o output]")
+  print("  --make, -m DIR/OR/ZIP/my-prog.lua [-v] [--verbose] [--nostdlib] [-t target] [-o output]")
   print("  --zip l or list <file.zip>        List contents of a zip file")
   print("  --zip c or create <file.zip> ...  Create/overwrite a zip file")
   print("  --find <directory>                Find files in a directory")
@@ -374,7 +368,7 @@ local function ExtractMakeFlags (Arguments)
   local Index = 1
   while (Index <= #Arguments) do
     local Arg = Arguments[Index]
-    if (Arg == "-v") then
+    if (Arg == "-v") or (Arg == "--verbose") then
       Verbose = true
     elseif (Arg == "--nostdlib") then
       NeedStdlib = false
@@ -446,27 +440,19 @@ local function MAKE_FilterSources (SourceList)
   return NewSourceList, FirstLuaModuleName, FirstDirectoryName
 end
 
-local function MAKE_DetermineOutputFilename (UserOutputFile, UserMainModule, FirstDirectoryName, TargetName, SuffixFlag)
+local function MAKE_DetermineOutputFilename (UserOutputFile, UserMainModule, FirstDirectoryName, TargetName)
   -- Add platform-specific extension
   local TargetWindows = contains(TargetName, "windows")
   local Filename
   if UserOutputFile then
-    if hassuffix(UserOutputFile, ".exe") then
-      Filename = removesuffix(UserOutputFile, ".exe")
-    else
-      Filename = UserOutputFile
-    end
-  elseif UserMainModule then
-    Filename = UserMainModule
-  elseif FirstDirectoryName then
-    Filename = FirstDirectoryName
+    Filename = UserOutputFile
+    assert((Filename ~= ""), "Empty output filename")
   else
-    error("Cannot determine output filename")
+    local Basename = (UserMainModule or FirstDirectoryName)
+    assert(Basename, "Cannot determine output filename")
+    Filename = Basename
   end
-  if SuffixFlag then
-    Filename = format("%s-%s", Filename, TargetName)
-  end
-  if TargetWindows then
+  if TargetWindows and (not hassuffix(Filename, ".exe")) then
     Filename = format("%s.exe", Filename)
   end
   -- Return value
@@ -481,19 +467,8 @@ local function HandleMake (Arguments)
   end
   -- Process inputs
   local NewSourceList, FirstLuaModuleName, FirstDirectoryName = MAKE_FilterSources(SourceList)
-  -- Determine which targets to build
-  local TargetList
-  local AppendSuffix
-  if (Target == nil) then
-    TargetList   = { GetMakeDefaultTarget() }
-    AppendSuffix = false
-  elseif (Target == "all") then
-    TargetList   = GetAvailableTargets()
-    AppendSuffix = true
-  else
-    TargetList   = { Target }
-    AppendSuffix = false
-  end
+  -- One target per build: default or user-specified
+  local TargetName = (Target or GetMakeDefaultTarget())
   -- Determine the entry point
   local ApplicationEntryPoint
   if FirstLuaModuleName then
@@ -501,17 +476,11 @@ local function HandleMake (Arguments)
   else
     ApplicationEntryPoint = "main"
   end
-  -- Build for each target
-  local SuccessCount = 0
-  for Index, TargetName in ipairs(TargetList) do
-    local OutputFilename = MAKE_DetermineOutputFilename(UserOutputFile, FirstLuaModuleName, FirstDirectoryName, TargetName, AppendSuffix)
-    MAKE_Log("Building target '%s' -> %s", TargetName, OutputFilename)
-    EXT_MakeExe(OutputFilename, TargetName, NewSourceList, ApplicationEntryPoint, NeedStdlib, Verbose)
-    SuccessCount = (SuccessCount + 1)
-    MAKE_Log("Successfully built: %s", OutputFilename)
-  end
-  -- Summary
-  MAKE_Log("Build %d/%d success", SuccessCount, #TargetList)
+  -- Build the target
+  local OutputFilename = MAKE_DetermineOutputFilename(UserOutputFile, FirstLuaModuleName, FirstDirectoryName, TargetName)
+  MAKE_Log("TARGET '%s' '%s'", OutputFilename, TargetName)
+  MAKE_Log(" ENTRY '%s'", ApplicationEntryPoint)
+  EXT_MakeExe(OutputFilename, TargetName, NewSourceList, ApplicationEntryPoint, NeedStdlib)
 end
 
 local function HandleCompileLua (LuaFilename)
