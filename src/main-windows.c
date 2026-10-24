@@ -35,6 +35,7 @@
 #include <winsock2.h>          /* fix libuv warning         */
 #include <windows.h>           /* timeBeginPeriod           */
 #include <shellscalingapi.h>   /* SetProcessDpiAwareness    */
+#include <shellapi.h>          /* CommandLineToArgvW        */
 #include <uv.h>                /* uv_mutex_init             */
 #include <psa/crypto.h>        /* psa_crypto_init           */
 #include <mbedtls/threading.h> /* mbedtls_threading_set_alt */
@@ -355,7 +356,7 @@ static void MAIN_FreeAllocatedArguments (char **ArgvUtf8, int Argc)
   }
 }
 
-int wmain (int argc, const wchar_t **argv)
+static int MAIN_Run (int argc, const wchar_t **argv)
 {
   struct LUA_Application  *Application;
   struct GB_Buffer        *NewBuffer;
@@ -401,3 +402,51 @@ int wmain (int argc, const wchar_t **argv)
 
   return EXIT_SUCCESS;
 }
+
+/*============================================================================*/
+/* CRT ENTRY POINTS                                                           */
+/*============================================================================*/
+
+#if defined(COMEXE_GUI)
+
+/* Since COMEXE_CON use "-municode", we also use "municode" here, and entry
+ * point is wWinMain not WinMain */
+int WINAPI wWinMain (HINSTANCE Instance,
+                     HINSTANCE PreviousInstance,
+                     PWSTR     CommandLine,
+                     int       ShowCommand)
+{
+  LPWSTR *Argv;
+  int     Argc;
+  int     ReturnCode;
+
+  (void)Instance;
+  (void)PreviousInstance;
+  (void)CommandLine; /* unused because it lacks argv[0] */
+  (void)ShowCommand;
+
+  /* Call the Win32 Shell command line parser */
+  Argv = CommandLineToArgvW(GetCommandLineW(), &Argc);
+
+  if (Argv)
+  {
+    ReturnCode = MAIN_Run(Argc, (const wchar_t **)Argv);
+    LocalFree(Argv);
+  }
+  else
+  {
+    ReturnCode = EXIT_FAILURE;
+  }
+
+  return ReturnCode;
+}
+
+#else
+
+/* For that CRT entry we need the option "-municode" */
+int wmain (int argc, const wchar_t **argv)
+{
+  return MAIN_Run(argc, argv);
+}
+
+#endif

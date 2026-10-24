@@ -125,6 +125,7 @@ local WindowsSystemLibs = {
   "-loleaut32",
   "-lole32",
   "-lws2_32",
+  "-lshell32",
   "-lwinmm",
   "-lpsapi",
   "-liphlpapi",
@@ -167,7 +168,7 @@ local WindowsVariants = {
     Define     = "-DCOMEXE_GUI",
     Base       = "comexe-gui.exe",
     Launcher   = false,
-    LinkFlags  = { "-s", "-municode", "-mwindows", "-static" },
+    LinkFlags  = { "-s", "-municode", "-Wl,--subsystem,windows", "-static" },
   },
 }
 
