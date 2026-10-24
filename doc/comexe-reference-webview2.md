@@ -52,7 +52,7 @@ if (not Success) then
 end
 ```
 
-The parameter is optional. When omitted, WebView2 stores [its data](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/user-data-folder) (sessions, cookies, etc.) in a default location.
+The parameter is optional. When omitted, WebView2 stores [its data](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/user-data-folder) (sessions, cookies, etc) in a default location.
 
 ```lua
 local Success, ErrorString = webview.init() -- data folder is created automatically: "program.exe.WebView2"
