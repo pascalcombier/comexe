@@ -31,7 +31,7 @@
  * it's recursive and seems not trivial to implement. But the most important
  * reason is that if the Lua developper forgot to close a child thread properly,
  * the program will be blocked in thread_join without ability to know where the
- * issue comes from. For these reasons, we choosed to simply DETECT this
+ * issue comes from. For these reasons, we chose to simply DETECT this
  * situation when a thread is being close.
  *
  * EVENT SUPPORTED TYPES
