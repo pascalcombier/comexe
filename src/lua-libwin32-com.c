@@ -4,8 +4,8 @@
  * CONTENT  Expose raw Windows COM functions to Lua (lightuserdata)           *
  *----------------------------------------------------------------------------*
  * Copyright (c) 2020-2026 Pascal COMBIER                                     *
- * This source code is licensed under the BSD 2-clause license found in the   *
- * LICENSE file in the root directory of this source tree.                    *
+ * This source code is licensed under the MIT license (see the LICENSE file). *
+ * SPDX-License-Identifier: MIT                                               *
  *----------------------------------------------------------------------------*
  * WARNING: This module exposes raw COM pointers (IDispatch*, VARIANT*, etc.) *
  * as lightuserdata. Lua code is responsible for all memory management and    *
