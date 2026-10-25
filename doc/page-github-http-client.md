@@ -33,12 +33,11 @@ This example runs on both Windows and Linux.
 
 # Preparation
 
-Download the [latest ComEXE binaries](https://github.com/pascalcombier/comexe/releases) and the [dkjson](https://dkolf.de/dkjson-lua) library. Project structure:
+Download the [latest ComEXE binaries](https://github.com/pascalcombier/comexe/releases). Project structure:
 
 ```
 github-top10\lua55ce-x86_64-windows.exe
 github-top10\lua55ce-x86_64-linux
-github-top10\src\dkjson.lua
 github-top10\src\test-github-top10.lua
 ```
 
