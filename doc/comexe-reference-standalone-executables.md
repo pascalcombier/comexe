@@ -57,9 +57,10 @@ Option `--verbose` shows more information:
 
 ```
 > lua55ce -x --make src\main.lua --verbose
-Building target 'x86_64-windows' -> main.exe
-NOTE compressing directory 'src'
-main.exe created (2.0 MiB)
+TARGET 'main.exe' 'x86_64-windows'
+ ENTRY 'main'
+ZIPDIR 'src'
+CREATE 'main.exe' 2.0 MiB
 ```
 
 The whole `src` directory is packed and included in the standalone executable, not only `main.lua`.

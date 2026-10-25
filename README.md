@@ -23,7 +23,7 @@ Download and extract the [latest binary release](https://github.com/pascalcombie
 
 ```sh
 > lua55ce -v
-Lua 5.5.1  Copyright (C) 1994-2025 Lua.org, PUC-Rio, ComEXE 0.0.12 2026-10-11T16:35:28
+Lua 5.5.1  Copyright (C) 1994-2025 Lua.org, PUC-Rio, ComEXE 0.0.13 2026-10-25T16:52:31
 > mkdir src
 > echo print("Hello World!") > src\hello.lua
 > lua55ce src\hello.lua
@@ -39,9 +39,10 @@ Option `--verbose` shows more information:
 
 ```
 > lua55ce -x --make src\hello.lua --verbose
-Building target 'x86_64-windows' -> hello.exe
-NOTE compressing directory 'src'
-hello.exe created (2.0 MiB)
+TARGET 'hello.exe' 'x86_64-windows'
+ ENTRY 'hello'
+ZIPDIR 'src'
+CREATE 'hello.exe' 2.0 MiB
 ```
 
 The key point is that the whole `src` directory is packed and included in the standalone executable, not only `hello.lua`. See [Standalone executables](./doc/comexe-reference-standalone-executables.md) for details.
