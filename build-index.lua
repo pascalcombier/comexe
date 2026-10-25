@@ -397,7 +397,6 @@ local FILE_LIST = {
     "third-party/src/tcc-vio/src/win32/include/winapi/ws2tcpip.h",
   },
   doc = {
-    "doc/comexe-page-batteries.md",
     "doc/comexe-page-utf8-on-windows.md",
     "doc/comexe-reference-ffi.md",
     "doc/comexe-reference-preprocessor.md",
