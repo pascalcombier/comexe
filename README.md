@@ -16,6 +16,8 @@
 ![Lua](https://img.shields.io/badge/Lua-5.5.1-2C2D72?logo=lua&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](./LICENSE)
 
+![lua55ce making hello.exe](./doc/readme-make-hello.gif)
+
 # 🚀 Quick start
 
 Download and extract the [latest binary release](https://github.com/pascalcombier/comexe/releases/latest), rename `lua55ce-x86_64.exe` to `lua55ce.exe` for convenience:
@@ -80,6 +82,10 @@ The option `--nostdlib` strips all the Lua modules from the executable.
 - [x] [Integrated Package Manager](./doc/comexe-reference-third-party-packages.md)
 - [x] [Improved UTF-8 support on Windows](./doc/comexe-page-utf8-on-windows.md)
 - [x] [MIT license](./LICENSE)
+
+Windows GUI from Lua. Requires the WebView2 runtime.
+
+![A WebView2 window built with ComEXE](./doc/test-webview2-screenshot.png)
 
 # 📘 Guides & Notes
 
