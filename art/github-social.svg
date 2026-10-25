@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="640" viewBox="0 0 1280 640">
+
+  <g id="background">
+    <rect x="0" y="0" width="1280" height="640" fill="#1e1e1e"/>
+  </g>
+
+  <g id="logo">
+    <image x="986" y="97" width="128" height="128" href="terrestrial-world.png" xlink:href="terrestrial-world.png"/>
+  </g>
+
+  <g id="title" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
+    <text x="80" y="156" font-size="108" font-weight="700" fill="#ffffff">ComEXE</text>
+  </g>
+
+  <g id="subtitle" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
+    <text x="80" y="236" font-size="40" fill="#c9c9c9">Lua 5.5 to one standalone executable</text>
+  </g>
+
+  <g id="rule">
+    <rect x="80" y="322" width="1120" height="2" fill="#383838"/>
+  </g>
+
+  <g id="platforms" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
+    <text x="80" y="426" font-size="32" fill="#e0e0e0">Windows x64 and Linux x64</text>
+    <text x="80" y="474" font-size="32" fill="#9a9a9a">No C compiler needed</text>
+  </g>
+
+  <g id="size" font-family="Segoe UI, Helvetica Neue, Arial, sans-serif" text-anchor="middle">
+    <text x="1050" y="484" font-size="84" font-weight="700" fill="#4c9aff">2.0 MiB</text>
+    <text x="1050" y="532" font-size="26" fill="#9a9a9a">one executable, no runtime</text>
+  </g>
+
+  <g id="command" font-family="Consolas, Menlo, DejaVu Sans Mono, monospace">
+    <text x="80" y="554" font-size="26" fill="#7a7a7a">&gt; lua55ce -x --make src\hello.lua</text>
+  </g>
+
+</svg>
