@@ -25,8 +25,10 @@ local Fennel       = require("fennel")
 local ApmClient    = require("apm-client")
 local LuaBundle    = require("lua-bundle")
 local Preprocessor = require("preprocessor")
+local Mbedtls      = require("com.mbedtls")
 
 local format           = string.format
+local concat           = table.concat
 local open             = io.open
 local append           = Runtime.append
 local contains         = Runtime.contains
@@ -264,6 +266,7 @@ local function HandleHelp ()
   print("  --zip c or create <file.zip> ...  Create/overwrite a zip file")
   print("  --find <directory>                Find files in a directory")
   print("  --compile, -c <file.lua|file.fnl> Compile Lua or Fennel source")
+  print("  --checksum [-a algo] [-o outfile] <file...> Print checksums")
   print("  --bundle <file.lua>               Bundle Lua dependencies into a single file")
   print("  --preprocess <file.lua>           Process special FFI-related code")
   print("  --wget <url>                      Download file via HTTP")
@@ -483,6 +486,53 @@ local function HandleMake (Arguments)
   EXT_MakeExe(OutputFilename, TargetName, NewSourceList, ApplicationEntryPoint, NeedStdlib)
 end
 
+local function HandleChecksum (Arguments)
+  -- Parse arguments
+  local FileList  = {}
+  local Index     = 1
+  local Algorithm
+  local OutputFilename
+  local Argument
+  while (Index <= #Arguments) do
+    Argument = Arguments[Index]
+    if (Argument == "-a") then
+      Index     = (Index + 1)
+      Algorithm = Arguments[Index]
+      assert(Algorithm, "Flag -a requires an algorithm name")
+    elseif (Argument == "-o") then
+      Index          = (Index + 1)
+      OutputFilename = Arguments[Index]
+      assert(OutputFilename, "Flag -o requires an output filename")
+    else
+      append(FileList, Argument)
+    end
+    Index = (Index + 1)
+  end
+  -- Validate
+  assert((#FileList > 0), "checksum requires at least one file")
+  -- Buffer lines
+  local FileBuffer
+  if OutputFilename then
+    FileBuffer = {}
+  end
+  -- Compute checksums, 1 line per file as sha256sum (separator is 2 spaces, no TAB)
+  for FileIndex, Filename in ipairs(FileList) do
+    local HashString = Mbedtls.hashfile(Filename, Algorithm)
+    local NewLine    = format("%s  %s", HashString, Filename)
+    if FileBuffer then
+      append(FileBuffer, NewLine)
+    else
+      print(NewLine)
+    end
+  end
+  -- Write the file with LF line endings
+  if FileBuffer then
+    local FileContents = format("%s\n", concat(FileBuffer, "\n"))
+    local Success, ErrorString = writefile(OutputFilename, FileContents)
+    assert(Success, ErrorString)
+  end
+end
+
 local function HandleCompileLua (LuaFilename)
   -- Validate input
   assert(fileexists(LuaFilename), format("Input file not found: %s", LuaFilename))
@@ -643,6 +693,8 @@ local function EXT_Command (RawArguments)
   elseif (Command == "find") then
     local Directory = (Arguments[1] or ".")
     HandleFind(Directory)
+  elseif (Command == "checksum") then
+    HandleChecksum(Arguments)
   elseif (Command == "compile") then
     local InputLua = Arguments[1]
     HandleCompile(InputLua)
