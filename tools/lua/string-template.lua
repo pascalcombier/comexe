@@ -120,9 +120,7 @@ local function ExpandVariables (Value, Environment)
   local function ExpandName (Name)
     return ResolveVariable(Name, Environment)
   end
-  -- Perform the variable expansion. The FUNCTION form is required, not a
-  -- preference: gsub's table form cannot keep an absent name literal, it leaves
-  -- the text untouched by accident, which is not the documented behaviour.
+  -- Perform the variable expansion
   local ExpandedString = gsub(Value, TOKEN_PATTERN, ExpandName)
   return ExpandedString
 end
@@ -284,8 +282,8 @@ end
 
 local function TEMPLATE_MethodRender (Template, OptionalEnvironment, OptionalCommands, OptionalRenderPathFunction)
   -- Handle defaults
-  local Environment        = (OptionalEnvironment or EMPTY_TABLE)
-  local Commands           = (OptionalCommands    or EMPTY_TABLE)
+  local Environment        = (OptionalEnvironment        or EMPTY_TABLE)
+  local Commands           = (OptionalCommands           or EMPTY_TABLE)
   local RenderPathFunction = (OptionalRenderPathFunction or Identity)
   -- Render the template
   local Tokens = Template.Tokens
