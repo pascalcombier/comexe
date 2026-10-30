@@ -245,6 +245,7 @@ local FILE_LIST = {
     "runtime/comexe/usr/share/lua/5.5/com/chunk-buffer.lua",
     "runtime/comexe/usr/share/lua/5.5/com/ffi-structure.lua",
     "runtime/comexe/usr/share/lua/5.5/com/ffi.lua",
+    "runtime/comexe/usr/share/lua/5.5/com/mbedtls.lua",
     "runtime/comexe/usr/share/lua/5.5/com/mini-httpd-lib.lua",
     "runtime/comexe/usr/share/lua/5.5/com/mini-httpd.lua",
     "runtime/comexe/usr/share/lua/5.5/com/minizip.lua",

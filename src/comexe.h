@@ -77,6 +77,7 @@ void *TA_GetObject(struct TA_Array *Array,size_t Offset);
 void TA_RemoveObject(struct TA_Array *Array,size_t Offset);
 int luaopen_minizipng(lua_State *LuaState);
 LUALIB_API int luaopen_libffiraw(lua_State *LuaState);
+int luaopen_mbedtls_raw(lua_State *LuaState);
 int luaopen_buffer(lua_State *LuaState);
 void SERVICE_Initialize(struct LUA_Application *Application);
 int luaopen_service(lua_State *LuaState);

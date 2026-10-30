@@ -28,6 +28,7 @@ local MakeheadersDeps = {
   "src/trivial-array.c",
   "src/lua-libminizip-ng.c",
   "src/lua-libffi.c",
+  "src/lua-libmbedtls.c",
   "src/lua-libbuffer.c",
   "src/lua-libwin32-service.c",
   "src/lua-libwin32-com.c",

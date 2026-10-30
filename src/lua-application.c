@@ -1060,6 +1060,7 @@ static void APP_PreloadLibraries (lua_State *LuaState)
   APP_RegisterPreload(LuaState, "com.raw.buffer",        luaopen_buffer);
   APP_RegisterPreload(LuaState, "com.raw.minizipng",     luaopen_minizipng);
   APP_RegisterPreload(LuaState, "com.raw.libffi",        luaopen_libffiraw);
+  APP_RegisterPreload(LuaState, "com.raw.mbedtls",       luaopen_mbedtls_raw);
   APP_RegisterPreload(LuaState, "luv",                   luaopen_luv);
   APP_RegisterPreload(LuaState, "socket.core",           luaopen_socket_core);
   APP_RegisterPreload(LuaState, "mime.core",             luaopen_mime_core);

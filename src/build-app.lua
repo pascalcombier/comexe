@@ -12,6 +12,7 @@ local Sources = {
   "lua-libbuffer.c",
   "lua-libminizip-ng.c",
   "lua-libffi.c",
+  "lua-libmbedtls.c",
 }
 
 local WindowsSources = {
@@ -33,6 +34,7 @@ local GenericFlags = {
   "-flto",
   "-D_FILE_OFFSET_BITS=64",
   "-D_LARGEFILE_SOURCE",
+  "-DMBEDTLS_DECLARE_PRIVATE_IDENTIFIERS",
 }
 
 local LinuxDefines = {
@@ -177,14 +179,14 @@ local LinuxMuslVariants = {
     MainObject = "main-con.o",
     Define     = "-DCOMEXE_CON",
     Base       = "comexe",
-    Launcher   = "lua55ce",
+    Launcher   = "lua55ce-musl",
     LinkFlags  = { "-s" },
   },
   {
     MainObject = "main-dbg.o",
     Define     = "-DCOMEXE_DBG",
     Base       = "comexe-dbg",
-    Launcher   = "lua55ced",
+    Launcher   = "lua55ced-musl",
     LinkFlags  = {},
   },
 }
