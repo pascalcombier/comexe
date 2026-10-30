@@ -273,7 +273,7 @@ local INIT_ParserEatRules = {
   ["-W"] =  1,
   ["--"] = -1,
   ["-"]  = -1,
-  ["-x"] =  2 -- Extended Commands
+  ["-x"] = -1 -- Extended Commands: everything after -x belongs to the command
 }
 
 local function HandleCommandLine ()
