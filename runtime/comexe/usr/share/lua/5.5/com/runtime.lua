@@ -17,6 +17,7 @@ local find            = string.find
 local sub             = string.sub
 local match           = string.match
 local gmatch          = string.gmatch
+local char            = string.char
 local append          = table.insert
 local remove          = table.remove
 local concat          = table.concat
@@ -79,6 +80,71 @@ local function STRING_Trim (String, Option)
     Result = match(String, "^(.-)%s*$")
   end
   return Result
+end
+
+--------------------------------------------------------------------------------
+-- HEX FUNCTIONS                                                              --
+--------------------------------------------------------------------------------
+
+-- Dict Byte->HexString: 0xAA -> "aa" (or "AA")
+local BYTE_TO_HEX_LOWER
+local BYTE_TO_HEX_UPPER
+
+-- Lazy initialization
+local function InitByteToHexLower ()
+  local NewMap = {}
+  for Byte = 0, 0xFF do
+    local Character = char(Byte)
+    local HexString = format("%02x", Byte)
+    NewMap[Character] = HexString
+  end
+  -- Save global
+  BYTE_TO_HEX_LOWER = NewMap
+  return NewMap
+end
+
+-- Lazy initialization
+local function InitByteToHexUpper ()
+  local NewMap = {}
+  for Byte = 0, 0xFF do
+    local Character = char(Byte)
+    local HexString = format("%02X", Byte)
+    NewMap[Character] = HexString
+  end
+  -- Save global
+  BYTE_TO_HEX_UPPER = NewMap
+  return NewMap
+end
+
+local function STRING_ToHex (Data, OptionalUpperCase)
+  local Map
+  if OptionalUpperCase then
+    Map = (BYTE_TO_HEX_UPPER or InitByteToHexUpper())
+  else
+    Map = (BYTE_TO_HEX_LOWER or InitByteToHexLower())
+  end
+  return (Data:gsub(".", Map))
+end
+
+-- "aa" -> "\xAA"
+local function STRING_HexPairToByte (HexPair)
+  return char(tonumber(HexPair, 16))
+end
+
+local function STRING_FromHex (HexString)
+  local Result
+  local ErrorString
+  -- gsub replaces each Hex pair by its corresponding byte
+  local DecodedString, HexPairCount = HexString:gsub("(%x%x)", STRING_HexPairToByte)
+  local ConsumedLength = (HexPairCount * 2)
+  if (ConsumedLength == #HexString) then
+    Result = DecodedString
+  elseif ((ConsumedLength == (#HexString - 1)) and find(HexString, "%x$")) then
+    ErrorString = format("odd number of hex digits: %d", #HexString)
+  else
+    ErrorString = format("invalid hex string: %q", HexString)
+  end
+  return Result, ErrorString
 end
 
 --------------------------------------------------------------------------------
@@ -431,6 +497,8 @@ local PUBLIC_API = {
   hassuffix    = STRING_HasSuffix,
   removesuffix = STRING_RemoveSuffix,
   stringtrim   = STRING_Trim,
+  tohex        = STRING_ToHex,
+  fromhex      = STRING_FromHex,
   -- Files & directories
   makedirectory   = RUNTIME_MakeDirectory,
   directoryexists = RUNTIME_DirectoryExists,
