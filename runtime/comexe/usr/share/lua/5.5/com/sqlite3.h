@@ -6,6 +6,7 @@
 #define SQLITE_FLOAT 2
 #define SQLITE_TEXT 3
 #define SQLITE_BLOB 4
+#define SQLITE_BUSY 5
 #define SQLITE_NULL 5
 /* Opening / closing */
 int sqlite3_open(const char *filename, void **ppDb);

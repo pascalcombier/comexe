@@ -33,8 +33,9 @@
 
 local libffi = require("com.ffi")
 
-local NULL    = libffi.NULL
-local pointer = libffi.pointer
+local NULL         = libffi.NULL
+local pointer      = libffi.pointer
+local derefpointer = libffi.derefpointer
 
 --------------------------------------------------------------------------------
 -- FFI IMPORTS                                                                --
@@ -44,6 +45,7 @@ local pointer = libffi.pointer
 -- @OUTPUT
 -- Constants
 local SQLITE_BLOB = 4
+local SQLITE_BUSY = 5
 local SQLITE_DONE = 101
 local SQLITE_FLOAT = 2
 local SQLITE_INTEGER = 1
@@ -114,24 +116,35 @@ local COLUMN_TYPE_NAME
 -- SQLITE_TRANSIENT tells SQLite to copy the string immediately
 local SQLITE_TRANSIENT = libffi.newpointer(0xFFFFFFFF, 0xFFFFFFFF)
 
--- Status strings for most important sqlite3_step results
-local STEP_STATUS = {
-    [5] = "BUSY",
-   [19] = "CONSTRAINT",
-   [21] = "MISUSE",
-  [100] = "ROW",
-  [101] = "DONE",
-}
+-- sqlite3_prepare_v2 returns values through pointer to pointers
+local SharedPointerArray = libffi.newarray(pointer, 1)
+local SharedPointer      = SharedPointerArray:getpointer()
 
 --------------------------------------------------------------------------------
 -- STATEMENT TYPE                                                             --
 --------------------------------------------------------------------------------
 
+-- sqlite3_step return a 32-bit error code
+-- Primary error code is lower 8 bits
+-- Extended error codes are (primary | (extended << 8))
+--
+-- This Lua interface just focus on primary error codes
+-- The STATEMENT_Step return the most important ones as a string
+-- And always return the integer value
+--
+-- sqlite3_step returns only SQLITE_ROW (100), SQLITE_DONE (101), or an error code
 local function STATEMENT_Step (Statement)
   -- local data
   local StatusInteger = sqlite3_step(Statement.Pointer)
-  local StatusString  = STEP_STATUS[(StatusInteger & 0xFF)]
-  if (not StatusString) then
+  local PrimaryCode   = (StatusInteger & 0xFF)
+  local StatusString
+  if (PrimaryCode == SQLITE_ROW) then
+    StatusString = "ROW"
+  elseif (PrimaryCode == SQLITE_DONE) then
+    StatusString = "DONE"
+  elseif (PrimaryCode == SQLITE_BUSY) then
+    StatusString = "BUSY"
+  else
     StatusString = "ERROR"
   end
   -- Return value
@@ -267,15 +280,14 @@ end
 local function DATABASE_Prepare (Database, SqlString)
   -- Retrieve data
   local DatabasePointer = Database.Pointer
-  local PointerArray    = Database.PointerArray
   -- Prepare statement
-  local Result = sqlite3_prepare_v2(DatabasePointer, SqlString, -1, PointerArray:getpointer(), NULL)
+  local Result = sqlite3_prepare_v2(DatabasePointer, SqlString, -1, SharedPointer, NULL)
   local NewStatement
   local ErrorString
   -- Interpret result
   if (Result == SQLITE_OK) then
     -- Read the output pointer
-    local StatementPointer = PointerArray:get(1)
+    local StatementPointer = derefpointer(SharedPointer)
     -- Create statement object
     NewStatement = {
       Database = Database,
@@ -332,20 +344,21 @@ local function OpenDatabase (Filename)
   -- local data
   local NewDatabase
   local ErrorString
-  -- Allocate pointer array for sqlite3_open output
-  local PointerArray = libffi.newarray(pointer, 1)
-  local Result       = sqlite3_open(Filename, PointerArray:getpointer())
+  -- sqlite3_prepare_v2 returns values through pointer to pointers
+  local Result          = sqlite3_open(Filename, SharedPointer)
+  local DatabasePointer = derefpointer(SharedPointer)
   -- Interpret result
   if (Result == SQLITE_OK) then
-    -- Read the output pointer
-    local DatabasePointer = PointerArray:get(1)
     -- Create database object
     NewDatabase = {
-      PointerArray = PointerArray,
-      Pointer      = DatabasePointer,
+      Pointer = DatabasePointer,
     }
     -- Attach metatable
     setmetatable(NewDatabase, DATABASE_METATABLE)
+  elseif (DatabasePointer ~= NULL) then
+    -- sqlite3_open can create a connection even when it fails
+    ErrorString = sqlite3_errmsg(DatabasePointer)
+    sqlite3_close(DatabasePointer)
   else
     ErrorString = "Failed to open database"
   end
