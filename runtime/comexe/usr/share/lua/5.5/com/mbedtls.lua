@@ -10,12 +10,11 @@
 --------------------------------------------------------------------------------
 
 local RawMbedtls = require("com.raw.mbedtls")
+local Runtime    = require("com.runtime")
 local uv         = require("luv")
 
 local format = string.format
-local concat = table.concat
-local append = table.insert
-local byte   = string.byte
+local tohex  = Runtime.tohex
 local open   = uv.fs_open
 local read   = uv.fs_read
 local close  = uv.fs_close
@@ -38,16 +37,6 @@ local FILE_READ_PERMISSIONS = tonumber("0666", 8)
 --------------------------------------------------------------------------------
 -- PRIVATE FUNCTIONS                                                          --
 --------------------------------------------------------------------------------
-
-local function ToHex (Data)
-  local Parts       = {}
-  local SizeInBytes = #Data
-  for Index = 1, SizeInBytes do
-    local ByteHexString = format("%02x", byte(Data, Index))
-    append(Parts, ByteHexString)
-  end
-  return concat(Parts)
-end
 
 -- return nil if no error
 local function FormatErrorString (ReturnCode, FunctionName)
@@ -87,7 +76,7 @@ local function DIGEST_MethodDigest (Digester, OptionalFormat)
   -- Format the result
   if (not ErrorString) then
     if (Format == "hex") then
-      Result = ToHex(Digest)
+      Result = tohex(Digest)
     else
       Result = Digest
     end

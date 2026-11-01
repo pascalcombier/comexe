@@ -43,14 +43,15 @@ TEST_UpdatePackagePath("../lib")
 -- MODULE IMPORTS                                                             --
 --------------------------------------------------------------------------------
 
+local Runtime  = require("com.runtime")
 local win32    = require("com.win32")
 local uv       = require("luv")
 local reporter = require("mini-reporter")
 
 local format = string.format
-local append = table.insert
-local concat = table.concat
 local byte   = string.byte
+
+local tohex = Runtime.tohex
 
 local utf8to16 = win32.utf8to16
 local utf16to8 = win32.utf16to8
@@ -66,11 +67,7 @@ local Reporter = reporter.new()
 --------------------------------------------------------------------------------
 
 local function MakeHexString (String)
-  local StringChunks = {}
-  for Index = 1, #String do
-    append(StringChunks, format("%02X", byte(String, Index)))
-  end
-  return concat(StringChunks, "")
+  return tohex(String, true)
 end
 
 local function PrintExpectedResults (StringUtf8, ComexeUtf16, ExpectedUtf16, ComexeUtf8, ExpectedUtf8)
