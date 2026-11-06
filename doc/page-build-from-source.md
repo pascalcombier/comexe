@@ -15,7 +15,7 @@ ComEXE can be built on Windows and Linux. The build system uses Zig to cross-com
 Requirements:
 
 * [GNU Make](https://www.gnu.org/software/make/)
-* [Zig 0.16.0](https://ziglang.org)
+* [Zig 0.17.0](https://ziglang.org)
 
 ## Build on Windows
 
