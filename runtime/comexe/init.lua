@@ -1774,7 +1774,7 @@ end
 -- MAIN                                                                       --
 --------------------------------------------------------------------------------
 
-local function INIT_DoNothing (...)
+local function INIT_DoNothing ()
 end
 
 -- Note that searchers are local to one Lua instance, it's hard to share between
@@ -1782,6 +1782,7 @@ end
 -- for current thread and future threads.
 
 -- Complete Runtime with Lua-implemented functions
+Runtime.noop            = INIT_DoNothing
 Runtime.append          = append
 Runtime.newpathname     = PATH_NewPathname
 Runtime.newbuffer       = NewBuffer

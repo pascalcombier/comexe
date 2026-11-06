@@ -46,6 +46,7 @@ local directoryexists  = Runtime.directoryexists
 local listfiles        = Runtime.listfiles
 local deletefile       = Runtime.deletefile
 local newpathname      = Runtime.newpathname
+local noop             = Runtime.noop
 local request          = Http.request
 local parseheadervalue = MiniHttpLib.parseheadervalue
 local parseurl         = Url.parse
@@ -132,16 +133,12 @@ end
 -- PRIVATE FUNCTIONS: MAKE EXE                                                --
 --------------------------------------------------------------------------------
 
-local function MAKE_DoNothing (...)
-  -- Don't print anything
-end
-
 local function MAKE_VerboseLog (...)
   local String = format(...)
   print(String)
 end
 
-local MAKE_Log = MAKE_DoNothing
+local MAKE_Log = noop
 
 local function MAKE_WarnSpecialFilenames (Directory)
   -- local callback
