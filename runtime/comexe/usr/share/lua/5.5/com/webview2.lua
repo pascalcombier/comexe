@@ -66,6 +66,10 @@ local EXIT_SUCCESS = 0
 local IDC_ARROW = 32512
 local IDI_APPLICATION = 32512
 local SW_SHOWDEFAULT = 10
+local SWP_NOACTIVATE = 16
+local SWP_NOMOVE = 2
+local SWP_NOSIZE = 1
+local SWP_NOZORDER = 4
 local WM_CLOSE = 16
 local WM_DESTROY = 2
 local WM_PAINT = 15
@@ -98,6 +102,7 @@ local PostMessageW
 local PostQuitMessage
 local RegisterClassExW
 local SetTimer
+local SetWindowPos
 local ShowWindow
 local TranslateMessage
 local UnregisterClassW
@@ -163,6 +168,7 @@ local function BindWin32Base (Library)
   PostQuitMessage = Library:bind(libffi.void, "PostQuitMessage", libffi.sint32)
   RegisterClassExW = Library:bind(libffi.uint16, "RegisterClassExW", libffi.pointer)
   SetTimer = Library:bind(libffi.uint64, "SetTimer", libffi.pointer, libffi.uint64, libffi.uint32, libffi.pointer)
+  SetWindowPos = Library:bind(libffi.sint32, "SetWindowPos", libffi.pointer, libffi.pointer, libffi.sint32, libffi.sint32, libffi.sint32, libffi.sint32, libffi.uint32)
   ShowWindow = Library:bind(libffi.sint32, "ShowWindow", libffi.pointer, libffi.sint32)
   TranslateMessage = Library:bind(libffi.sint32, "TranslateMessage", libffi.pointer)
   UnregisterClassW = Library:bind(libffi.sint32, "UnregisterClassW", libffi.pointer, libffi.pointer)
