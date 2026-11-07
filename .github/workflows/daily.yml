@@ -1,0 +1,52 @@
+name: daily
+
+# Build and test the software daily, if the head commit changed
+# Manual trigger will build and test even if the head commit didn't change
+# ubuntu-latest images provide GNU Make, git, curl, tar, xz, jq
+
+on:
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: daily
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      # Only schedules skip on previously built HEAD, manual runs always build
+      - name: Skip when HEAD already passed
+        id: changed
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          HEAD_SHA=$(git rev-parse HEAD)
+          LAST_OK=$(gh api "repos/${{ github.repository }}/actions/workflows/daily.yml/runs?status=success&per_page=1" --jq '.workflow_runs[0].head_sha // empty')
+          if [ "$HEAD_SHA" = "$LAST_OK" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Zig 0.17.0
+        if: steps.changed.outputs.skip != 'true'
+        run: |
+          curl -fsSL https://ziglang.org/download/0.17.0/zig-x86_64-linux-0.17.0.tar.xz | tar -xJ -C "$HOME"
+          echo "$HOME/zig-x86_64-linux-0.17.0" >> "$GITHUB_PATH"
+
+      - name: Build
+        if: steps.changed.outputs.skip != 'true'
+        run: make -f makefile-x86_64-linux-gnu -j"$(nproc)"
+
+      - name: Test
+        if: steps.changed.outputs.skip != 'true'
+        run: bin/x86_64-linux-gnu/src/lua55ce tests/runner.lua

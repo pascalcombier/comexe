@@ -14,6 +14,7 @@ The extended commands (`--make`, `--compile`) are prefixed with `-x`. Without it
 ![Platform](https://img.shields.io/badge/platform-Windows%20x64%20%7C%20Linux%20x64-lightgrey)
 ![Lua](https://img.shields.io/badge/Lua-5.5.1-2C2D72?logo=lua&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](./LICENSE)
+[![Daily build](https://github.com/pascalcombier/comexe/actions/workflows/daily.yml/badge.svg)](https://github.com/pascalcombier/comexe/actions/workflows/daily.yml)
 
 ![lua55ce making hello.exe](./doc/readme-make-hello.gif)
 
