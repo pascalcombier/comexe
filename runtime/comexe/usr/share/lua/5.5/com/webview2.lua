@@ -192,6 +192,8 @@ local ICoreWebView2ControllerVtbl
 local ICoreWebView2Vtbl
 local ICoreWebView2SettingsVtbl
 local ICoreWebView2WebMessageReceivedEventArgsVtbl
+local ICoreWebView2ObjectCollectionViewVtbl
+local ICoreWebView2FileVtbl
 -- Functions
 local CreateCoreWebView2EnvironmentWithOptions
 local GetAvailableCoreWebView2BrowserVersionString
@@ -463,6 +465,20 @@ local function BindWebview (Library)
     { libffi.uint32, "get_Source", libffi.pointer, libffi.pointer },
     { libffi.uint32, "get_WebMessageAsJson", libffi.pointer, libffi.pointer },
     { libffi.uint32, "TryGetWebMessageAsString", libffi.pointer, libffi.pointer },
+    { libffi.uint32, "get_AdditionalObjects", libffi.pointer, libffi.pointer },
+  }
+  ICoreWebView2ObjectCollectionViewVtbl = {
+    { libffi.uint32, "QueryInterface", libffi.pointer, libffi.pointer, libffi.pointer },
+    { libffi.uint32, "AddRef", libffi.pointer },
+    { libffi.uint32, "Release", libffi.pointer },
+    { libffi.uint32, "get_Count", libffi.pointer, libffi.pointer },
+    { libffi.uint32, "GetValueAtIndex", libffi.pointer, libffi.uint32, libffi.pointer },
+  }
+  ICoreWebView2FileVtbl = {
+    { libffi.uint32, "QueryInterface", libffi.pointer, libffi.pointer, libffi.pointer },
+    { libffi.uint32, "AddRef", libffi.pointer },
+    { libffi.uint32, "Release", libffi.pointer },
+    { libffi.uint32, "get_Path", libffi.pointer, libffi.pointer },
   }
   CreateCoreWebView2EnvironmentWithOptions = Library:bind(libffi.uint32, "CreateCoreWebView2EnvironmentWithOptions", libffi.pointer, libffi.pointer, libffi.pointer, libffi.pointer)
   GetAvailableCoreWebView2BrowserVersionString = Library:bind(libffi.uint32, "GetAvailableCoreWebView2BrowserVersionString", libffi.pointer, libffi.pointer)
@@ -611,6 +627,72 @@ end
 -- WEBVIEW CALLBACKS                                                          --
 --------------------------------------------------------------------------------
 
+-- Files drag and drop is implemented with ReadFilePath and
+-- ReadAdditionalObjects
+--
+-- The entry point is JavaScript side:
+--
+-- zone.addEventListener('drop', function (event) {
+--   event.preventDefault()
+--   event.stopPropagation()
+--   zone.classList.remove('over')
+--   const files = Array.from(event.dataTransfer.files || [])
+--
+-- The given event.dataTransfer.files is a browser-side COM host object. We can
+-- access a handful of information from the JS side (name, lastModified, size,
+-- type) but unfortunately the file PATH is not available to JS side.
+--
+-- We need to extract more information from the browser-side COM host object. To
+-- do that, we have to use the function postMessageWithAdditionalObjects. That
+-- function allows to pass references to File objects back to the C/Lua side.
+--
+-- This is the only way to retrieve pathnames. The purpose of
+-- postMessageWithAdditionalObjects is to send the received File references to
+-- deeper SW layers.
+--
+
+local function ReadFilePath (ItemPointer)
+  local FilePath
+  if (ItemPointer ~= NULL) then
+    local File = newinterface(ItemPointer, ICoreWebView2FileVtbl, "[out]")
+    if (File:get_Path(SharedPointer) == S_OK) then
+      local PathPointer = derefpointer(SharedPointer)
+      FilePath = pointertostring(PathPointer, "utf16", "utf8")
+      CoTaskMemFree(PathPointer)
+    end
+  end
+  return FilePath
+end
+
+local function ReadAdditionalObjects (ArgsInterface)
+  local Files
+  local Hresult = ArgsInterface:get_AdditionalObjects(SharedPointer)
+  if (Hresult == S_OK) then
+    local CollectionPointer = derefpointer(SharedPointer)
+    if (CollectionPointer ~= NULL) then
+      local Collection  = newinterface(CollectionPointer, ICoreWebView2ObjectCollectionViewVtbl, "[out]")
+      local CountResult = Collection:get_Count(SharedPointer)
+      if (CountResult == S_OK) then
+        local Count = readvalue(SharedPointer, 0, uint32)
+        if (Count > 0) then
+          Files = {}
+          for Offset = 0, (Count - 1) do
+            local ItemResult = Collection:GetValueAtIndex(Offset, SharedPointer)
+            if (ItemResult == S_OK) then
+              local FilePointer = derefpointer(SharedPointer)
+              local FilePath    = ReadFilePath(FilePointer)
+              if (FilePath) then
+                append(Files, FilePath)
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+  return Files
+end
+
 -- API ensure that ArgsPointer is non-NULL
 local function CoreMessageReceived (WebView, Sender, ArgsPointer)
   -- local data
@@ -633,7 +715,9 @@ local function CoreMessageReceived (WebView, Sender, ArgsPointer)
   end
   -- Transfer to user event handler
   if UiEvent then
-    WebView.OnMessage(WebView, UiEvent)
+    -- Additional objects: essentially the objects dropped into the window (DND)
+    local AdditionalObjects = ReadAdditionalObjects(ArgsInterface)
+    WebView.OnMessage(WebView, UiEvent, AdditionalObjects)
   end
   return S_OK
 end
@@ -1055,15 +1139,19 @@ local function WEBVIEW_MethodShow (WebView, Title)
   end
 end
 
-local function WEBVIEW_MethodSend (WebView, Message)
+local function WEBVIEW_MethodSetBounds (WebView, X, Y, Width, Height)
   -- Retrieve data
-  local Window     = WebView.Window
-  local EventQueue = WebView.EventQueue
-  -- Enqueue event
-  append(EventQueue, Message)
-  -- Request queue flush
+  local Window = WebView.Window
+  -- Compute flags
+  local Flags  = (SWP_NOZORDER | SWP_NOACTIVATE)
+  if (not X) or (not Y) then
+    Flags = (Flags | SWP_NOMOVE)
+  end
+  if (not Width) or (not Height) then
+    Flags = (Flags | SWP_NOSIZE)
+  end
   if (Window ~= NULL) then
-    PostMessageW(Window, WM_APP_FLUSH_EVENTS, 0, 0)
+    SetWindowPos(Window, NULL, (X or 0), (Y or 0), (Width or 0), (Height or 0), Flags)
   end
 end
 
@@ -1073,6 +1161,18 @@ local function WEBVIEW_MethodClose (WebView)
   -- Post CLOSE message
   if (Window ~= NULL) then
     PostMessageW(Window, WM_CLOSE, 0, 0)
+  end
+end
+
+local function WEBVIEW_MethodSend (WebView, Message)
+  -- Retrieve data
+  local Window     = WebView.Window
+  local EventQueue = WebView.EventQueue
+  -- Enqueue event
+  append(EventQueue, Message)
+  -- Request queue flush
+  if (Window ~= NULL) then
+    PostMessageW(Window, WM_APP_FLUSH_EVENTS, 0, 0)
   end
 end
 
@@ -1231,13 +1331,14 @@ local WEBVIEW_Metatable = {
   -- METATABLE_UserDefinedMethods
   __index = {
     show        = WEBVIEW_MethodShow,
-    send        = WEBVIEW_MethodSend,
+    setbounds   = WEBVIEW_MethodSetBounds,
     close       = WEBVIEW_MethodClose,
+    send        = WEBVIEW_MethodSend,
     getuserdata = WEBVIEW_GetUserdata,
     hwnd        = WEBVIEW_GetHwnd,
     execute     = WEBVIEW_MethodExecute,
-    screenshot  = WEBVIEW_MethodScreenshot,
     devtools    = WEBVIEW_MethodDevtools,
+    screenshot  = WEBVIEW_MethodScreenshot,
   }
 }
 

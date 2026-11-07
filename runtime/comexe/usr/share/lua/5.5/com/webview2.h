@@ -321,6 +321,22 @@ typedef struct COMEXE_WIN32COM_INTERFACE ICoreWebView2WebMessageReceivedEventArg
   HRESULT (STDMETHODCALLTYPE *get_Source)(void *This, LPWSTR *value);
   HRESULT (STDMETHODCALLTYPE *get_WebMessageAsJson)(void *This, LPWSTR *value);
   HRESULT (STDMETHODCALLTYPE *TryGetWebMessageAsString)(void *This, LPWSTR *value);
+  HRESULT (STDMETHODCALLTYPE *get_AdditionalObjects)(void *This, void **value);
 } ICoreWebView2WebMessageReceivedEventArgsVtbl;
+
+typedef struct COMEXE_WIN32COM_INTERFACE ICoreWebView2ObjectCollectionViewVtbl {
+  HRESULT (STDMETHODCALLTYPE *QueryInterface)(void *This, REFIID riid, void **ppvObject);
+  ULONG   (STDMETHODCALLTYPE *AddRef)(void *This);
+  ULONG   (STDMETHODCALLTYPE *Release)(void *This);
+  HRESULT (STDMETHODCALLTYPE *get_Count)(void *This, UINT32 *value);
+  HRESULT (STDMETHODCALLTYPE *GetValueAtIndex)(void *This, uint32_t index, void **value);
+} ICoreWebView2ObjectCollectionViewVtbl;
+
+typedef struct COMEXE_WIN32COM_INTERFACE ICoreWebView2FileVtbl {
+  HRESULT (STDMETHODCALLTYPE *QueryInterface)(void *This, REFIID riid, void **ppvObject);
+  ULONG   (STDMETHODCALLTYPE *AddRef)(void *This);
+  ULONG   (STDMETHODCALLTYPE *Release)(void *This);
+  HRESULT (STDMETHODCALLTYPE *get_Path)(void *This, LPWSTR *path);
+} ICoreWebView2FileVtbl;
 
 #endif /* WEBVIEW2_H */
