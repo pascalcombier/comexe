@@ -17,6 +17,7 @@
 -- Example:
 --   local sqlite3  = require("com.sqlite3")
 --   local database = sqlite3.open("test.db")
+--   database:setbusytimeout(5000)
 --   database:exec("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
 --   database:exec("INSERT INTO users VALUES (1, 'Alice')")
 --
@@ -59,6 +60,7 @@ local sqlite3_bind_double
 local sqlite3_bind_int64
 local sqlite3_bind_null
 local sqlite3_bind_text
+local sqlite3_busy_timeout
 local sqlite3_changes
 local sqlite3_close
 local sqlite3_column_blob
@@ -84,6 +86,7 @@ local function BindLibrary (Library)
   sqlite3_bind_int64 = Library:bind(libffi.sint32, "sqlite3_bind_int64", libffi.pointer, libffi.sint32, libffi.sint64)
   sqlite3_bind_null = Library:bind(libffi.sint32, "sqlite3_bind_null", libffi.pointer, libffi.sint32)
   sqlite3_bind_text = Library:bind(libffi.sint32, "sqlite3_bind_text", libffi.pointer, libffi.sint32, libffi.pointer, libffi.sint32, libffi.pointer)
+  sqlite3_busy_timeout = Library:bind(libffi.sint32, "sqlite3_busy_timeout", libffi.pointer, libffi.sint32)
   sqlite3_changes = Library:bind(libffi.sint32, "sqlite3_changes", libffi.pointer)
   sqlite3_close = Library:bind(libffi.sint32, "sqlite3_close", libffi.pointer)
   sqlite3_column_blob = Library:bind(libffi.pointer, "sqlite3_column_blob", libffi.pointer, libffi.sint32)
@@ -146,6 +149,14 @@ local function STATEMENT_Step (Statement)
     StatusString = "BUSY"
   else
     StatusString = "ERROR"
+  end
+  -- Raise error if requested
+  if (StatusString ~= "DONE") and (StatusString ~= "ROW") then
+    local Database = Statement.Database
+    if (Database.RaiseOnError) then
+      local ErrorString = (sqlite3_errmsg(Database.Pointer) or "unknown")
+      error(string.format("step failed (%d): %s", StatusInteger, ErrorString), 2)
+    end
   end
   -- Return value
   return StatusString, StatusInteger
@@ -241,21 +252,21 @@ local STATEMENT_METATABLE = {
   __gc = STATEMENT_CollectGarbage,
   -- METATABLE_UserDefinedMethods
   __index = {
-    step      = STATEMENT_Step,
-    reset     = STATEMENT_Reset,
-    getcount  = STATEMENT_ColumnCount,
-    getname   = STATEMENT_ColumnName,
-    gettype   = STATEMENT_ColumnType,
-    getbytes  = STATEMENT_ColumnBytes,
-    gettext   = STATEMENT_ColumnText,
-    getint    = STATEMENT_ColumnInt,
-    getdouble = STATEMENT_ColumnDouble,
-    getblob   = STATEMENT_ColumnBlob,
-    settext   = STATEMENT_BindText,
-    setint    = STATEMENT_BindInt,
-    setdouble = STATEMENT_BindDouble,
-    setblob   = STATEMENT_BindBlob,
-    setnull   = STATEMENT_BindNull,
+    step      = STATEMENT_Step,         -- Statement
+    reset     = STATEMENT_Reset,        -- Statement
+    getcount  = STATEMENT_ColumnCount,  -- Statement
+    getname   = STATEMENT_ColumnName,   -- Statement
+    gettype   = STATEMENT_ColumnType,   -- Current row (step)
+    getbytes  = STATEMENT_ColumnBytes,  -- Current row (step)
+    gettext   = STATEMENT_ColumnText,   -- Current row (step)
+    getint    = STATEMENT_ColumnInt,    -- Current row (step)
+    getdouble = STATEMENT_ColumnDouble, -- Current row (step)
+    getblob   = STATEMENT_ColumnBlob,   -- Current row (step)
+    settext   = STATEMENT_BindText,     -- Parameter binding
+    setint    = STATEMENT_BindInt,      -- Parameter binding
+    setdouble = STATEMENT_BindDouble,   -- Parameter binding
+    setblob   = STATEMENT_BindBlob,     -- Parameter binding
+    setnull   = STATEMENT_BindNull,     -- Parameter binding
   }
 }
 
@@ -271,8 +282,12 @@ local function DATABASE_Exec (Database, SqlString)
   if (Result == SQLITE_OK) then
     Success = true
   else
-    Success      = false
-    ErrorString = sqlite3_errmsg(Database.Pointer)
+    Success     = false
+    ErrorString = (sqlite3_errmsg(Database.Pointer) or "unknown")
+    -- Raise on failure if requested
+    if Database.RaiseOnError then
+      error(ErrorString, 2)
+    end
   end
   return Success, ErrorString
 end
@@ -296,7 +311,11 @@ local function DATABASE_Prepare (Database, SqlString)
     -- Attach metatable
     setmetatable(NewStatement, STATEMENT_METATABLE)
   else
-    ErrorString = sqlite3_errmsg(DatabasePointer)
+    ErrorString = (sqlite3_errmsg(DatabasePointer) or "unknown")
+    -- Raise on failure if requested
+    if Database.RaiseOnError then
+      error(ErrorString, 2)
+    end
   end
   -- Return value
   return NewStatement, ErrorString
@@ -322,17 +341,74 @@ local function DATABASE_Changes (Database)
   return sqlite3_changes(Database.Pointer)
 end
 
+local function DATABASE_SetBusyTimeout (Database, TimeoutMilliseconds)
+  return sqlite3_busy_timeout(Database.Pointer, TimeoutMilliseconds)
+end
+
+local function DATABASE_RaiseOnError (Database, Enabled)
+  Database.RaiseOnError = Enabled
+end
+
+-- This is a helper for transactions. Transactions are verbose to handle,
+-- because there is an exec("BEGIN TRANSACTION") where we need to handle the
+-- errors, then the steps and then finally the exec("COMMIT") or
+-- exec("ROLLBACK")
+--
+-- DATABASE_Transaction does NOT call DATABASE_Exec on purpose
+--
+-- If function raise an error, the work will be ROLLBACK
+-- If not the transaction will be COMMIT
+--
+-- This function returns: Success, ErrorString, Result
+--
+-- Result is user callback return value, verbatim: false, nil, true any value
+-- returned by the callback will be retrievable here (don't support multiple
+-- values, just return the first value)
+
+local function DATABASE_Transaction (Database, Function, ...)
+  -- Local data
+  local DatabasePointer = Database.Pointer
+  local Result
+  local ErrorString
+  -- Run the work inside the transaction
+  if (sqlite3_exec(DatabasePointer, "BEGIN", NULL, NULL, NULL) ~= SQLITE_OK) then
+    ErrorString = (sqlite3_errmsg(DatabasePointer) or "unknown")
+  else
+    local CallSuccess, CallResult = pcall(Function, ...)
+    if (not CallSuccess) then
+      ErrorString = CallResult
+      sqlite3_exec(DatabasePointer, "ROLLBACK", NULL, NULL, NULL)
+    elseif (sqlite3_exec(DatabasePointer, "COMMIT", NULL, NULL, NULL) ~= SQLITE_OK) then
+      ErrorString = (sqlite3_errmsg(DatabasePointer) or "unknown")
+      sqlite3_exec(DatabasePointer, "ROLLBACK", NULL, NULL, NULL)
+    else
+      Result = CallResult
+    end
+  end
+  -- Raise on failure if requested
+  if ErrorString and Database.RaiseOnError then
+    error(ErrorString, 0)
+  end
+  -- Evaluate success
+  local Success = (ErrorString == nil)
+  -- Return values
+  return Success, ErrorString, Result
+end
+
 local DATABASE_METATABLE = {
   -- METATABLE_LuaDefinedMethods
   __gc = DATABASE_Close,
   -- METATABLE_UserDefinedMethods
   __index = {
-    exec         = DATABASE_Exec,
-    prepare      = DATABASE_Prepare,
-    close        = DATABASE_Close,
-    getlasterror = DATABASE_GetLastError,
-    getlastrowid = DATABASE_LastInsertRowid,
-    getchanges   = DATABASE_Changes,
+    exec           = DATABASE_Exec,
+    prepare        = DATABASE_Prepare,
+    transaction    = DATABASE_Transaction,
+    close          = DATABASE_Close,
+    getlasterror   = DATABASE_GetLastError,
+    getlastrowid   = DATABASE_LastInsertRowid,
+    getchanges     = DATABASE_Changes,
+    setbusytimeout = DATABASE_SetBusyTimeout,
+    raiseonerror   = DATABASE_RaiseOnError,
   }
 }
 
@@ -351,7 +427,8 @@ local function OpenDatabase (Filename)
   if (Result == SQLITE_OK) then
     -- Create database object
     NewDatabase = {
-      Pointer = DatabasePointer,
+      Pointer      = DatabasePointer,
+      RaiseOnError = false,
     }
     -- Attach metatable
     setmetatable(NewDatabase, DATABASE_METATABLE)

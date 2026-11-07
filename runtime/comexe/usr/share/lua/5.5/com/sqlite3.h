@@ -32,5 +32,7 @@ int sqlite3_bind_double(void *pStmt, int index, double val);
 int sqlite3_bind_null(void *pStmt, int index);
 int64_t sqlite3_last_insert_rowid(void *db);
 int sqlite3_changes(void *db);
+/* Busy handling */
+int sqlite3_busy_timeout(void *db, int ms);
 /* Error handling */
 const char *sqlite3_errmsg(void *db);
