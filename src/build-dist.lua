@@ -61,12 +61,18 @@ end
 -- We will simply use lua55ce -x --checksum
 local function GetLua55ceFilename (Environment)
   local Extension
+  local Suffix
   if (Environment.OS == "windows") then
     Extension = ".exe"
+    Suffix    = ""
+  elseif (Environment.LIBC == "musl") then
+    Extension = ""
+    Suffix    = "-musl"
   else
     Extension = ""
+    Suffix    = "-gnu"
   end
-  local Filename = format("bin/%s/src/lua55ce%s", Environment.HOST_TRIPLE, Extension)
+  local Filename = format("bin/%s/src/lua55ce%s%s", Environment.HOST_TRIPLE, Suffix, Extension)
   return Filename
 end
 

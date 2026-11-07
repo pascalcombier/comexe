@@ -2799,14 +2799,14 @@ bin/app/lua55ce-runtime.zip: build-manifest-app-runtime.lua bin/tools/buildtool.
 bin/dist/lua55ce-0.0.14-windows-x86_64.zip: bin/app/lua55ce-runtime.zip bin/x86_64-windows-gnu/src/lua55ce.exe build-manifest-app-dist-windows.lua bin/tools/buildtool.exe doc/comexe-page-utf8-on-windows.md doc/comexe-reference-ffi.md doc/comexe-reference-preprocessor.md doc/comexe-reference-sqlite3.md doc/comexe-reference-standalone-executables.md doc/comexe-reference-third-party-packages.md doc/comexe-reference-threads.md doc/comexe-reference-webview2.md doc/comexe-reference-win32.md doc/page-build-from-source.md doc/page-differences-lua-puc.md doc/page-fennel.md doc/page-ffi-sqlite.md doc/page-ffi-win32-gui.md doc/page-github-http-client.md doc/page-sqlite3.md doc/page-webview2.md doc/page-win32-com-excel.md doc/readme-make-hello.gif doc/test-webview2-error.png doc/test-webview2-screenshot.png doc/test-win32-gui.png bin/dist/auto-dir-ok
 	bin/tools/buildtool.exe pack build-manifest-app-dist-windows.lua bin/dist/lua55ce-0.0.14-windows-x86_64.zip 9
 
-bin/dist/lua55ce-0.0.14-windows-x86_64.zip.sha256: bin/dist/lua55ce-0.0.14-windows-x86_64.zip bin/x86_64-linux-gnu/src/lua55ce bin/dist/auto-dir-ok
-	cd bin/dist && ../../bin/x86_64-linux-gnu/src/lua55ce -x --checksum -o lua55ce-0.0.14-windows-x86_64.zip.sha256 lua55ce-0.0.14-windows-x86_64.zip
+bin/dist/lua55ce-0.0.14-windows-x86_64.zip.sha256: bin/dist/lua55ce-0.0.14-windows-x86_64.zip bin/x86_64-linux-gnu/src/lua55ce-gnu bin/dist/auto-dir-ok
+	cd bin/dist && ../../bin/x86_64-linux-gnu/src/lua55ce-gnu -x --checksum -o lua55ce-0.0.14-windows-x86_64.zip.sha256 lua55ce-0.0.14-windows-x86_64.zip
 
 bin/dist/lua55ce-0.0.14-linux-x86_64.zip: bin/app/lua55ce-runtime.zip bin/x86_64-linux-musl/src/lua55ce-musl bin/x86_64-linux-gnu/src/lua55ce-gnu build-manifest-app-dist-linux.lua bin/tools/buildtool.exe doc/comexe-page-utf8-on-windows.md doc/comexe-reference-ffi.md doc/comexe-reference-preprocessor.md doc/comexe-reference-sqlite3.md doc/comexe-reference-standalone-executables.md doc/comexe-reference-third-party-packages.md doc/comexe-reference-threads.md doc/comexe-reference-webview2.md doc/comexe-reference-win32.md doc/page-build-from-source.md doc/page-differences-lua-puc.md doc/page-fennel.md doc/page-ffi-sqlite.md doc/page-ffi-win32-gui.md doc/page-github-http-client.md doc/page-sqlite3.md doc/page-webview2.md doc/page-win32-com-excel.md doc/readme-make-hello.gif doc/test-webview2-error.png doc/test-webview2-screenshot.png doc/test-win32-gui.png bin/dist/auto-dir-ok
 	bin/tools/buildtool.exe pack build-manifest-app-dist-linux.lua bin/dist/lua55ce-0.0.14-linux-x86_64.zip 9
 
-bin/dist/lua55ce-0.0.14-linux-x86_64.zip.sha256: bin/dist/lua55ce-0.0.14-linux-x86_64.zip bin/x86_64-linux-gnu/src/lua55ce bin/dist/auto-dir-ok
-	cd bin/dist && ../../bin/x86_64-linux-gnu/src/lua55ce -x --checksum -o lua55ce-0.0.14-linux-x86_64.zip.sha256 lua55ce-0.0.14-linux-x86_64.zip
+bin/dist/lua55ce-0.0.14-linux-x86_64.zip.sha256: bin/dist/lua55ce-0.0.14-linux-x86_64.zip bin/x86_64-linux-gnu/src/lua55ce-gnu bin/dist/auto-dir-ok
+	cd bin/dist && ../../bin/x86_64-linux-gnu/src/lua55ce-gnu -x --checksum -o lua55ce-0.0.14-linux-x86_64.zip.sha256 lua55ce-0.0.14-linux-x86_64.zip
 
 clean:
 	rm -rf bin/app
