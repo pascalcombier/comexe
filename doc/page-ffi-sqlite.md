@@ -563,4 +563,4 @@ end
 
 # Full listing
 
-The complete module is at **[sqlite3.lua](../runtime/comexe/usr/share/lua/5.5/com/sqlite3.lua)**. It is intended to be used with the test **[test-sqlite3.lua](../tests/examples/ffi/test-sqlite3.lua)**
+The complete module is at **[sqlite3.lua](../runtime/comexe/usr/share/lua/5.5/com/sqlite3.lua)**. It is intended to be used with the test **[test-sqlite3.lua](../tests/examples/test-sqlite3.lua)**
