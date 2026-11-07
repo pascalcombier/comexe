@@ -413,6 +413,7 @@ local FILE_LIST = {
     "doc/page-ffi-sqlite.md",
     "doc/page-ffi-win32-gui.md",
     "doc/page-github-http-client.md",
+    "doc/page-sqlite3.md",
     "doc/page-webview2.md",
     "doc/page-win32-com-excel.md",
     "doc/readme-make-hello.gif",

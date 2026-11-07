@@ -109,6 +109,7 @@ Windows GUI from Lua:
 **Guides**
 
 - [Fetching JSON data over HTTP](./doc/page-github-http-client.md)
+- [Using SQLite](./doc/page-sqlite3.md)
 - [Using the FFI to wrap a C library](./doc/page-ffi-sqlite.md)
 - [Using Fennel with ComEXE](./doc/page-fennel.md)
 - [Building a GUI with WebView2](./doc/page-webview2.md)
