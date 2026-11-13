@@ -49,4 +49,4 @@ jobs:
 
       - name: Test
         if: steps.changed.outputs.skip != 'true'
-        run: bin/x86_64-linux-gnu/src/lua55ce tests/runner.lua
+        run: bin/x86_64-linux-gnu/src/lua55ce-gnu tests/runner.lua
