@@ -2,6 +2,7 @@
 
 * [Overview](#overview)
   * [Initialization](#initialization)
+  * [Attaching to a running instance](#attaching-to-a-running-instance)
   * [IDispatch objects](#idispatch-objects)
   * [Type conversions](#type-conversions)
 * [Writing single cells](#writing-single-cells)
@@ -53,9 +54,26 @@ else
 end
 ```
 
+## Attaching to a running instance
+
+Instead of creating a new instance, `EasyCom.getobject` attaches to a running instance.
+
+```lua
+local Excel = EasyCom.getobject("Excel.Application")
+
+if Excel then
+  print(Excel:get("Version"))
+end
+```
+
+Notes:
+- `EasyCom.getobject` returns `nil` when no instance is running
+- `ActiveWorkbook` and `ActiveSheet` are initialized to the workbook and sheet the user has open
+- `Excel:call("Quit")` will close the user's Excel
+
 ## IDispatch objects
 
-Objects created by `EasyCom.newobject` expose **COM properties** and **COM methods**:
+Objects returned by `EasyCom.newobject` or `EasyCom.getobject` expose **COM properties** and **COM methods**:
 
 | Method                          | Description      |
 |---------------------------------|------------------|
