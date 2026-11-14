@@ -105,6 +105,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <combaseapi.h> /* CLSIDFromString */
+#include <oleauto.h>    /* GetActiveObject */
 
 #include <stdbool.h>
 #include <string.h> /* memcpy  */
@@ -554,6 +555,29 @@ static int COM_CoCreateInstance (lua_State *LuaState)
 
   lua_pushinteger(LuaState, Result);
   lua_pushlightuserdata(LuaState, Unknown);
+
+  return 2; /* Number of values returned on the stack */
+}
+
+/* Attach to a running object registered in the ROT "Running Object Table".
+ * GetActiveObject returns MK_E_UNAVAILABLE when no instance is running. */
+static int COM_GetActiveObject (lua_State *LuaState)
+{
+  CLSID    *ClassId   = lua_touserdata(LuaState, 1);
+  IID      *Iid       = lua_touserdata(LuaState, 2);
+  IUnknown *Unknown   = NULL;
+  void     *Interface = NULL;
+
+  HRESULT Result = GetActiveObject(ClassId, NULL, &Unknown);
+
+  if (SUCCEEDED(Result))
+  {
+    Result = Unknown->lpVtbl->QueryInterface(Unknown, Iid, &Interface);
+    Unknown->lpVtbl->Release(Unknown);
+  }
+
+  lua_pushinteger(LuaState, Result);
+  lua_pushlightuserdata(LuaState, Interface);
 
   return 2; /* Number of values returned on the stack */
 }
@@ -1479,6 +1503,7 @@ static const struct luaL_Reg LWC_FUNCTIONS[] =
   { "safearray_writedata",     SAFEARRAY_WriteData      },
   /* Generic COM (limited version of cocreateinstance) */
   { "cocreateinstance",        COM_CoCreateInstance     },
+  { "getactiveobject",         COM_GetActiveObject      },
   /* IDispatch interface */
   { "idispatch_getidofname",   DISPATCH_GetIdOfName     },
   { "idispatch_invoke",        DISPATCH_Invoke          },

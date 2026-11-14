@@ -106,6 +106,7 @@ local IID_IDispatch     = newiid(IID_IDispatch_U16)
 
 -- DISPATCH
 local cocreateinstance = RawCom.cocreateinstance
+local getactiveobject  = RawCom.getactiveobject
 local getidofname      = RawCom.idispatch_getidofname
 local invoke           = RawCom.idispatch_invoke
 local members          = RawCom.idispatch_members
@@ -1354,6 +1355,41 @@ local function COM_NewDispatch (ClsidUtf8)
   return NewDispatchObject
 end
 
+-- COM_AttachDispatch(ClsidUtf8)
+-- ClsidUtf8: names like "Application.Excel"
+--
+-- Attach to an already running instance through the Running Object Table.
+-- HRESULT GetActiveObject(
+--  [in]  REFCLSID rclsid,   // CLSID of the object
+--  [in]  void     *pvReserved,
+--  [out] IUnknown **ppunk
+-- );
+--
+-- Returns nil when no instance of the server is running
+local function COM_AttachDispatch (ClsidUtf8)
+  -- Local variables
+  local ActiveObjectPointer
+  local NewAttachedObject
+  -- Case where ClsidUtf8 is nil
+  if ClsidUtf8 then
+    local ClsidUtf16 = utf8to16(ClsidUtf8)
+    local Clsid      = newclsid(ClsidUtf16)
+    -- Attach to the running object
+    if Clsid then
+      local Result, Pointer = getactiveobject(Clsid, IID_IDispatch)
+      if HRESULT_SUCCEEDED(Result) then
+        ActiveObjectPointer = Pointer
+      end
+    end
+  end
+  -- Create the Lua object
+  if ActiveObjectPointer then
+    NewAttachedObject = DISPATCH_NewObject(ClsidUtf8, ActiveObjectPointer)
+  end
+  -- Return the attached object
+  return NewAttachedObject
+end
+
 --------------------------------------------------------------------------------
 -- COM INTERFACE: CREATE IUnknown CALLABLE INTERFACE FROM VTABLE              --
 --------------------------------------------------------------------------------
@@ -1632,6 +1668,7 @@ end
 
 local PUBLIC_API = {
   newobject    = COM_NewDispatch,
+  getobject    = COM_AttachDispatch,
   castunknown  = COM_CastUnknown,
   datetonumber = COM_IsoDateToNumber,
   newsafearray = SAFEARRAY_Create,
