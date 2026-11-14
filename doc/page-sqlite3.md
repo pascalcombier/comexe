@@ -52,11 +52,13 @@ The resulting value is a [Database object](./comexe-reference-sqlite3.md#databas
 
 ## Configuring the busy timeout
 
-Avoid `SQLITE_BUSY` by increasing [the busy timeout](https://sqlite.org/c3ref/busy_timeout.html).
+When the database is locked, `BUSY` errors can appear. To avoid them, request SQLite to [wait and retry](https://sqlite.org/c3ref/busy_timeout.html) for a duration specified in milliseconds:
 
 ```lua
 Database:setbusytimeout(5000)
 ```
+
+`setbusytimeout` returns a SQLite result code, `0` on success.
 
 ## Configuring error handling
 
