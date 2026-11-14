@@ -46,6 +46,7 @@ local directoryexists  = Runtime.directoryexists
 local listfiles        = Runtime.listfiles
 local deletefile       = Runtime.deletefile
 local newpathname      = Runtime.newpathname
+local formatsize       = Runtime.formatsize
 local noop             = Runtime.noop
 local request          = Http.request
 local parseheadervalue = MiniHttpLib.parseheadervalue
@@ -81,26 +82,6 @@ local COMMAND_LONG_ALIASES = {
 --------------------------------------------------------------------------------
 -- PRIVATE FUNCTIONS                                                          --
 --------------------------------------------------------------------------------
-
--- Copied from tools\src\buildtool-pack.lua
--- Human-readable size
-local function FormatHumanSize (SizeInBytes)
-  local Units = { "B", "KiB", "MiB", "GiB", "TiB" }
-  local Value = SizeInBytes
-  local Index = 1
-  while (Value >= 1024) and (Index < #Units) do
-    Value = (Value / 1024)
-    Index = (Index + 1)
-  end
-  local Pattern
-  if (Index > 1) then
-    Pattern = "%.1f %s"
-  else
-    Pattern = "%d %s"
-  end
-  local FormattedString = format(Pattern, Value, Units[Index])
-  return FormattedString
-end
 
 local function CreateTempFilename (Prefix, Suffix)
   -- Format date and time
@@ -244,7 +225,7 @@ local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationE
   OutputFile:close()
   -- Report the result, with the size that was actually written
   local SizeInBytes     = (#TargetContent + #ZipContent)
-  local HumanSizeString = FormatHumanSize(SizeInBytes)
+  local HumanSizeString = formatsize(SizeInBytes)
   MAKE_Log("CREATE '%s' %s", OutputFilename, HumanSizeString)
   -- Clean up the temporary ZIP
   deletefile(TempZipFilename)

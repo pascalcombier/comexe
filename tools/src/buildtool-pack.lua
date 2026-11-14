@@ -259,6 +259,7 @@ local function WriteZipArchive (Entries, FileList, OutputFilename, CompressionLe
 end
 
 -- Human-readable size
+-- Duplicated from runtime.lua (com.runtime not available here)
 local function FormatHumanSize (SizeInBytes)
   local Units = { "B", "KiB", "MiB", "GiB", "TiB" }
   local Value = SizeInBytes

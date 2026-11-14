@@ -82,6 +82,24 @@ local function STRING_Trim (String, Option)
   return Result
 end
 
+local function STRING_FormatSize (SizeInBytes)
+  local Units = { "B", "KiB", "MiB", "GiB", "TiB" }
+  local Value = SizeInBytes
+  local Index = 1
+  while (Value >= 1024) and (Index < #Units) do
+    Value = (Value / 1024)
+    Index = (Index + 1)
+  end
+  local Pattern
+  if (Index > 1) then
+    Pattern = "%.1f %s"
+  else
+    Pattern = "%d %s"
+  end
+  local FormattedString = format(Pattern, Value, Units[Index])
+  return FormattedString
+end
+
 --------------------------------------------------------------------------------
 -- HEX FUNCTIONS                                                              --
 --------------------------------------------------------------------------------
@@ -497,6 +515,7 @@ local PUBLIC_API = {
   hassuffix    = STRING_HasSuffix,
   removesuffix = STRING_RemoveSuffix,
   stringtrim   = STRING_Trim,
+  formatsize   = STRING_FormatSize,
   tohex        = STRING_ToHex,
   fromhex      = STRING_FromHex,
   -- Files & directories
