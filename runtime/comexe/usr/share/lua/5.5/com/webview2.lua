@@ -38,6 +38,7 @@ local sizeof        = libffi.sizeof
 local newcallback   = libffi.newcallback
 local stringpointer = libffi.stringpointer
 local luaref        = runtime.ref
+local noop          = runtime.noop
 local newinterface  = easycom.newinterface
 local runonce       = event.runonce
 
@@ -103,6 +104,7 @@ local PostQuitMessage
 local RegisterClassExW
 local SetTimer
 local SetWindowPos
+local SetWindowTextW
 local ShowWindow
 local TranslateMessage
 local UnregisterClassW
@@ -169,6 +171,7 @@ local function BindWin32Base (Library)
   RegisterClassExW = Library:bind(libffi.uint16, "RegisterClassExW", libffi.pointer)
   SetTimer = Library:bind(libffi.uint64, "SetTimer", libffi.pointer, libffi.uint64, libffi.uint32, libffi.pointer)
   SetWindowPos = Library:bind(libffi.sint32, "SetWindowPos", libffi.pointer, libffi.pointer, libffi.sint32, libffi.sint32, libffi.sint32, libffi.sint32, libffi.uint32)
+  SetWindowTextW = Library:bind(libffi.sint32, "SetWindowTextW", libffi.pointer, libffi.pointer)
   ShowWindow = Library:bind(libffi.sint32, "ShowWindow", libffi.pointer, libffi.sint32)
   TranslateMessage = Library:bind(libffi.sint32, "TranslateMessage", libffi.pointer)
   UnregisterClassW = Library:bind(libffi.sint32, "UnregisterClassW", libffi.pointer, libffi.pointer)
@@ -754,23 +757,49 @@ local function ContentSeemsUri (Content)
 end
 
 local function WebviewStartUi (WebView)
+  -- Retrieve data
+  local ComWebView = WebView.ComWebView
   -- local callback implementation transfer to CoreMessageReceived
   local function OnWebMessageReceived (Sender, ArgsPointer)
     return CoreMessageReceived(WebView, Sender, ArgsPointer)
+  end
+  -- local callback: update the window title from page title
+  local function OnDocumentTitleChanged (Sender, ArgsPointer)
+    local DocumentTitle
+    if (ComWebView:get_DocumentTitle(SharedPointer) == S_OK) then
+      local DocumentTitlePointer = derefpointer(SharedPointer)
+      DocumentTitle = pointertostring(DocumentTitlePointer, "utf16", "utf8")
+      CoTaskMemFree(DocumentTitlePointer)
+    end
+    -- Preserve default window title if the document.title is unset (empty string "")
+    if (DocumentTitle ~= "") and (WebView.Window ~= NULL) then
+      local TitleUtf16   = utf8to16(DocumentTitle)
+      local TitlePointer = stringpointer(TitleUtf16)
+      SetWindowTextW(WebView.Window, TitlePointer)
+    end
+    return S_OK
   end
   -- Create the COM handler
   local NewMessageHandler = easycom.newhandler(OnWebMessageReceived, { pointer, pointer })
   -- Save the reference
   WebView.MessageHandler = NewMessageHandler
   -- Configure the COM event handler
-  local ComWebView = WebView.ComWebView
-  local Hresult    = ComWebView:add_WebMessageReceived(NewMessageHandler:getpointer(), SharedPointer)
+  local Hresult = ComWebView:add_WebMessageReceived(NewMessageHandler:getpointer(), SharedPointer)
   if (Hresult == S_OK) then
     -- To unsubscribe later: call remove_WebMessageReceived(EventRegistrationToken)
     -- Not implemented yet, unclear why we would do that.
     local EventRegistrationToken = readvalue(SharedPointer, 0, uint64)
   else
     print(format("[WebView2] add_WebMessageReceived failed: 0x%08X", Hresult))
+  end
+  -- Create the COM handler and save the reference
+  local NewTitleHandler = easycom.newhandler(OnDocumentTitleChanged, { pointer, pointer })
+  -- Prevent garbage-collection
+  WebView.TitleHandler = NewTitleHandler
+  -- Configure the COM event handler
+  local TitleHresult = ComWebView:add_DocumentTitleChanged(NewTitleHandler:getpointer(), SharedPointer)
+  if (TitleHresult ~= S_OK) then
+    print(format("[WebView2] add_DocumentTitleChanged failed: 0x%08X", TitleHresult))
   end
   -- Load the UI
   local ContentUtf8  = WebView.Content
@@ -1065,12 +1094,10 @@ end
 -- WIN32 INIT                                                                 --
 --------------------------------------------------------------------------------
 
-local function CreateWindow (WebView, UserTitle)
-  -- Handle defaults
-  local Title = (UserTitle or "WebView2")
-  -- Convert to UTF-16
-  local TitleUtf16 = utf8to16(Title)
-  local TitlePtr   = stringpointer(TitleUtf16)
+local function CreateWindow (WebView)
+  -- Default title
+  local TitleUtf16   = utf8to16("WebView2")
+  local TitlePointer = stringpointer(TitleUtf16)
   -- Compute style
   local Style = (WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS)
   -- Create the window (we provide UTF-16 ClassNamePointer directly to avoid
@@ -1078,7 +1105,7 @@ local function CreateWindow (WebView, UserTitle)
   local HWND = CreateWindowExW(
     0,                -- dwExStyle
     ClassNamePointer, -- lpClassName
-    TitlePtr,         -- lpWindowName
+    TitlePointer,     -- lpWindowName
     Style,            -- dwStyle
     CW_USEDEFAULT,    -- X
     CW_USEDEFAULT,    -- Y
@@ -1088,14 +1115,10 @@ local function CreateWindow (WebView, UserTitle)
     nil,              -- hMenu
     HInstance,        -- hInstance
     nil)              -- lpParam
-  -- Show window
+  -- Register the window, the window stays hidden until show() is called
   if (HWND ~= NULL) then
-    -- Register the webview, this is needed before the first WM_PAINT
     WebView.Window = HWND
     WebViewByHwnd[HWND] = WebView
-    -- Show window
-    ShowWindow(HWND, SW_SHOWDEFAULT)
-    UpdateWindow(HWND)
     SetTimer(HWND, WM_POLL_TIMER_ID, 20, NULL)
   end
   -- Return value
@@ -1131,11 +1154,11 @@ end
 -- WEBVIEW API                                                                --
 --------------------------------------------------------------------------------
 
-local function WEBVIEW_MethodShow (WebView, Title)
-  local HWND = CreateWindow(WebView, Title)
-  if (HWND ~= NULL) then
-    WindowCount = (WindowCount + 1)
-    CreateWebView(WebView)
+local function WEBVIEW_MethodShow (WebView)
+  local Window = WebView.Window
+  if (Window ~= NULL) then
+    ShowWindow(Window, SW_SHOWDEFAULT)
+    UpdateWindow(Window) -- Process WM_PAINT
   end
 end
 
@@ -1228,11 +1251,13 @@ local function ProcessNextJob (WebView)
 end
 
 -- Optional feature
-local function WEBVIEW_MethodExecute (WebView, JavaScript, Callback)
+local function WEBVIEW_MethodExecute (WebView, JavaScript, OptionalCallback)
+  -- Handle defaults
+  local Callback = (OptionalCallback or noop)
   -- Retrieve data
   local ComWebView = WebView.ComWebView
   assert((ComWebView ~= NULL), "WebView is not initialized")
-  assert((type(Callback) == "function"), "callback is required")
+  assert((type(Callback) == "function"), "callback must be a function")
   -- Enqueue the job
   local NewJob = {
     Type       = "javascript",
@@ -1358,6 +1383,7 @@ local function NewWebView (Content, OnMessage, UserData)
     EnvironmentHandler = NULL,
     ControllerHandler  = NULL,
     MessageHandler     = NULL,
+    TitleHandler       = NULL,
     JobQueue           = {},
     Busy               = false,
   }
@@ -1369,6 +1395,11 @@ local function NewWebView (Content, OnMessage, UserData)
   NewObject.Handler = easycom.newhandler(OnCompleted, { sint32, pointer })
   -- Attach metatable
   setmetatable(NewObject, WEBVIEW_Metatable)
+  -- Create the native window and start loading the content
+  local HWND = CreateWindow(NewObject)
+  assert((HWND ~= NULL), "WebView window creation failed, webview.init() must be called first")
+  WindowCount = (WindowCount + 1)
+  CreateWebView(NewObject)
   -- Return value
   return NewObject
 end

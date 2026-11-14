@@ -123,6 +123,7 @@ int        ShowWindow(void *hWnd, int nCmdShow);
 int        UpdateWindow(void *hWnd);
 int        GetClientRect(void *hWnd, void *lpRect);
 int        SetWindowPos(void *hWnd, void *hWndInsertAfter, int X, int Y, int cx, int cy, unsigned int uFlags);
+int        SetWindowTextW(void *hWnd, const void *lpString);
 long long  DefWindowProcW(void *hWnd, unsigned int Msg, unsigned long long wParam, long long lParam);
 int        GetMessageW(void *lpMsg, void *hWnd, unsigned int wMsgFilterMin, unsigned int wMsgFilterMax);
 int        TranslateMessage(const void *lpMsg);
