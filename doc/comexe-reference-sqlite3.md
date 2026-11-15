@@ -130,4 +130,4 @@ Database:close()
 
 # Example
 
-[test-sqlite3.lua](../tests/examples/ffi/test-sqlite3.lua)
+[test-sqlite3.lua](../tests/examples/test-sqlite3.lua)
