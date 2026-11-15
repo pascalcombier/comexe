@@ -9,6 +9,10 @@
 * [Event management](#event-management)
   * [JavaScript to Lua](#javascript-to-lua)
   * [Lua to JavaScript](#lua-to-javascript)
+* [Window title](#window-title)
+* [Files dropped into the WebView](#files-dropped-into-the-webview)
+  * [Capturing the dropped files](#capturing-the-dropped-files)
+  * [Reading the paths in Lua](#reading-the-paths-in-lua)
 * [Advanced features](#advanced-features)
   * [JavaScript execution](#javascript-execution)
   * [DevTools Protocol access](#devtools-protocol-access)
@@ -62,10 +66,10 @@ It is recommended to specify a writable directory, such as `%USERPROFILE%`. The 
 
 # Module API
 
-| Function                                    | Description                              |
-|---------------------------------------------|------------------------------------------|
-| `webview.new(Content, OnMessage, UserData)` | Create a **WebView object**          |
-| `webview.runloop()`                         | Run the message loop until windows close |
+| Function                                    | Description                                       |
+|---------------------------------------------|---------------------------------------------------|
+| `webview.new(Content, OnMessage, UserData)` | Create a hidden **WebView object**                |
+| `webview.runloop()`                         | Run the message loop until all windows are closed |
 
 ## new
 
@@ -75,34 +79,39 @@ It is recommended to specify a writable directory, such as `%USERPROFILE%`. The 
   - Standalone HTML/CSS/JS string (handwritten or output of [Node.js](https://nodejs.org/) or [bun](https://bun.sh))
   - A URI starting with `http://`, `https://` or `file://`
 - `OnMessage`
-  - Event handler, called with `OnMessage(WebView, UiEvent)`
+  - Event handler, called with `OnMessage(WebView, UiEvent, AdditionalObjects)`
+  - `UiEvent` is the JSON value posted by JavaScript
+  - `AdditionalObjects` is `nil` or an array of pathnames, see [Files dropped into the WebView](#files-dropped-into-the-webview)
 - `UserData`
   - Optional user value, retrievable with `WebView:getuserdata()`
 
-The return value is a **WebView object** documented in the next section.
+The returned value is a **WebView object** documented in the next section.
+
+> **Important:** A WebView is created hidden by default. Call `WebView:show()` to make it visible.
 
 ## runloop
 
-`webview.runloop()` runs the message loop until the last window closes, then returns the exit code.
+`webview.runloop()` runs the message loop until all windows are closed, then returns the exit code.
 
 # WebView objects
 
-| Method                               | Description                                                              |
-|--------------------------------------|--------------------------------------------------------------------------|
-| `show(WindowTitle)`                  | Create and show the window                                            |
-| `close()`                            | Close the window                                                      |
-| `send(Message)`                      | Send a Lua object to the JavaScript side, see [Event management](#event-management) |
-| `getuserdata()`                      | Return the `UserData` value passed to `new`                           |
-| `hwnd()`                             | Return the Win32 `HWND`                                                  |
-| `execute(JavaScript, Callback)`      | Execute JavaScript in the page, see [JavaScript execution](#javascript-execution) |
+| Method                               | Description                                                                                |
+|--------------------------------------|--------------------------------------------------------------------------------------------|
+| `show()`                             | Show the window (created hidden by `new`)                                                  |
+| `close()`                            | Close the window                                                                           |
+| `setbounds(X, Y, Width, Height)`     | Move or resize (`nil` keeps the current position or size)                                  |
+| `send(Message)`                      | Send a Lua object to the JavaScript side, see [Event management](#event-management)        |
+| `getuserdata()`                      | Return the `UserData` value passed to `new`                                                |
+| `hwnd()`                             | Return the Win32 `HWND`                                                                    |
+| `execute(JavaScript, Callback)`      | Execute JavaScript in the page, see [JavaScript execution](#javascript-execution)          |
 | `devtools(Method, Params, Callback)` | Call a DevTools Protocol method, see [DevTools Protocol access](#devtools-protocol-access) |
-| `screenshot(Callback)`               | Capture the full page as a PNG, see [Recording screenshots](#recording-screenshots) |
+| `screenshot(Callback)`               | Capture the full page as a PNG, see [Recording screenshots](#recording-screenshots)        |
 
 # Event management
 
 ## JavaScript to Lua
 
-The page posts an event with:
+JavaScript posts an event with:
 
 ```javascript
 window.chrome.webview.postMessage(JSON.stringify(Value))
@@ -150,6 +159,48 @@ window.chrome.webview.addEventListener('message', function (Event) {
 
 The page reads the value from `Event.data`.
 
+# Window title
+
+The window title follows `document.title`, so it can be set from HTML or JavaScript. It defaults to `"WebView2"` when the page reports no title.
+
+The Lua side can change it once the page is ready:
+
+```lua
+WebView:execute("document.title = 'New title'")
+```
+
+# Files dropped into the WebView
+
+The process starts in JavaScript with the `drop` event listener.
+
+## Capturing the dropped files
+
+JavaScript exposes only `name`, `size`, `type` and `lastModified`. To retrieve the pathname, post the file objects to the host with `postMessageWithAdditionalObjects`:
+
+```javascript
+zone.addEventListener('drop', function (Event) {
+  // Do not open the dropped file in the page
+  Event.preventDefault()
+  // Like postMessage, but also carries File objects, so Lua can read their pathnames
+  window.chrome.webview.postMessageWithAdditionalObjects(
+    JSON.stringify({ type: "drop" }), Event.dataTransfer.files)
+})
+```
+
+## Reading the paths in Lua
+
+`OnMessage` receives an array of absolute pathnames in `AdditionalObjects`:
+
+```lua
+local function OnMessage (WebView, UiEvent, AdditionalObjects)
+  if (AdditionalObjects) then
+    print(AdditionalObjects[1]) -- for example: "C:\docs\README.md"
+  end
+end
+```
+
+`AdditionalObjects` is `nil` when no file was passed with the message.
+
 # Advanced features
 
 `WebView:send` and `OnMessage` are sufficient to build a GUI application.
@@ -162,7 +213,7 @@ Optional features:
 
 ## JavaScript execution
 
-`WebView:execute(JavaScript, Callback)` runs `JavaScript` in the page. The result is delivered to the callback, decoded from JSON.
+`WebView:execute(JavaScript, Callback)` runs JavaScript in the page. `Callback` is optional.
 
 Callback signature:
 

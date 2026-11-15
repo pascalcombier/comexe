@@ -23,7 +23,7 @@
 
 This guide shows how to build a **Windows GUI** using the [WebView2 interface](./comexe-reference-webview2.md). The `com.webview2` module is Windows-only. To work properly, `WebView2Loader.dll` must be next to the executable or in `PATH`. The module can be used to develop GUI applications with modern web libraries like [React](https://react.dev) and [Vue](https://vuejs.org/).
 
-For simplicity, this example uses a single self-contained `index.html` containing all the necessary HTML/CSS/JavaScript code. The WebView can also load a page from a local HTTP server by passing the server URL instead of an HTML string.
+For simplicity, this example uses a single self-contained `test-win32-webview2.html` containing all the necessary HTML/CSS/JavaScript code. The WebView can also load a page from a local HTTP server by passing the server URL instead of an HTML string.
 
 ![WebView2 screenshot](test-webview2-screenshot.png)
 
@@ -61,6 +61,7 @@ The file contains all the HTML/CSS/JavaScript code. It can be written by hand or
 <!DOCTYPE html>
 <html>
   <head>
+    <title>WebView2 Hello</title>
     <style>
       body {
         display:flex;
@@ -94,6 +95,8 @@ The file contains all the HTML/CSS/JavaScript code. It can be written by hand or
       window.chrome.webview.addEventListener('message', function (Event) {
         if (Event.data.type === 'alert') alert(Event.data.text)
       })
+      <!-- Tell Lua when the document is ready -->
+      window.addEventListener('DOMContentLoaded', function () { PostEvent('ready') })
       <!-- Auto-exit after 5 seconds -->
       setTimeout(function () { PostEvent('exit') }, 5000)
     </script>
@@ -162,10 +165,10 @@ Complex projects can use JavaScript objects instead of strings to carry more inf
 
 ## Receiving events
 
-A WebView is created with an event handler:
+The WebView is created with the event handler `WebViewEventHandler`. `WindowCount` is stored in the WebView's `UserData`, retrievable later with `WebView:getuserdata()`.
 
 ```
-local WebView = webview.new(Html, WebViewEventHandler)
+local WebView = webview.new(Html, WebViewEventHandler, WindowCount)
 ```
 
 The event handler is a function with two parameters:
@@ -184,9 +187,13 @@ local function WebViewEventHandler (WebView, UiEvent)
     WebView:send(NewEvent)
   elseif (UiEvent == "new") then
     WindowCount = (WindowCount + 1)
-    local Child = webview.new(Html, WebViewEventHandler)
-    local Title = string.format("WebView2 Hello - %d", WindowCount)
-    Child:show(Title)
+    local Child = webview.new(Html, WebViewEventHandler, WindowCount)
+    Child:show()
+  elseif (UiEvent == "ready") then
+    -- Update title (we could have use WebView:send instead of WebView:execute)
+    local Count  = WebView:getuserdata()
+    local JsCode = string.format("document.title = 'WebView2 Hello - %d'", Count)
+    WebView:execute(JsCode)
   elseif (UiEvent == "exit") then
     WebView:close()
   end
@@ -237,9 +244,10 @@ The event values are retrieved from the `Event.data` object:
 The blocking function `runloop` runs the event loop and returns when the last window is closed:
 
 ```lua
-local WebView = webview.new(Html, WebViewEventHandler)
-local Title   = string.format("WebView2 Hello - %d", WindowCount)
-WebView:show(Title)
+local WebView = webview.new(Html, WebViewEventHandler, WindowCount)
+WebView:show()
+
+-- Wait for all the windows to be closed by the user
 webview.runloop()
 ```
 
@@ -252,16 +260,24 @@ The `"new"` event creates an additional window:
 ```
 elseif (UiEvent == "new") then
   WindowCount = (WindowCount + 1)
-  local Child = webview.new(Html, WebViewEventHandler)
-  local Title = string.format("WebView2 Hello - %d", WindowCount)
-  Child:show(Title)
+  local Child = webview.new(Html, WebViewEventHandler, WindowCount)
+  Child:show()
+```
+
+The `"ready"` event updates the window title:
+
+```
+elseif (UiEvent == "ready") then
+  -- Update title (we could have use WebView:send instead of WebView:execute)
+  local Count  = WebView:getuserdata()
+  local JsCode = string.format("document.title = 'WebView2 Hello - %d'", Count)
+  WebView:execute(JsCode)
 ```
 
 The `"exit"` event closes the window:
 
 ```
 elseif (UiEvent == "exit") then
-  -- Close this window
   WebView:close()
 end
 ```
