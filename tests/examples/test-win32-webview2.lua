@@ -25,18 +25,21 @@ local function WebViewEventHandler (WebView, UiEvent)
     WebView:send(NewEvent)
   elseif (UiEvent == "new") then
     WindowCount = (WindowCount + 1)
-    local Child = webview.new(Html, WebViewEventHandler)
-    local Title = string.format("WebView2 Hello - %d", WindowCount)
-    Child:show(Title)
+    local Child = webview.new(Html, WebViewEventHandler, WindowCount)
+    Child:show()
+  elseif (UiEvent == "ready") then
+    -- Update title (we could have use WebView:send instead of WebView:execute)
+    local Count  = WebView:getuserdata()
+    local JsCode = string.format("document.title = 'WebView2 Hello - %d'", Count)
+    WebView:execute(JsCode)
   elseif (UiEvent == "exit") then
     WebView:close()
   end
 end
 
 -- New webview window
-local WebView = webview.new(Html, WebViewEventHandler)
-local Title   = string.format("WebView2 Hello - %d", WindowCount)
-WebView:show(Title)
+local WebView = webview.new(Html, WebViewEventHandler, WindowCount)
+WebView:show()
 
 -- Wait for all the windows to be closed by the user
 webview.runloop()

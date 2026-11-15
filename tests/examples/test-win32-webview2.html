@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <title>WebView2 Hello</title>
     <style>
       body {
         display:flex;
@@ -34,6 +35,8 @@
       window.chrome.webview.addEventListener('message', function (Event) {
         if (Event.data.type === 'alert') alert(Event.data.text)
       })
+      <!-- Tell Lua when the document is ready -->
+      window.addEventListener('DOMContentLoaded', function () { PostEvent('ready') })
       <!-- Auto-exit after 5 seconds -->
       setTimeout(function () { PostEvent('exit') }, 5000)
     </script>
