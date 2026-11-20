@@ -12,7 +12,7 @@ end
 -- Read the HTML code from file (dev) or from executable (production)
 local Html = Runtime.loadresource("test-win32-webview2.html")
 if (not Html) then
-  win32.messagebox(nil, "Failed to read test-win32-webview2.html", "Application Error", "OK", "ERROR")
+  win32.messagebox(nil, "Failed to load test-win32-webview2.html", "Application Error", "OK", "ERROR")
   os.exit(1)
 end
 
