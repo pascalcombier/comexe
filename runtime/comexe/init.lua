@@ -1843,6 +1843,30 @@ else
   ModuleToLoad = Thread.getname()
 end
 
+-- Standard Lua: hide ComEXE modules
+if INIT_StandardLua then
+  local StandardModules = {
+    _G        = true,
+    package   = true,
+    coroutine = true,
+    string    = true,
+    table     = true,
+    math      = true,
+    io        = true,
+    os        = true,
+    utf8      = true,
+    debug     = true,
+  }
+  for Name in pairs(package.preload) do
+    package.preload[Name] = nil
+  end
+  for Name in pairs(package.loaded) do
+    if (not StandardModules[Name]) then
+      package.loaded[Name] = nil
+    end
+  end
+end
+
 require(ModuleToLoad)
 
 if ZIP_File then

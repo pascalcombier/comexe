@@ -68,11 +68,11 @@ The default, with no suffix, is the console build. `-dbg` is the debug build, `-
 | Build                                   | Size     |
 |-----------------------------------------|----------|
 | Windows x64, full runtime               | 1.99 MiB |
-| Windows x64, `--nostdlib`               | 1.41 MiB |
+| Windows x64, `--stdlua`                 | 1.41 MiB |
 | Linux x64, `x86_64-linux-musl` (static) | 2.82 MiB |
 | Linux x64, `x86_64-linux-gnu` (glibc)   | 2.64 MiB |
 
-The option `--nostdlib` strips all the Lua modules from the executable.
+`--stdlua` only exposes the standard Lua libraries. It is intended for scripts that do not use ComEXE modules.
 
 # 📦 Features
 

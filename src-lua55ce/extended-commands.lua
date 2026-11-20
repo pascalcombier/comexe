@@ -135,11 +135,14 @@ local function MAKE_WarnSpecialFilenames (Directory)
   listfiles(Directory, CheckFile)
 end
 
-local function EXT_CreateInitLua (ApplicationEntryPoint)
-  local InitLuaContents   = LoadResource(COMEXE_ZIP_INIT_ENTRY, "ZIP")
-  local FirstLineFormat   = [[local INIT_AppEntryPoint = "%s"]]
-  local FirstLineContents = format(FirstLineFormat, ApplicationEntryPoint)
-  local NewInitLua        = format("%s\n%s", FirstLineContents, InitLuaContents)
+local function EXT_CreateInitLua (ApplicationEntryPoint, StandardLua)
+  -- Load init.lua from Runtime ZIP
+  local InitLuaContents = LoadResource(COMEXE_ZIP_INIT_ENTRY, "ZIP")
+  -- Patch it
+  local InitTemplate = [[local INIT_AppEntryPoint = %q
+local INIT_StandardLua = %s
+%s]]
+  local NewInitLua = format(InitTemplate, ApplicationEntryPoint, StandardLua, InitLuaContents)
   return NewInitLua
 end
 
@@ -164,7 +167,7 @@ local function EXT_AddRuntimeSource (Merger, TargetEntryName)
   Merger:AddRule(Source, ".*",           "SKIP")
 end
 
-local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationEntryPoint, NeedStdlib)
+local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationEntryPoint, StandardLua)
   -- Validate inputs
   assert(TargetName, "make requires a target name")
   assert(DataInputs and (#DataInputs > 0), "make requires at least one data input (directory or ZIP file)")
@@ -191,10 +194,10 @@ local function EXT_MakeExe (OutputFilename, TargetName, DataInputs, ApplicationE
   -- Use NewMerger to build the ZIP
   local Merger = NewMerger(TempZipFilename, Z_BEST_COMPRESSION)
   -- runtime/init.lua
-  local NewInitLua = EXT_CreateInitLua(ApplicationEntryPoint)
+  local NewInitLua = EXT_CreateInitLua(ApplicationEntryPoint, StandardLua)
   Merger:AddEntry(COMEXE_ZIP_INIT_ENTRY, NewInitLua)
   -- Add runtime source if needed (COMEXE_EXE treated as ZIP source)
-  if NeedStdlib then
+  if (not StandardLua) then
     EXT_AddRuntimeSource(Merger, TargetEntryName)
   end
   -- User inputs
@@ -239,7 +242,7 @@ local function HandleHelp ()
   print("Extended Commands:")
   print("  --help, -h                        Show this help message")
   print("  --list-targets                    List available targets for make command")
-  print("  --make, -m DIR/OR/ZIP/my-prog.lua [-v] [--verbose] [--nostdlib] [-t target] [-o output]")
+  print("  --make, -m DIR/OR/ZIP/my-prog.lua [-v] [--verbose] [--stdlua] [-t target] [-o output]")
   print("  --zip l or list <file.zip>        List contents of a zip file")
   print("  --zip c or create <file.zip> ...  Create/overwrite a zip file")
   print("  --find <directory>                Find files in a directory")
@@ -340,9 +343,9 @@ end
 
 local function ExtractMakeFlags (Arguments)
   -- Parse flags and source argument
-  local Verbose    = false
-  local NeedStdlib = true
-  local SourceList = {}
+  local Verbose     = false
+  local StandardLua = false
+  local SourceList  = {}
   local TargetSpec
   local OutputFile
   -- Parse arguments
@@ -351,8 +354,8 @@ local function ExtractMakeFlags (Arguments)
     local Arg = Arguments[Index]
     if (Arg == "-v") or (Arg == "--verbose") then
       Verbose = true
-    elseif (Arg == "--nostdlib") then
-      NeedStdlib = false
+    elseif (Arg == "--stdlua") then
+      StandardLua = true
     elseif (Arg == "-t") then
       Index = (Index + 1)
       if (Index <= #Arguments) then
@@ -378,7 +381,7 @@ local function ExtractMakeFlags (Arguments)
     error("make requires a source file or directory argument")
   end
   -- Return the parsed flags as multiple values
-  return Verbose, TargetSpec, OutputFile, SourceList, NeedStdlib
+  return Verbose, TargetSpec, OutputFile, SourceList, StandardLua
 end
 
 local function MAKE_FilterSources (SourceList)
@@ -442,9 +445,16 @@ end
 
 local function HandleMake (Arguments)
   -- Extract flags
-  local Verbose, Target, UserOutputFile, SourceList, NeedStdlib = ExtractMakeFlags(Arguments)
+  local Verbose, Target, UserOutputFile, SourceList, StandardLua = ExtractMakeFlags(Arguments)
   if Verbose then
     MAKE_Log = MAKE_VerboseLog
+  end
+  -- Determine runtime
+  local Runtime
+  if StandardLua then
+    Runtime = "lua-runtime"
+  else
+    Runtime = "comexe-runtime"
   end
   -- Process inputs
   local NewSourceList, FirstLuaModuleName, FirstDirectoryName = MAKE_FilterSources(SourceList)
@@ -459,9 +469,9 @@ local function HandleMake (Arguments)
   end
   -- Build the target
   local OutputFilename = MAKE_DetermineOutputFilename(UserOutputFile, FirstLuaModuleName, FirstDirectoryName, TargetName)
-  MAKE_Log("TARGET '%s' '%s'", OutputFilename, TargetName)
+  MAKE_Log("TARGET '%s' '%s' '%s'", OutputFilename, TargetName, Runtime)
   MAKE_Log(" ENTRY '%s'", ApplicationEntryPoint)
-  EXT_MakeExe(OutputFilename, TargetName, NewSourceList, ApplicationEntryPoint, NeedStdlib)
+  EXT_MakeExe(OutputFilename, TargetName, NewSourceList, ApplicationEntryPoint, StandardLua)
 end
 
 local function HandleChecksum (Arguments)
