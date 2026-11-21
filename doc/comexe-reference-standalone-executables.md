@@ -1,115 +1,227 @@
 # Generating Standalone Executables
 
-`lua55ce` turns a Lua project into a standalone executable. The executable contains the Lua runtime and your project files.
+* [Overview](#overview)
+* [A first script](#a-first-script)
+* [Building an executable](#building-an-executable)
+* [Executable layout](#executable-layout)
+  * [ComEXE runtime](#comexe-runtime)
+  * [Standard Lua runtime](#standard-lua-runtime)
+* [Project example](#project-example)
+  * [Project structure](#project-structure)
+  * [Third-party libraries](#third-party-libraries)
+  * [Resources](#resources)
+  * [Build the example](#build-the-example)
+* [Cross-compilation](#cross-compilation)
+* [Troubleshooting](#troubleshooting)
+  * [Executable size is larger than expected](#executable-size-is-larger-than-expected)
 
-* [Hello World example](#hello-world-example)
-* [Compile it into a 2 MiB executable](#compile-it-into-a-2-mib-executable)
-* [Cross-compile for other platforms](#cross-compile-for-other-platforms)
-* [Executable contents](#executable-contents)
-* [Make the executable smaller](#make-the-executable-smaller)
+# Overview
 
-## Hello World example
+`lua55ce` runs Lua scripts like the standard [Lua interpreter](https://www.lua.org/manual/5.5/manual.html#7). `lua55ce -x --make` generates standalone executables for Windows and Linux, natively or by cross-compilation. Those executables are [self-extracting archives](https://en.wikipedia.org/wiki/Self-extracting_archive). Their contents can be listed with `lua55ce -x --zip l` or with ZIP tools such as [7-Zip](https://7-zip.org/). At startup the Lua runtime is read from the ZIP in memory, so nothing is extracted to disk. Lua is statically linked into each executable, so target machines do not need a Lua library.
 
-**main.lua**
+# A first script
 
-```lua title="src\main.lua"
-print("Hello World!")
-```
+Create a script and run it:
 
-This will output:
-
-```sh
-E:\my-program>lua55ce src\main.lua
+```console
+> mkdir src
+> echo print("Hello World!") > src\hello.lua
+> lua55ce src\hello.lua
 Hello World!
 ```
 
-## Compile it into a 2 MiB executable
+# Building an executable
 
-```batch
-E:\my-program>lua55ce -x --make src\main.lua
+`lua55ce -x --make` builds an executable from a Lua file:
 
-E:\my-program>main.exe
+```console
+> lua55ce -x --make src\hello.lua
+> hello.exe
 Hello World!
 ```
 
-## Cross-compile for other platforms
+The executable is named after the script file and written to the current directory. Use `-o` to set another name:
 
-```batch
-E:\my-program>lua55ce -x --list-targets
-x86_64-linux-gnu
-x86_64-linux-gnu-dbg
-x86_64-linux-musl
-x86_64-linux-musl-dbg
+```console
+> lua55ce -x --make src\hello.lua -o my-program.exe
+```
+
+The same build with `--verbose`:
+
+```console
+> lua55ce -x --make src\hello.lua --verbose
+TARGET 'hello.exe' 'x86_64-windows' 'comexe-runtime'
+ ENTRY 'hello'
+ZIPDIR 'src'
+CREATE 'hello.exe' 2.0 MiB
+```
+
+`ZIPDIR` is `src`: the whole directory is packed, not only `hello.lua`. The last line reports the size of the generated executable.
+
+# Executable layout
+
+## ComEXE runtime
+
+The executable embeds a ZIP with ComEXE's runtime files and the contents of the source directory:
+
+```console
+> lua55ce -x --zip l hello.exe
+... (runtime files)
+comexe/init.lua
+comexe/usr/share/lua/5.5/com/runtime.lua
+... (packed files)
+hello.lua
+```
+
+ComEXE's runtime is made of multiple files, providing LuaSocket, dkjson, minizip and others. `--stdlua` omits them when a program uses only [the Lua standard libraries](https://www.lua.org/manual/5.5/manual.html#6).
+
+## Standard Lua runtime
+
+```console
+> lua55ce -x --make src\hello.lua --stdlua --verbose
+TARGET 'hello.exe' 'x86_64-windows' 'lua-runtime'
+ ENTRY 'hello'
+ZIPDIR 'src'
+CREATE 'hello.exe' 1.4 MiB
+> lua55ce -x --zip l hello.exe
+comexe/init.lua
+hello.lua
+```
+
+With `--stdlua`, the runtime is limited to the file `comexe/init.lua`, so the executable is 1.4 MiB.
+
+# Project example
+
+A project can use third-party libraries or embed data files.
+
+## Project structure
+
+The `src` directory contains three files:
+
+* `project.lua`: project entry point
+* `project.dat`: data loaded at runtime
+* `share/lua/5.5/inspect.lua`: third-party library dependency
+
+**project.dat**
+
+```
+Hello World!
+```
+
+**project.lua**
+
+```lua
+local Runtime = require("com.runtime")
+local Inspect = require("inspect")
+
+local Text = Runtime.loadresource("project.dat")
+
+print(Inspect({ text = Text }))
+```
+
+## Third-party libraries
+
+The optional `share\lua\5.5` directory is automatically added to [`package.path`](https://www.lua.org/manual/5.5/manual.html#6.3), so third-party libraries can be placed there: `require("inspect")` loads `share\lua\5.5\inspect.lua`.
+
+## Resources
+
+The `--make` command packs every file of the source directory, not only the Lua sources. `Runtime.loadresource` can retrieve any packed file at runtime.
+
+`Runtime.loadresource` reads from the file system under `lua55ce` or from the embedded ZIP under `project.exe`:
+
+| Command                   | `loadresource("project.dat")` |
+|---------------------------|-------------------------------|
+| `lua55ce src\project.lua` | File `src\project.dat`        |
+| `project.exe`             | ZIP Entry `project.dat`       |
+
+`Runtime.loadresource` returns `nil` when the resource is not found.
+
+## Build the example
+
+```console
+> lua55ce -x --make src\project.lua
+> project.exe
+{ text = "Hello World!" }
+```
+
+# Cross-compilation
+
+List the available targets:
+
+```console
+> lua55ce -x --list-targets
 x86_64-windows
 x86_64-windows-dbg
 x86_64-windows-gui
-
-E:\my-program>lua55ce -x --make src\main.lua -t x86_64-linux-musl
+x86_64-linux-musl
+x86_64-linux-musl-dbg
+x86_64-linux-gnu
+x86_64-linux-gnu-dbg
 ```
 
-Cross-compilation works both ways: build Windows binaries on Linux or Linux binaries on Windows.
+| Target                  | ARCH   | OS           | LIBC  | Variant | Mode    |
+|-------------------------|--------|--------------|-------|---------|---------|
+| `x86_64-windows`        | x86_64 | Windows 10+  | UCRT  | Console | Release |
+| `x86_64-windows-dbg`    | x86_64 | Windows 10+  | UCRT  | Console | Debug   |
+| `x86_64-windows-gui`    | x86_64 | Windows 10+  | UCRT  | GUI     | Release |
+| `x86_64-linux-musl`     | x86_64 | Linux        | musl  | Console | Release |
+| `x86_64-linux-musl-dbg` | x86_64 | Linux        | musl  | Console | Debug   |
+| `x86_64-linux-gnu`      | x86_64 | Linux        | glibc | Console | Release |
+| `x86_64-linux-gnu-dbg`  | x86_64 | Linux        | glibc | Console | Debug   |
 
-A target name without the variant suffixes `-dbg` or `-gui` refers to the console build, intended for command line programs. `-gui` is Win32-only and refers to the Windows subsystem. `-dbg` is the debug build, which is larger and includes debug symbols.
+Build the executable for another target:
 
-## Executable contents
-
-Option `--verbose` shows more information:
-
-```
-> lua55ce -x --make src\main.lua --verbose
-TARGET 'main.exe' 'x86_64-windows'
- ENTRY 'main'
-ZIPDIR 'src'
-CREATE 'main.exe' 2.0 MiB
-```
-
-The whole `src` directory is packed and included in the standalone executable, not only `main.lua`.
-
-This command packs *everything* inside the `src` folder:
-
-```sh
-lua55ce -x --make src\main.lua
+```console
+> lua55ce -x --make src\project.lua -t x86_64-linux-musl
 ```
 
-Similarly, the following command packs everything inside the current folder (`.`):
+Cross-compilation works both ways: build Windows binaries on Linux, or Linux binaries on Windows.
 
-```sh
-lua55ce -x --make main.lua
+# Troubleshooting
+
+## Executable size is larger than expected
+
+The build runs in the source directory:
+
+```console
+> echo print("Hello World!") > hello.lua
+> lua55ce -x --make hello.lua --verbose --stdlua
+TARGET 'hello.exe' 'x86_64-windows' 'lua-runtime'
+ ENTRY 'hello'
+ZIPDIR '.'
+CREATE 'hello.exe' 1.4 MiB
 ```
 
-So if the current folder has those files:
-- main.lua
-- main.exe
+The build creates `hello.exe` next to `hello.lua`:
 
-The command will pack both main.lua (good) and main.exe (bad) into the new main.exe, which will make the executable file larger.
+```
+hello.lua
+hello.exe
+```
 
-Always put the source code in its own folder!
+`hello.exe` embeds two files:
 
-The ZIP part of the executable can be inspected:
-
-```sh
-> lua55ce -x --zip l main.exe
+```console
+> lua55ce -x --zip l hello.exe
 comexe/init.lua
-comexe/usr/share/lua/5.5/com/runtime.lua
-...
-main.lua
-data.txt
+hello.lua
 ```
 
-The executable size can be reduced by editing the ZIP contents with a ZIP editor such as [7-zip](https://7-zip.org).
+Building again increases the binary size:
 
-## Make the executable smaller
-
-```sh
-lua55ce -x --make src\main.lua --nostdlib
+```console
+> lua55ce -x --make hello.lua --verbose --stdlua
+TARGET 'hello.exe' 'x86_64-windows' 'lua-runtime'
+ ENTRY 'hello'
+ZIPDIR '.'
+CREATE 'hello.exe' 2.1 MiB
 ```
 
-This removes every bundled Lua module and gives you a ~1.4 MiB executable on Windows.
+The new `hello.exe` is bigger because it contains the previous executable:
 
-Removed modules:
-- luasocket
-- dkjson
-- `com.sqlite3`
-- `com.ffi`
-- `com.win32.easycom`
-- `com.webview2`
+```console
+> lua55ce -x --zip l hello.exe
+comexe/init.lua
+hello.exe
+hello.lua
+```
