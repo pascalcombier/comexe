@@ -64,9 +64,12 @@ local DT_CENTER = 1
 local DT_SINGLELINE = 32
 local DT_VCENTER = 4
 local EXIT_SUCCESS = 0
+local GWL_STYLE = -16
 local IDC_ARROW = 32512
 local IDI_APPLICATION = 32512
+local MONITOR_DEFAULTTONEAREST = 2
 local SW_SHOWDEFAULT = 10
+local SWP_FRAMECHANGED = 32
 local SWP_NOACTIVATE = 16
 local SWP_NOMOVE = 2
 local SWP_NOSIZE = 1
@@ -79,8 +82,11 @@ local WM_TIMER = 275
 local WS_CLIPCHILDREN = 33554432
 local WS_CLIPSIBLINGS = 67108864
 local WS_OVERLAPPEDWINDOW = 13565952
+local WS_POPUP = 2147483648
+local WS_VISIBLE = 268435456
 -- Structures
 local RECT
+local MONITORINFO
 local WNDCLASSEX
 local MSG
 local PAINTSTRUCT
@@ -96,13 +102,18 @@ local EndPaint
 local GetClientRect
 local GetMessageW
 local GetModuleHandleA
+local GetMonitorInfoW
+local GetWindowLongPtrW
+local GetWindowRect
 local KillTimer
 local LoadCursorA
 local LoadIconA
+local MonitorFromWindow
 local PostMessageW
 local PostQuitMessage
 local RegisterClassExW
 local SetTimer
+local SetWindowLongPtrW
 local SetWindowPos
 local SetWindowTextW
 local ShowWindow
@@ -116,6 +127,12 @@ local function BindWin32Base (Library)
     libffi.sint32, "top",
     libffi.sint32, "right",
     libffi.sint32, "bottom"
+  )
+  MONITORINFO = libffi.newstructure("MONITORINFO",
+    libffi.uint32, "cbSize",
+    RECT, "rcMonitor",
+    RECT, "rcWork",
+    libffi.uint32, "dwFlags"
   )
   WNDCLASSEX = libffi.newstructure("WNDCLASSEX",
     libffi.uint32, "cbSize",
@@ -163,13 +180,18 @@ local function BindWin32Base (Library)
   GetClientRect = Library:bind(libffi.sint32, "GetClientRect", libffi.pointer, libffi.pointer)
   GetMessageW = Library:bind(libffi.sint32, "GetMessageW", libffi.pointer, libffi.pointer, libffi.uint32, libffi.uint32)
   GetModuleHandleA = Library:bind(libffi.pointer, "GetModuleHandleA", libffi.pointer)
+  GetMonitorInfoW = Library:bind(libffi.sint32, "GetMonitorInfoW", libffi.pointer, libffi.pointer)
+  GetWindowLongPtrW = Library:bind(libffi.sint64, "GetWindowLongPtrW", libffi.pointer, libffi.sint32)
+  GetWindowRect = Library:bind(libffi.sint32, "GetWindowRect", libffi.pointer, libffi.pointer)
   KillTimer = Library:bind(libffi.sint32, "KillTimer", libffi.pointer, libffi.uint64)
   LoadCursorA = Library:bind(libffi.pointer, "LoadCursorA", libffi.pointer, libffi.pointer)
   LoadIconA = Library:bind(libffi.pointer, "LoadIconA", libffi.pointer, libffi.pointer)
+  MonitorFromWindow = Library:bind(libffi.pointer, "MonitorFromWindow", libffi.pointer, libffi.uint32)
   PostMessageW = Library:bind(libffi.sint32, "PostMessageW", libffi.pointer, libffi.uint32, libffi.uint64, libffi.sint64)
   PostQuitMessage = Library:bind(libffi.void, "PostQuitMessage", libffi.sint32)
   RegisterClassExW = Library:bind(libffi.uint16, "RegisterClassExW", libffi.pointer)
   SetTimer = Library:bind(libffi.uint64, "SetTimer", libffi.pointer, libffi.uint64, libffi.uint32, libffi.pointer)
+  SetWindowLongPtrW = Library:bind(libffi.sint64, "SetWindowLongPtrW", libffi.pointer, libffi.sint32, libffi.sint64)
   SetWindowPos = Library:bind(libffi.sint32, "SetWindowPos", libffi.pointer, libffi.pointer, libffi.sint32, libffi.sint32, libffi.sint32, libffi.sint32, libffi.uint32)
   SetWindowTextW = Library:bind(libffi.sint32, "SetWindowTextW", libffi.pointer, libffi.pointer)
   ShowWindow = Library:bind(libffi.sint32, "ShowWindow", libffi.pointer, libffi.sint32)
@@ -559,11 +581,13 @@ local HInstance
 local WM_POLL_TIMER_ID    = 1
 local WM_APP_FLUSH_EVENTS = (0x8000 + 1)
 
--- At that moment, RECT and PAINTSTRUCT are not defined yet, so we can't
--- allocate global RECT and PAINTSTRUCT. They will be allocated later by
--- AllocateGlobalObjects and reused all the time
-local ClientRect
-local ClientRectPointer
+-- The structure types RECT, MONITORINFO and PAINTSTRUCT are not defined yet, so
+-- we can't call newinstance(Type). They will be allocated later by
+-- AllocateGlobalObjects and reused multiple times
+local TempRect
+local TempRectPointer
+local MonitorInfo
+local MonitorInfoPointer
 local PaintStructInstance
 local PaintStructPointer
 
@@ -621,8 +645,8 @@ end
 local function ApplyControllerBounds (WebView)
   local Controller = WebView.Controller
   if (Controller ~= NULL) then
-    GetClientRect(WebView.Window, ClientRectPointer)
-    Controller:put_Bounds(ClientRect)
+    GetClientRect(WebView.Window, TempRectPointer)
+    Controller:put_Bounds(TempRect)
   end
 end
 
@@ -779,10 +803,19 @@ local function WebviewStartUi (WebView)
     end
     return S_OK
   end
+  -- local callback: handle JavaScript event element.requestFullscreen
+  local function OnContainsFullScreenElementChanged (Sender, ArgsPointer)
+    local IsFullScreen
+    if (ComWebView:get_ContainsFullScreenElement(SharedPointer) == S_OK) then
+      IsFullScreen = readvalue(SharedPointer, 0, sint32)
+    else
+      IsFullScreen = 0
+    end
+    WebView:setfullscreen((IsFullScreen ~= 0))
+    return S_OK
+  end
   -- Create the COM handler
   local NewMessageHandler = easycom.newhandler(OnWebMessageReceived, { pointer, pointer })
-  -- Save the reference
-  WebView.MessageHandler = NewMessageHandler
   -- Configure the COM event handler
   local Hresult = ComWebView:add_WebMessageReceived(NewMessageHandler:getpointer(), SharedPointer)
   if (Hresult == S_OK) then
@@ -792,15 +825,24 @@ local function WebviewStartUi (WebView)
   else
     print(format("[WebView2] add_WebMessageReceived failed: 0x%08X", Hresult))
   end
-  -- Create the COM handler and save the reference
+  -- Create the COM handler
   local NewTitleHandler = easycom.newhandler(OnDocumentTitleChanged, { pointer, pointer })
-  -- Prevent garbage-collection
-  WebView.TitleHandler = NewTitleHandler
   -- Configure the COM event handler
   local TitleHresult = ComWebView:add_DocumentTitleChanged(NewTitleHandler:getpointer(), SharedPointer)
   if (TitleHresult ~= S_OK) then
     print(format("[WebView2] add_DocumentTitleChanged failed: 0x%08X", TitleHresult))
   end
+  -- Create the COM handler
+  local NewFullScreenHandler = easycom.newhandler(OnContainsFullScreenElementChanged, { pointer, pointer })
+  -- Configure the COM event handler
+  local FullScreenHresult = ComWebView:add_ContainsFullScreenElementChanged(NewFullScreenHandler:getpointer(), SharedPointer)
+  if (FullScreenHresult ~= S_OK) then
+    print(format("[WebView2] add_ContainsFullScreenElementChanged failed: 0x%08X", FullScreenHresult))
+  end
+  -- Prevent garbage collection of references
+  WebView.MessageHandler    = NewMessageHandler
+  WebView.TitleHandler      = NewTitleHandler
+  WebView.FullScreenHandler = NewFullScreenHandler
   -- Load the UI
   local ContentUtf8  = WebView.Content
   local ContentUtf16 = utf8to16(ContentUtf8)
@@ -904,9 +946,10 @@ local function WindowProcedure (Window, Message, WParam, LParam)
     Result = 0
   elseif (Message == WM_PAINT) then
     if (WebView.ComWebView == NULL) then
-      local Hdc = BeginPaint(Window, PaintStructPointer)
-      GetClientRect(Window, ClientRectPointer)
-      DrawTextW(Hdc, LoadingTextPointer, -1, ClientRectPointer, (DT_CENTER | DT_VCENTER | DT_SINGLELINE))
+      local Hdc   = BeginPaint(Window, PaintStructPointer)
+      local Flags = (DT_CENTER | DT_VCENTER | DT_SINGLELINE)
+      GetClientRect(Window, TempRectPointer)
+      DrawTextW(Hdc, LoadingTextPointer, -1, TempRectPointer, Flags)
       EndPaint(Window, PaintStructPointer)
       Result = 0
     else
@@ -1023,13 +1066,19 @@ end
 local function AllocateGlobalObjects ()
   -- Make sure the function is called after BindWin32Base and BindWebview
   assert(RECT)
+  assert(MONITORINFO)
   assert(PAINTSTRUCT)
   -- Allocate globals
-  ClientRect          = newinstance(RECT)
-  ClientRectPointer   = ClientRect:getpointer()
+  TempRect            = newinstance(RECT)
+  TempRectPointer     = TempRect:getpointer()
+  MonitorInfo         = newinstance(MONITORINFO)
+  MonitorInfoPointer  = MonitorInfo:getpointer()
   PaintStructInstance = newinstance(PAINTSTRUCT)
   PaintStructPointer  = PaintStructInstance:getpointer()
-  -- Prevent runtime from releasing (the pointer is used by WM_PAINT)
+  -- Initialize
+  MonitorInfo:set("cbSize", sizeof(MONITORINFO))
+  -- Prevent runtime from releasing (only the pointer is used by WM_PAINT,
+  -- PaintStructInstance is not referenced)
   luaref(PaintStructInstance)
   -- Return value
   return true
@@ -1175,6 +1224,83 @@ local function WEBVIEW_MethodSetBounds (WebView, X, Y, Width, Height)
   end
   if (Window ~= NULL) then
     SetWindowPos(Window, NULL, (X or 0), (Y or 0), (Width or 0), (Height or 0), Flags)
+  end
+end
+
+local function WEBVIEW_RectValues (Rect)
+  local Left   = Rect:get("left")
+  local Top    = Rect:get("top")
+  local Right  = Rect:get("right")
+  local Bottom = Rect:get("bottom")
+  return Left, Top, (Right - Left), (Bottom - Top)
+end
+
+local function WEBVIEW_GetScreenRect (WebView)
+  -- Retrieve the monitor that holds the window
+  local Monitor = MonitorFromWindow(WebView.Window, MONITOR_DEFAULTTONEAREST)
+  -- Retrieve monitor information
+  GetMonitorInfoW(Monitor, MonitorInfoPointer)
+  local MonitorRect = MonitorInfo:get("rcMonitor")
+  -- Extract rectangle values to Lua
+  local Left, Top, Width, Height = WEBVIEW_RectValues(MonitorRect)
+  return Left, Top, Width, Height
+end
+
+local function WEBVIEW_EnterFullscreen (WebView)
+  -- Retrieve data
+  local Window = WebView.Window
+  -- Collect current bounds
+  GetWindowRect(Window, TempRectPointer)
+  local WindowX, WindowY, WindowWidth, WindowHeight = WEBVIEW_RectValues(TempRect)
+  local ScreenX, ScreenY, ScreenWidth, ScreenHeight = WEBVIEW_GetScreenRect(WebView)
+  -- Save the state
+  WebView.FullscreenState = {
+    Style        = GetWindowLongPtrW(Window, GWL_STYLE),
+    WindowX      = WindowX,
+    WindowY      = WindowY,
+    WindowWidth  = WindowWidth,
+    WindowHeight = WindowHeight,
+  }
+  -- Apply the borderless style
+  SetWindowLongPtrW(Window, GWL_STYLE, (WS_POPUP | WS_VISIBLE))
+  -- Set fullscreen
+  SetWindowPos(Window,
+               NULL,
+               ScreenX,
+               ScreenY,
+               ScreenWidth,
+               ScreenHeight,
+               (SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOACTIVATE))
+end
+
+local function WEBVIEW_LeaveFullscreen (WebView)
+  -- Retrieve data
+  local Window          = WebView.Window
+  local FullscreenState = WebView.FullscreenState
+  -- Restore the saved style
+  SetWindowLongPtrW(Window, GWL_STYLE, FullscreenState.Style)
+  -- Restore the window location
+  SetWindowPos(Window,
+               NULL,
+               FullscreenState.WindowX,
+               FullscreenState.WindowY,
+               FullscreenState.WindowWidth,
+               FullscreenState.WindowHeight,
+               (SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOACTIVATE))
+  -- Clear fullscreen state
+  WebView.FullscreenState = nil
+end
+
+local function WEBVIEW_MethodSetFullscreen (WebView, Enabled)
+  local Window = WebView.Window
+  if (Window ~= NULL) then
+    local IsFullscreen        = (WebView.FullscreenState ~= nil)
+    local FullscreenRequested = Enabled
+    if (not IsFullscreen) and FullscreenRequested then
+      WEBVIEW_EnterFullscreen(WebView)
+    elseif IsFullscreen and (not FullscreenRequested) then
+      WEBVIEW_LeaveFullscreen(WebView)
+    end
   end
 end
 
@@ -1355,15 +1481,16 @@ end
 local WEBVIEW_Metatable = {
   -- METATABLE_UserDefinedMethods
   __index = {
-    show        = WEBVIEW_MethodShow,
-    setbounds   = WEBVIEW_MethodSetBounds,
-    close       = WEBVIEW_MethodClose,
-    send        = WEBVIEW_MethodSend,
-    getuserdata = WEBVIEW_GetUserdata,
-    hwnd        = WEBVIEW_GetHwnd,
-    execute     = WEBVIEW_MethodExecute,
-    devtools    = WEBVIEW_MethodDevtools,
-    screenshot  = WEBVIEW_MethodScreenshot,
+    show          = WEBVIEW_MethodShow,
+    setbounds     = WEBVIEW_MethodSetBounds,
+    setfullscreen = WEBVIEW_MethodSetFullscreen,
+    close         = WEBVIEW_MethodClose,
+    send          = WEBVIEW_MethodSend,
+    getuserdata   = WEBVIEW_GetUserdata,
+    hwnd          = WEBVIEW_GetHwnd,
+    execute       = WEBVIEW_MethodExecute,
+    devtools      = WEBVIEW_MethodDevtools,
+    screenshot    = WEBVIEW_MethodScreenshot,
   }
 }
 
@@ -1384,6 +1511,7 @@ local function NewWebView (Content, OnMessage, UserData)
     ControllerHandler  = NULL,
     MessageHandler     = NULL,
     TitleHandler       = NULL,
+    FullScreenHandler  = NULL,
     JobQueue           = {},
     Busy               = false,
   }

@@ -100,6 +100,7 @@ The returned value is a **WebView object** documented in the next section.
 | `show()`                             | Show the window (created hidden by `new`)                                                  |
 | `close()`                            | Close the window                                                                           |
 | `setbounds(X, Y, Width, Height)`     | Move or resize (`nil` keeps the current position or size)                                  |
+| `setfullscreen(Enabled)`             | Enable or disable fullscreen                                                               |
 | `send(Message)`                      | Send a Lua object to the JavaScript side, see [Event management](#event-management)        |
 | `getuserdata()`                      | Return the `UserData` value passed to `new`                                                |
 | `hwnd()`                             | Return the Win32 `HWND`                                                                    |

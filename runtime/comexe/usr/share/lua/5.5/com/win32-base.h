@@ -21,6 +21,8 @@
 #define WS_OVERLAPPEDWINDOW 0x00CF0000
 #define WS_CLIPCHILDREN     0x02000000
 #define WS_CLIPSIBLINGS     0x04000000
+#define WS_POPUP            0x80000000
+#define WS_VISIBLE          0x10000000
 
 #define CW_USEDEFAULT  0x80000000
 #define SW_SHOWDEFAULT 10
@@ -40,10 +42,18 @@
 /* SetWindowPos                                                               */
 /*============================================================================*/
 
-#define SWP_NOSIZE     0x0001
-#define SWP_NOMOVE     0x0002
-#define SWP_NOZORDER   0x0004
-#define SWP_NOACTIVATE 0x0010
+#define SWP_NOSIZE       0x0001
+#define SWP_NOMOVE       0x0002
+#define SWP_NOZORDER     0x0004
+#define SWP_NOACTIVATE   0x0010
+#define SWP_FRAMECHANGED 0x0020
+
+/*============================================================================*/
+/* WINDOW STYLE / MONITOR                                                     */
+/*============================================================================*/
+
+#define GWL_STYLE                (-16)
+#define MONITOR_DEFAULTTONEAREST 2
 
 /*============================================================================*/
 /* DRAWTEXT                                                                   */
@@ -63,6 +73,13 @@ typedef struct {
   long right;
   long bottom;
 } RECT;
+
+typedef struct {
+  unsigned int cbSize;
+  RECT         rcMonitor;
+  RECT         rcWork;
+  unsigned int dwFlags;
+} MONITORINFO;
 
 typedef struct {
   unsigned int  cbSize;
@@ -122,8 +139,13 @@ int        DestroyWindow(void *hWnd);
 int        ShowWindow(void *hWnd, int nCmdShow);
 int        UpdateWindow(void *hWnd);
 int        GetClientRect(void *hWnd, void *lpRect);
+int        GetWindowRect(void *hWnd, void *lpRect);
 int        SetWindowPos(void *hWnd, void *hWndInsertAfter, int X, int Y, int cx, int cy, unsigned int uFlags);
 int        SetWindowTextW(void *hWnd, const void *lpString);
+long long  GetWindowLongPtrW(void *hWnd, int nIndex);
+long long  SetWindowLongPtrW(void *hWnd, int nIndex, long long dwNewLong);
+void      *MonitorFromWindow(void *hWnd, unsigned int dwFlags);
+int        GetMonitorInfoW(void *hMonitor, void *lpmi);
 long long  DefWindowProcW(void *hWnd, unsigned int Msg, unsigned long long wParam, long long lParam);
 int        GetMessageW(void *lpMsg, void *hWnd, unsigned int wMsgFilterMin, unsigned int wMsgFilterMax);
 int        TranslateMessage(const void *lpMsg);
